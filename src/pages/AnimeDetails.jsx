@@ -350,32 +350,10 @@ function AnimeDetails() {
                 })}
               </div>
             ) : episodes > 0 ? (
-              <div className="episode-list">
-                {Array.from({ length: Math.min(episodes, 24) }, (_, index) => {
-                  const ep = index + 1;
-                  const isWatched = progress[anime.id] >= ep;
-                  const isCurrent = currentEpisode?.number === ep;
-                  return (
-                    <button
-                      key={ep}
-                      type="button"
-                      className={`episode-card ${isCurrent ? 'active' : ''} ${isWatched ? 'watched' : ''}`}
-                      disabled={!gogoId}
-                      onClick={() => {
-                        if (gogoId) {
-                          const epObj = { id: `${gogoId}-episode-${ep}`, number: ep, title: `Episode ${ep}` };
-                          selectEpisode(epObj);
-                        }
-                      }}
-                    >
-                      <strong>{String(ep).padStart(2, '0')}</strong>
-                      <span>Episode {ep}</span>
-                      {isWatched && <span className="ep-check">✓ Watched</span>}
-                      {isCurrent && <span className="ep-now-playing">▶ Now Playing</span>}
-                    </button>
-                  );
-                })}
-              </div>
+              <p className="status">
+                We found this title, but real stream episodes are not available from our live provider right now.
+                Try another title or use the official streaming links below.
+              </p>
             ) : (
               <p className="status">Episode list not available yet.</p>
             )}

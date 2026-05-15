@@ -392,6 +392,12 @@ select {
   transform: translateY(-5px);
   box-shadow: 0 22px 60px rgba(32, 18, 84, 0.18);
 }
+.card-link-overlay {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+}
+
 .card-media {
   position: relative;
 }
