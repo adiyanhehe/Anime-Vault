@@ -27,6 +27,7 @@ function AnimeDetails() {
   const [videoSources, setVideoSources] = useState([]);
   const [playerLoading, setPlayerLoading] = useState(false);
   const [playerError, setPlayerError] = useState('');
+  const [gogoLoading, setGogoLoading] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -60,6 +61,7 @@ function AnimeDetails() {
 
         // Find Gogoanime ID for real streaming
         try {
+          setGogoLoading(true);
           const gogoId = await findBestGogoMatch(media.title.romaji, media.seasonYear, media.title.english);
           if (gogoId) {
             setGogoId(gogoId);
@@ -76,6 +78,8 @@ function AnimeDetails() {
           }
         } catch (gogoErr) {
           console.warn('Gogoanime search failed:', gogoErr.message);
+        } finally {
+          setGogoLoading(false);
         }
       } catch (err) {
         setError(err.message || 'Failed to load anime details');
@@ -350,37 +354,15 @@ function AnimeDetails() {
                 })}
               </div>
             ) : episodes > 0 ? (
-              <div className="episode-list">
-                {Array.from({ length: Math.min(episodes, 24) }, (_, index) => {
-                  const ep = index + 1;
-                  const isWatched = progress[anime.id] >= ep;
-                  const isCurrent = currentEpisode?.number === ep;
-                  return (
-                    <button
-                      key={ep}
-                      type="button"
-                      className={`episode-card ${isCurrent ? 'active' : ''} ${isWatched ? 'watched' : ''}`}
-                      disabled={!gogoId}
-                      onClick={() => {
-                        if (gogoId) {
-                          const epObj = { id: `${gogoId}-episode-${ep}`, number: ep, title: `Episode ${ep}` };
-                          selectEpisode(epObj);
-                        }
-                      }}
-                    >
-                      <strong>{String(ep).padStart(2, '0')}</strong>
-                      <span>Episode {ep}</span>
-                      {isWatched && <span className="ep-check">✓ Watched</span>}
-                      {isCurrent && <span className="ep-now-playing">▶ Now Playing</span>}
-                    </button>
-                  );
-                })}
-              </div>
+              <p className="status">
+                We found this title, but real stream episodes are not available from our live provider right now.
+                Try another title or use the official streaming links below.
+              </p>
             ) : (
               <p className="status">Episode list not available yet.</p>
             )}
 
-            {gogoEpisodes.length === 0 && gogoId && (
+            {gogoLoading && (
               <p className="status">Loading episode list from Gogoanime...</p>
             )}
           </div>
@@ -471,7 +453,15 @@ function AnimeDetails() {
             <div className="sidebar-block">
               <h3>Watch on Official Sites</h3>
               <div className="streaming-links-sidebar">
-                {streamingLinks.slice(0, 5).map((link, i) => (
+                {streamingLinks.slice(0, 5).map((link, i) => {
+                  let hostname = '';
+                  try {
+                    hostname = new URL(link.url).hostname;
+                  } catch {
+                    hostname = '';
+                  }
+
+                  return (
                   <a
                     key={i}
                     href={link.url}
@@ -479,15 +469,17 @@ function AnimeDetails() {
                     rel="noopener noreferrer"
                     className="streaming-sidebar-item"
                   >
-                    <img
-                      src={`https://www.google.com/s2/favicons?domain=${new URL(link.url).hostname}&sz=64`}
-                      alt={link.name}
-                      onError={(e) => { e.target.style.display = 'none'; }}
-                    />
+                    {hostname ? (
+                      <img
+                        src={`https://www.google.com/s2/favicons?domain=${hostname}&sz=64`}
+                        alt={link.name}
+                        onError={(e) => { e.target.style.display = 'none'; }}
+                      />
+                    ) : null}
                     <span>{link.name}</span>
                     <span className="material-symbols-outlined">open_in_new</span>
                   </a>
-                ))}
+                )})}
               </div>
             </div>
           )}

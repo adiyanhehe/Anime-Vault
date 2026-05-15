@@ -4,15 +4,28 @@
  * Public instances: https://consumet-api-rho.vercel.app or https://api.consumet.org
  */
 
-const BASE = 'https://consumet-api-rho.vercel.app/anime/gogoanime';
+const BASES = [
+  'https://api.consumet.org/anime/gogoanime',
+  'https://consumet-api-rho.vercel.app/anime/gogoanime'
+];
 
 async function get(endpoint) {
-  const response = await fetch(`${BASE}${endpoint}`);
-  if (!response.ok) {
-    throw new Error(`Consumet request failed: ${response.status}`);
+  let lastError = null;
+
+  for (const base of BASES) {
+    try {
+      const response = await fetch(`${base}${endpoint}`);
+      if (!response.ok) {
+        throw new Error(`Consumet request failed: ${response.status}`);
+      }
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      lastError = error;
+    }
   }
-  const data = await response.json();
-  return data;
+
+  throw lastError || new Error('Consumet request failed');
 }
 
 /**

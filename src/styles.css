@@ -381,6 +381,7 @@ select {
   transform: translateY(-2px);
 }
 .anime-card {
+  position: relative;
   display: grid;
   grid-template-rows: auto 1fr;
   overflow: hidden;
@@ -392,6 +393,24 @@ select {
   transform: translateY(-5px);
   box-shadow: 0 22px 60px rgba(32, 18, 84, 0.18);
 }
+.card-link-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: inherit;
+}
+
+.anime-card .card-content,
+.anime-card .card-media {
+  position: relative;
+  z-index: 2;
+}
+
+.anime-card .favorite-btn {
+  position: relative;
+  z-index: 3;
+}
+
 .card-media {
   position: relative;
 }
