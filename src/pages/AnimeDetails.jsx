@@ -453,7 +453,15 @@ function AnimeDetails() {
             <div className="sidebar-block">
               <h3>Watch on Official Sites</h3>
               <div className="streaming-links-sidebar">
-                {streamingLinks.slice(0, 5).map((link, i) => (
+                {streamingLinks.slice(0, 5).map((link, i) => {
+                  let hostname = '';
+                  try {
+                    hostname = new URL(link.url).hostname;
+                  } catch {
+                    hostname = '';
+                  }
+
+                  return (
                   <a
                     key={i}
                     href={link.url}
@@ -461,15 +469,17 @@ function AnimeDetails() {
                     rel="noopener noreferrer"
                     className="streaming-sidebar-item"
                   >
-                    <img
-                      src={`https://www.google.com/s2/favicons?domain=${new URL(link.url).hostname}&sz=64`}
-                      alt={link.name}
-                      onError={(e) => { e.target.style.display = 'none'; }}
-                    />
+                    {hostname ? (
+                      <img
+                        src={`https://www.google.com/s2/favicons?domain=${hostname}&sz=64`}
+                        alt={link.name}
+                        onError={(e) => { e.target.style.display = 'none'; }}
+                      />
+                    ) : null}
                     <span>{link.name}</span>
                     <span className="material-symbols-outlined">open_in_new</span>
                   </a>
-                ))}
+                )})}
               </div>
             </div>
           )}

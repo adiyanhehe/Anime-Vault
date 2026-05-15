@@ -2,13 +2,13 @@ import { Link } from 'react-router-dom';
 
 function AnimeCard({ anime, isFavorite, onToggleFavorite, progress }) {
   function handleFavoriteClick(event) {
-    event.preventDefault();
     event.stopPropagation();
     onToggleFavorite(anime);
   }
 
   return (
-    <Link to={`/anime/${anime.id}`} className="anime-card glass-card card-link-overlay" aria-label={`Open ${anime.title.romaji}`}>
+    <article className="anime-card glass-card">
+      <Link to={`/anime/${anime.id}`} className="card-link-overlay" aria-label={`Open ${anime.title.romaji}`} />
       <div className="card-media">
         <img src={anime.coverImage?.large || anime.coverImage?.medium} alt={anime.title.romaji} />
         <div className="card-badge">
@@ -24,7 +24,7 @@ function AnimeCard({ anime, isFavorite, onToggleFavorite, progress }) {
           {isFavorite ? '★ Favorited' : '☆ Favorite'}
         </button>
       </div>
-    </Link>
+    </article>
   );
 }
 
