@@ -1,0 +1,45 @@
+:root {
+  font-family: Inter, system-ui, Arial, sans-serif;
+  color: #fff;
+  background: #111;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: #111; }
+.topbar {
+  position: sticky; top: 0; z-index: 5;
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 1rem 2rem; background: #141414; border-bottom: 1px solid #222;
+}
+.topbar a { color: #fff; text-decoration: none; margin-left: 1rem; opacity: .8; }
+.topbar .active, .topbar a:hover { opacity: 1; }
+.brand { color: #e50914 !important; font-size: 1.4rem; font-weight: 700; margin-left: 0 !important; }
+.content { padding: 1.5rem 2rem 3rem; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 1rem; }
+.anime-card { background: #1b1b1b; border-radius: 12px; overflow: hidden; transition: transform .2s ease, box-shadow .2s ease; }
+.anime-card:hover { transform: translateY(-5px); box-shadow: 0 10px 24px rgba(0,0,0,.5); }
+.card-media img { width: 100%; height: 260px; object-fit: cover; display:block; }
+.card-content { padding: .8rem; }
+.card-content h3 { margin: 0 0 .5rem; font-size: 1rem; }
+.card-content p { margin: .3rem 0; color: #cfcfcf; font-size: .9rem; }
+.favorite-btn, .search-bar button, .watch-btn, .unlock-box button, .episode {
+  border: none; border-radius: 8px; cursor: pointer;
+}
+.favorite-btn { width:100%; margin-top:.4rem; background:#2a2a2a; color:#fff; padding:.5rem; }
+.search-bar { display:flex; gap:.5rem; margin-bottom: 1rem; }
+.search-bar input { flex:1; padding:.75rem; border-radius:8px; border:1px solid #333; background:#1d1d1d; color:#fff; }
+.search-bar button { background:#e50914; color:#fff; padding:.75rem 1rem; }
+.details { display:grid; grid-template-columns: minmax(220px, 340px) 1fr; gap:1.5rem; }
+.hero { width:100%; border-radius:12px; }
+.watch-btn { background:#e50914; color:#fff; padding:.7rem 1rem; margin:.6rem 0; }
+.unlock-box { margin:1rem 0; padding:1rem; background:#1c1c1c; border-radius:12px; }
+.unlock-box button { background:#2f2f2f; color:#fff; padding:.6rem .8rem; }
+.episode-list { display:grid; grid-template-columns: repeat(auto-fit,minmax(130px,1fr)); gap:.5rem; }
+.episode { background:#2b2b2b; color:#fff; padding:.6rem; }
+.episode.active { background:#e50914; }
+.status { color:#ddd; }
+.error { color:#ff7272; }
+.panel { margin-top:1rem; padding:1rem; background:#1d1d1d; border-radius:10px; }
+@media (max-width: 800px) {
+  .topbar, .content { padding: 1rem; }
+  .details { grid-template-columns: 1fr; }
+}
