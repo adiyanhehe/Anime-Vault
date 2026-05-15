@@ -27,6 +27,7 @@ function AnimeDetails() {
   const [videoSources, setVideoSources] = useState([]);
   const [playerLoading, setPlayerLoading] = useState(false);
   const [playerError, setPlayerError] = useState('');
+  const [gogoLoading, setGogoLoading] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -60,6 +61,7 @@ function AnimeDetails() {
 
         // Find Gogoanime ID for real streaming
         try {
+          setGogoLoading(true);
           const gogoId = await findBestGogoMatch(media.title.romaji, media.seasonYear, media.title.english);
           if (gogoId) {
             setGogoId(gogoId);
@@ -76,6 +78,8 @@ function AnimeDetails() {
           }
         } catch (gogoErr) {
           console.warn('Gogoanime search failed:', gogoErr.message);
+        } finally {
+          setGogoLoading(false);
         }
       } catch (err) {
         setError(err.message || 'Failed to load anime details');
@@ -358,7 +362,7 @@ function AnimeDetails() {
               <p className="status">Episode list not available yet.</p>
             )}
 
-            {gogoEpisodes.length === 0 && gogoId && (
+            {gogoLoading && (
               <p className="status">Loading episode list from Gogoanime...</p>
             )}
           </div>
