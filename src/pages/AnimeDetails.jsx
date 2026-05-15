@@ -36,6 +36,7 @@ function AnimeDetails() {
   }, [id]);
 
   const isUnlocked = useMemo(() => Date.now() < unlockUntil, [unlockUntil]);
+  const timeRemaining = useMemo(() => Math.max(0, unlockUntil - Date.now()), [unlockUntil]);
   const episodes = anime?.episodes || 12;
 
   function unlockWatch() {
@@ -56,32 +57,103 @@ function AnimeDetails() {
   if (!anime) return null;
 
   return (
-    <section className="details">
-      <img src={anime.coverImage?.extraLarge || anime.coverImage?.large} alt={anime.title.romaji} className="hero" />
-      <div>
-        <h1>{anime.title.romaji}</h1>
-        <p>{stripHtml(anime.description)}</p>
-        <p><strong>Episodes:</strong> {anime.episodes || 'TBA'}</p>
-        <p><strong>Genres:</strong> {anime.genres?.join(', ')}</p>
-        <button className="watch-btn">Watch Now</button>
-        <div className="unlock-box">
-          <p>{isUnlocked ? 'Unlocked for ad-free window!' : 'Episodes locked after preview.'}</p>
-          <button onClick={unlockWatch}>Watch Ad to Unlock 40 min</button>
+    <section className="details-page">
+      <div className="detail-hero">
+        <img
+          className="detail-cover"
+          src={anime.coverImage?.extraLarge || anime.coverImage?.large}
+          alt={anime.title.romaji}
+        />
+        <div className="detail-hero-overlay" />
+        <div className="detail-hero-copy">
+          <span className="tag">Featured</span>
+          <h1>{anime.title.romaji}</h1>
+          <p>{stripHtml(anime.description).slice(0, 240)}...</p>
+          <div className="detail-tags">
+            <span>{anime.episodes || 'TBA'} Episodes</span>
+            <span>{anime.genres?.join(' / ')}</span>
+          </div>
+          <div className="hero-buttons">
+            <button className="button button-primary" onClick={() => watchEpisode(1)}>
+              <span className="material-symbols-outlined">play_circle</span>
+              Play Episode 1
+            </button>
+            <button className="button button-secondary" onClick={unlockWatch}>
+              <span className="material-symbols-outlined">play_circle</span>
+              Watch Ad to Unlock 40 min
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="details-grid">
+        <div className="details-main glass-card">
+          <div className="details-intro">
+            <h2>Synopsis</h2>
+            <p>{stripHtml(anime.description)}</p>
+          </div>
+
+          <div className="unlock-panel">
+            <div>
+              <h3>{isUnlocked ? 'Premium Access Unlocked' : 'Episode Queue Locked'}</h3>
+              <p>
+                {isUnlocked
+                  ? `Unlocked for ${Math.ceil(timeRemaining / 60000)} more minutes.`
+                  : 'Watch a short ad to unlock the next 40 minutes of premium episodes.'}
+              </p>
+            </div>
+            <button className="button button-primary" onClick={unlockWatch}>
+              Watch Ad to Unlock 40 min
+            </button>
+          </div>
+
+          <div className="episodes-section">
+            <div className="section-title">
+              <h2>Episode List</h2>
+              <span>{episodes} total</span>
+            </div>
+            <div className="episode-list">
+              {Array.from({ length: episodes }, (_, index) => {
+                const episode = index + 1;
+                const isCurrent = progress[anime.id] === episode;
+                return (
+                  <button
+                    key={episode}
+                    type="button"
+                    className={`episode-card ${isCurrent ? 'active' : ''}`}
+                    disabled={!isUnlocked}
+                    onClick={() => watchEpisode(episode)}
+                  >
+                    <strong>{String(episode).padStart(2, '0')}</strong>
+                    <span>{isUnlocked ? `Play` : 'Locked'}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         </div>
 
-        <h2>Episode List</h2>
-        <div className="episode-list">
-          {Array.from({ length: episodes }, (_, i) => i + 1).map((ep) => (
-            <button
-              key={ep}
-              onClick={() => watchEpisode(ep)}
-              className={`episode ${progress[anime.id] === ep ? 'active' : ''}`}
-              disabled={!isUnlocked}
-            >
-              Episode {ep} {!isUnlocked ? '🔒' : ''}
-            </button>
-          ))}
-        </div>
+        <aside className="details-sidebar glass-card">
+          <div className="sidebar-block">
+            <h3>Quick Actions</h3>
+            <button className="button button-primary full-width">Add to My List</button>
+            <button className="button button-secondary full-width">Share Anime</button>
+          </div>
+          <div className="sidebar-block">
+            <h3>You Might Also Like</h3>
+            <div className="related-list">
+              {anime.genres?.slice(0, 3).map((genre) => (
+                <div key={genre} className="related-item">
+                  <div className="related-icon">{genre[0]}</div>
+                  <div>
+                    <p>{genre}</p>
+                    <span>Genre highlight</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </aside>
       </div>
     </section>
   );

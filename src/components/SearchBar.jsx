@@ -10,13 +10,14 @@ function SearchBar({ defaultValue = '', onSearch }) {
 
   return (
     <form onSubmit={submit} className="search-bar">
+      <span className="material-symbols-outlined search-start">search</span>
       <input
         type="text"
-        placeholder="Search anime..."
+        placeholder="Search anime, movies, genres..."
         value={query}
         onChange={(e) => setQuery(e.target.value)}
       />
-      <button type="submit">Search</button>
+      <button type="submit" className="button button-primary">Search</button>
     </form>
   );
 }

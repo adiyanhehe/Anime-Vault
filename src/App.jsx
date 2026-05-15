@@ -8,9 +8,20 @@ function App() {
     <div className="app-shell">
       <header className="topbar">
         <Link to="/" className="brand">AnimeVault</Link>
-        <nav>
-          <NavLink to="/" end>Home</NavLink>
-          <NavLink to="/search">Search</NavLink>
+        <nav className="topnav">
+          <NavLink
+            to="/"
+            end
+            className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}
+          >
+            Home
+          </NavLink>
+          <NavLink
+            to="/search"
+            className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}
+          >
+            Browse
+          </NavLink>
         </nav>
       </header>
 
