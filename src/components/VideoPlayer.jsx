@@ -54,6 +54,11 @@ function VideoPlayer({ sources, poster, title, onNext, onPrev, hasNext, hasPrev,
     }
 
     const url = bestSource.url;
+    if (!url) {
+      setError('Video source URL is empty');
+      setLoading(false);
+      return;
+    }
     const isM3U8 = url.includes('.m3u8') || url.includes('master.m3u') || url.includes('master.txt');
 
     if (isM3U8) {

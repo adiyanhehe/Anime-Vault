@@ -1,18 +1,59 @@
 /**
  * Consumet API wrapper for fetching actual anime video streaming sources.
  * Uses Gogoanime as the source provider.
- * Public instances: https://consumet-api-rho.vercel.app or https://api.consumet.org
+ * Fallback instances: https://consumet-api-rho.vercel.app, https://api.consumet.org
  */
 
-const BASE = 'https://consumet-api-rho.vercel.app/anime/gogoanime';
+const BASE_URLS = [
+  'https://consumet-api-rho.vercel.app/anime/gogoanime',
+  'https://api.consumet.org/anime/gogoanime',
+];
 
-async function get(endpoint) {
-  const response = await fetch(`${BASE}${endpoint}`);
-  if (!response.ok) {
-    throw new Error(`Consumet request failed: ${response.status}`);
+const TIMEOUT_MS = 10000;
+
+async function fetchWithFallback(endpoint) {
+  let lastError = null;
+
+  for (const base of BASE_URLS) {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
+
+      const response = await fetch(`${base}${endpoint}`, {
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      // Check content-type to avoid parsing non-JSON as JSON
+      const contentType = response.headers.get('content-type') || '';
+      if (!contentType.includes('application/json') && !contentType.includes('application/octet-stream')) {
+        // Some Consumet instances return non-JSON error pages
+        const text = await response.text();
+        if (text.includes('<!DOCTYPE') || text.includes('<html')) {
+          throw new Error(`Non-JSON response from ${base} (HTML error page)`);
+        }
+        // Try JSON parse anyway
+        try {
+          return JSON.parse(text);
+        } catch {
+          throw new Error(`Response is not valid JSON from ${base}`);
+        }
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (err) {
+      lastError = err;
+      console.warn(`Consumet fetch failed for ${base}${endpoint}: ${err.message}`);
+      // Try next fallback
+    }
   }
-  const data = await response.json();
-  return data;
+
+  throw new Error(`All Consumet instances failed. Last error: ${lastError?.message}`);
 }
 
 /**
@@ -21,7 +62,7 @@ async function get(endpoint) {
  * @returns {Promise<Array>} List of anime results with id, title, image, etc.
  */
 export async function searchGogoanime(query) {
-  const data = await get(`/${encodeURIComponent(query)}`);
+  const data = await fetchWithFallback(`/${encodeURIComponent(query)}`);
   return data.results || [];
 }
 
@@ -32,7 +73,7 @@ export async function searchGogoanime(query) {
  * @returns {Promise<Array>} List of episodes with id, number, title
  */
 export async function fetchGogoEpisodes(animeId, page = 1) {
-  const data = await get(`/info/${encodeURIComponent(animeId)}`);
+  const data = await fetchWithFallback(`/info/${encodeURIComponent(animeId)}`);
   return data.episodes || [];
 }
 
@@ -42,7 +83,7 @@ export async function fetchGogoEpisodes(animeId, page = 1) {
  * @returns {Promise<Object>} Streaming sources (multi-quality)
  */
 export async function fetchEpisodeSources(episodeId) {
-  const data = await get(`/watch/${encodeURIComponent(episodeId)}`);
+  const data = await fetchWithFallback(`/watch/${encodeURIComponent(episodeId)}`);
   return {
     sources: data.sources || [],
     download: data.download || '',

@@ -8,6 +8,15 @@ import VideoPlayer from '../components/VideoPlayer';
 const PROGRESS_KEY = 'animevault_progress';
 const RECENTS_KEY = 'animevault_recently_viewed';
 
+/**
+ * Safely get a string title from a possibly-null media.title object.
+ * Returns fallback if title is unavailable.
+ */
+function safeTitle(title) {
+  if (!title) return 'Unknown Title';
+  return title.romaji || title.english || title.native || 'Unknown Title';
+}
+
 function AnimeDetails() {
   const { id } = useParams();
   const [anime, setAnime] = useState(null);
@@ -36,9 +45,17 @@ function AnimeDetails() {
         const media = await fetchAnimeById(id);
         setAnime(media);
 
+        if (!media) {
+          setError('Anime not found');
+          setLoading(false);
+          return;
+        }
+
+        const titleStr = safeTitle(media.title);
+
         // Add to recently viewed
         const recents = JSON.parse(localStorage.getItem(RECENTS_KEY) || '[]');
-        const updated = [{ id: media.id, title: media.title.romaji }, ...recents.filter((item) => item.id !== media.id)].slice(0, 10);
+        const updated = [{ id: media.id, title: titleStr }, ...recents.filter((item) => item.id !== media.id)].slice(0, 10);
         localStorage.setItem(RECENTS_KEY, JSON.stringify(updated));
 
         // Fetch Jikan data
@@ -60,10 +77,10 @@ function AnimeDetails() {
 
         // Find Gogoanime ID for real streaming
         try {
-          const gogoId = await findBestGogoMatch(media.title.romaji, media.seasonYear, media.title.english);
-          if (gogoId) {
-            setGogoId(gogoId);
-            const eps = await fetchGogoEpisodes(gogoId);
+          const foundGogoId = await findBestGogoMatch(titleStr, media.seasonYear, media.title?.english);
+          if (foundGogoId) {
+            setGogoId(foundGogoId);
+            const eps = await fetchGogoEpisodes(foundGogoId);
             setGogoEpisodes(eps);
 
             // Auto-play the last watched episode or episode 1
@@ -195,6 +212,7 @@ function AnimeDetails() {
   if (error) return <p className="status error">{error}</p>;
   if (!anime) return null;
 
+  const animeTitle = safeTitle(anime.title);
   const trailerUrl = featuredTrailer;
   const episodes = anime?.episodes || 0;
   const hasNextEpisode = currentEpisode && gogoEpisodes.findIndex(e => e.id === currentEpisode.id) < gogoEpisodes.length - 1;
@@ -208,7 +226,7 @@ function AnimeDetails() {
           <VideoPlayer
             sources={videoSources}
             poster={anime.coverImage?.extraLarge || anime.coverImage?.large}
-            title={`${anime.title.romaji} - Episode ${currentEpisode.number}`}
+            title={`${animeTitle} - Episode ${currentEpisode.number}`}
             episodeNum={currentEpisode.number}
             totalEpisodes={gogoEpisodes.length}
             onNext={hasNextEpisode ? goToNextEpisode : null}
@@ -237,12 +255,12 @@ function AnimeDetails() {
         <img
           className="detail-cover"
           src={anime.bannerImage || anime.coverImage?.extraLarge || anime.coverImage?.large}
-          alt={anime.title.romaji}
+          alt={animeTitle}
         />
         <div className="detail-hero-overlay" />
         <div className="detail-hero-copy">
           <span className="tag">{anime.format || 'ANIME'}</span>
-          <h1>{anime.title.romaji}</h1>
+          <h1>{animeTitle}</h1>
           <p>{stripHtml(anime.description).slice(0, 240)}...</p>
           <div className="detail-tags">
             {anime.episodes && <span>{anime.episodes} Episodes</span>}
@@ -277,7 +295,7 @@ function AnimeDetails() {
               <div className="trailer-embed">
                 <iframe
                   src={trailerUrl}
-                  title={`${anime.title.romaji} Trailer`}
+                  title={`${animeTitle} Trailer`}
                   allowFullScreen
                   frameBorder="0"
                   allow="autoplay; encrypted-media; picture-in-picture"
@@ -389,7 +407,7 @@ function AnimeDetails() {
         <aside className="details-sidebar glass-card">
           {/* Poster */}
           <div className="sidebar-poster">
-            <img src={anime.coverImage?.large || anime.coverImage?.extraLarge} alt={anime.title.romaji} />
+            <img src={anime.coverImage?.large || anime.coverImage?.extraLarge} alt={animeTitle} />
           </div>
 
           {/* Quick Actions */}
@@ -520,11 +538,12 @@ function AnimeDetails() {
               <div className="related-list">
                 {anime.recommendations.nodes.slice(0, 6).map((rec) => {
                   const m = rec.mediaRecommendation;
+                  const recTitle = safeTitle(m?.title);
                   return (
-                    <Link key={m.id} to={`/anime/${m.id}`} className="related-item">
-                      <img src={m.coverImage?.medium || m.coverImage?.large} alt={m.title.romaji} />
+                    <Link key={m?.id || Math.random()} to={`/anime/${m?.id}`} className="related-item">
+                      <img src={m?.coverImage?.medium || m?.coverImage?.large} alt={recTitle} />
                       <div>
-                        <p>{m.title.romaji}</p>
+                        <p>{recTitle}</p>
                       </div>
                     </Link>
                   );

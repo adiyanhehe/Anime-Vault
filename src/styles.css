@@ -387,10 +387,17 @@ select {
   border-radius: 1.5rem;
   transition: transform 0.25s ease, box-shadow 0.25s ease;
   background: rgba(29, 30, 46, 0.78);
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
 }
 .anime-card:hover {
   transform: translateY(-5px);
   box-shadow: 0 22px 60px rgba(32, 18, 84, 0.18);
+}
+.anime-card:focus-visible {
+  outline: 2px solid #ddb7ff;
+  outline-offset: 2px;
 }
 .card-media {
   position: relative;
@@ -439,6 +446,16 @@ select {
   background: rgba(221, 183, 255, 0.14);
   color: #fff;
   border: 1px solid rgba(221, 183, 255, 0.18);
+  position: relative;
+  z-index: 1;
+  cursor: pointer;
+}
+.favorite-btn:hover {
+  background: rgba(221, 183, 255, 0.26);
+}
+.favorite-btn:focus-visible {
+  outline: 2px solid #ddb7ff;
+  outline-offset: 2px;
 }
 .search-bar {
   display: grid;
