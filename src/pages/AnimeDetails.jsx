@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { fetchAnimeById, stripHtml } from '../api/anilist';
 import { fetchStreamingLinks, fetchAnimeVideos, fetchEpisodes } from '../api/jikan';
+import { searchGogoanime, fetchGogoEpisodes, fetchEpisodeSources } from '../api/consumet';
+import VideoPlayer from '../components/VideoPlayer';
 
 const PROGRESS_KEY = 'animevault_progress';
 const RECENTS_KEY = 'animevault_recently_viewed';
@@ -14,10 +16,17 @@ function AnimeDetails() {
   const [streamingLinks, setStreamingLinks] = useState([]);
   const [videos, setVideos] = useState(null);
   const [episodeList, setEpisodeList] = useState([]);
-  const [episodesLoading, setEpisodesLoading] = useState(false);
   const [progress, setProgress] = useState(() => JSON.parse(localStorage.getItem(PROGRESS_KEY) || '{}'));
   const [activeTab, setActiveTab] = useState('streaming');
   const [trailerError, setTrailerError] = useState(false);
+
+  // Real streaming state
+  const [gogoId, setGogoId] = useState(null);
+  const [gogoEpisodes, setGogoEpisodes] = useState([]);
+  const [currentEpisode, setCurrentEpisode] = useState(null);
+  const [videoSources, setVideoSources] = useState([]);
+  const [playerLoading, setPlayerLoading] = useState(false);
+  const [playerError, setPlayerError] = useState('');
 
   useEffect(() => {
     async function load() {
@@ -32,7 +41,7 @@ function AnimeDetails() {
         const updated = [{ id: media.id, title: media.title.romaji }, ...recents.filter((item) => item.id !== media.id)].slice(0, 10);
         localStorage.setItem(RECENTS_KEY, JSON.stringify(updated));
 
-        // Fetch Jikan streaming data if MAL id exists
+        // Fetch Jikan data
         const malId = media.idMal;
         if (malId) {
           try {
@@ -45,9 +54,28 @@ function AnimeDetails() {
             setVideos(vidData);
             setEpisodeList(eps);
           } catch (jikanErr) {
-            // Jikan may fail or rate limit; non-critical
             console.warn('Jikan fetch failed:', jikanErr.message);
           }
+        }
+
+        // Find Gogoanime ID for real streaming
+        try {
+          const gogoId = await findBestGogoMatch(media.title.romaji, media.seasonYear, media.title.english);
+          if (gogoId) {
+            setGogoId(gogoId);
+            const eps = await fetchGogoEpisodes(gogoId);
+            setGogoEpisodes(eps);
+
+            // Auto-play the last watched episode or episode 1
+            const lastProgress = JSON.parse(localStorage.getItem(PROGRESS_KEY) || '{}')[media.id];
+            const targetEp = eps.find(e => e.number === (lastProgress || 1)) || eps[eps.length - 1] || eps[0];
+            if (targetEp) {
+              setCurrentEpisode(targetEp);
+              loadEpisodeSources(targetEp.id);
+            }
+          }
+        } catch (gogoErr) {
+          console.warn('Gogoanime search failed:', gogoErr.message);
         }
       } catch (err) {
         setError(err.message || 'Failed to load anime details');
@@ -59,13 +87,89 @@ function AnimeDetails() {
     load();
   }, [id]);
 
-  const episodes = anime?.episodes || 0;
+  async function findBestGogoMatch(romaji, year, english) {
+    try {
+      // Try romaji first
+      let results = await searchGogoanime(romaji);
+      if (results.length === 0 && english) {
+        results = await searchGogoanime(english);
+      }
+      if (results.length === 0) return null;
 
-  function markWatched(ep) {
+      // Try to match by year
+      if (year) {
+        const yearMatch = results.find((r) => r.releaseDate && String(r.releaseDate).includes(String(year)));
+        if (yearMatch) return yearMatch.id;
+      }
+
+      // Try to match romaji title closely
+      const romajiLower = romaji.toLowerCase().replace(/[^a-z0-9 ]/g, '');
+      const closeMatch = results.find((r) => {
+        const titleLower = (r.title || '').toLowerCase().replace(/[^a-z0-9 ]/g, '');
+        return titleLower.includes(romajiLower) || romajiLower.includes(titleLower);
+      });
+      if (closeMatch) return closeMatch.id;
+
+      return results[0].id;
+    } catch (err) {
+      console.warn('Failed to find Gogoanime match:', err.message);
+      return null;
+    }
+  }
+
+  async function loadEpisodeSources(episodeId) {
+    if (!episodeId) return;
+    setPlayerLoading(true);
+    setPlayerError('');
+    setVideoSources([]);
+    try {
+      const data = await fetchEpisodeSources(episodeId);
+      if (data.sources && data.sources.length > 0) {
+        // Sort by quality (highest first)
+        const sorted = [...data.sources].sort((a, b) => {
+          const aQ = a.quality ? parseInt(a.quality) : 0;
+          const bQ = b.quality ? parseInt(b.quality) : 0;
+          return bQ - aQ;
+        });
+        setVideoSources(sorted);
+      } else {
+        setPlayerError('No video sources available for this episode');
+      }
+    } catch (err) {
+      setPlayerError(err.message || 'Failed to load video');
+    } finally {
+      setPlayerLoading(false);
+    }
+  }
+
+  function selectEpisode(ep) {
+    if (!ep || !ep.id) return;
+    setCurrentEpisode(ep);
+    markWatched(ep.number);
+    loadEpisodeSources(ep.id);
+  }
+
+  function markWatched(epNum) {
     if (!anime) return;
-    const next = { ...progress, [anime.id]: ep };
+    const next = { ...progress, [anime.id]: Math.max(progress[anime.id] || 0, epNum) };
     setProgress(next);
     localStorage.setItem(PROGRESS_KEY, JSON.stringify(next));
+  }
+
+  function goToNextEpisode() {
+    if (!currentEpisode || !gogoEpisodes.length) return;
+    const currentIndex = gogoEpisodes.findIndex(e => e.id === currentEpisode.id);
+    if (currentIndex < gogoEpisodes.length - 1) {
+      selectEpisode(gogoEpisodes[currentIndex + 1]);
+    }
+  }
+
+  function goToPrevEpisode() {
+    if (!currentEpisode || !gogoEpisodes.length) return;
+    const currentIndex = gogoEpisodes.findIndex(e => e.id === currentEpisode.id);
+    if (currentIndex > 0) {
+      selectEpisode(gogoEpisodes[currentIndex - 1]);
+    }
   }
 
   const getYoutubeEmbedUrl = useCallback((trailer) => {
@@ -92,9 +196,42 @@ function AnimeDetails() {
   if (!anime) return null;
 
   const trailerUrl = featuredTrailer;
+  const episodes = anime?.episodes || 0;
+  const hasNextEpisode = currentEpisode && gogoEpisodes.findIndex(e => e.id === currentEpisode.id) < gogoEpisodes.length - 1;
+  const hasPrevEpisode = currentEpisode && gogoEpisodes.findIndex(e => e.id === currentEpisode.id) > 0;
 
   return (
     <section className="details-page">
+      {/* Video Player Section */}
+      {currentEpisode && (
+        <div className="video-player-section">
+          <VideoPlayer
+            sources={videoSources}
+            poster={anime.coverImage?.extraLarge || anime.coverImage?.large}
+            title={`${anime.title.romaji} - Episode ${currentEpisode.number}`}
+            episodeNum={currentEpisode.number}
+            totalEpisodes={gogoEpisodes.length}
+            onNext={hasNextEpisode ? goToNextEpisode : null}
+            onPrev={hasPrevEpisode ? goToPrevEpisode : null}
+            hasNext={!!hasNextEpisode}
+            hasPrev={!!hasPrevEpisode}
+          />
+          {playerLoading && (
+            <div className="episode-loading-bar">
+              <div className="spinner-sm" />
+              <span>Loading episode {currentEpisode.number}...</span>
+            </div>
+          )}
+          {playerError && (
+            <div className="episode-error-bar">
+              <span className="material-symbols-outlined">warning</span>
+              <span>{playerError}</span>
+              <button className="text-button" onClick={() => loadEpisodeSources(currentEpisode.id)}>Retry</button>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Hero Banner */}
       <div className="detail-hero">
         <img
@@ -115,22 +252,13 @@ function AnimeDetails() {
             {anime.seasonYear && <span>{anime.season} {anime.seasonYear}</span>}
           </div>
           <div className="hero-buttons">
-            {trailerUrl && !trailerError ? (
+            {trailerUrl && !trailerError && (
               <button
-                className="button button-primary"
+                className="button button-secondary"
                 onClick={() => setActiveTab('trailer')}
               >
                 <span className="material-symbols-outlined">play_circle</span>
                 Watch Trailer
-              </button>
-            ) : null}
-            {streamingLinks.length > 0 && (
-              <button
-                className="button button-secondary"
-                onClick={() => setActiveTab('streaming')}
-              >
-                <span className="material-symbols-outlined">play_circle</span>
-                Where to Watch
               </button>
             )}
           </div>
@@ -139,14 +267,12 @@ function AnimeDetails() {
 
       <div className="details-grid">
         <div className="details-main glass-card">
-          {/* Trailer / Streaming Tabs */}
+          {/* Trailer Section */}
           {activeTab === 'trailer' && trailerUrl && (
             <div className="trailer-section">
               <div className="section-title">
                 <h2>Trailer</h2>
-                <button className="text-button" onClick={() => setActiveTab('streaming')}>
-                  Streaming Options
-                </button>
+                <button className="text-button" onClick={() => setActiveTab('streaming')}>Close</button>
               </div>
               <div className="trailer-embed">
                 <iframe
@@ -157,38 +283,6 @@ function AnimeDetails() {
                   allow="autoplay; encrypted-media; picture-in-picture"
                   onError={() => setTrailerError(true)}
                 />
-              </div>
-            </div>
-          )}
-
-          {/* Streaming Links */}
-          {activeTab === 'streaming' && streamingLinks.length > 0 && (
-            <div className="streaming-section">
-              <div className="section-title">
-                <h2>Watch Now</h2>
-                <span>{streamingLinks.length} platform{streamingLinks.length > 1 ? 's' : ''}</span>
-              </div>
-              <div className="streaming-grid">
-                {streamingLinks.map((link, i) => (
-                  <a
-                    key={i}
-                    href={link.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="streaming-card"
-                  >
-                    <img
-                      src={`https://www.google.com/s2/favicons?domain=${new URL(link.url).hostname}&sz=64`}
-                      alt={link.name}
-                      onError={(e) => { e.target.style.display = 'none'; }}
-                    />
-                    <div>
-                      <strong>{link.name}</strong>
-                      <span>Watch on {link.name}</span>
-                    </div>
-                    <span className="material-symbols-outlined external-icon">open_in_new</span>
-                  </a>
-                ))}
               </div>
             </div>
           )}
@@ -227,29 +321,30 @@ function AnimeDetails() {
             )}
           </div>
 
-          {/* Episode List */}
+          {/* Episode List (Real Gogoanime) */}
           <div className="episodes-section">
             <div className="section-title">
               <h2>Episodes</h2>
-              <span>{episodes > 0 ? `${episodes} total` : ''}</span>
+              <span>{gogoEpisodes.length > 0 ? `${gogoEpisodes.length} episodes available` : episodes > 0 ? `${episodes} total` : ''}</span>
             </div>
-            {episodeList.length > 0 ? (
+
+            {gogoEpisodes.length > 0 ? (
               <div className="episode-list scroll-episodes">
-                {episodeList.map((ep) => {
-                  const epNum = ep.mal_id;
-                  const isWatched = progress[anime.id] >= epNum;
-                  const isCurrent = progress[anime.id] === epNum;
+                {gogoEpisodes.map((ep) => {
+                  const isWatched = progress[anime.id] >= ep.number;
+                  const isCurrent = currentEpisode?.id === ep.id;
                   return (
                     <button
-                      key={ep.mal_id}
+                      key={ep.id}
                       type="button"
                       className={`episode-card ${isCurrent ? 'active' : ''} ${isWatched ? 'watched' : ''}`}
-                      onClick={() => markWatched(epNum)}
+                      onClick={() => selectEpisode(ep)}
                     >
-                      <strong>{String(epNum).padStart(2, '0')}</strong>
-                      <span className="ep-title">{ep.title || `Episode ${epNum}`}</span>
-                      {ep.aired && <span className="ep-date">{ep.aired}</span>}
+                      <strong>{String(ep.number).padStart(2, '0')}</strong>
+                      <span className="ep-title">{ep.title || `Episode ${ep.number}`}</span>
+                      {ep.isFiller && <span className="ep-badge-filler">Filler</span>}
                       {isWatched && <span className="ep-check">✓ Watched</span>}
+                      {isCurrent && <span className="ep-now-playing">▶ Now Playing</span>}
                     </button>
                   );
                 })}
@@ -259,23 +354,34 @@ function AnimeDetails() {
                 {Array.from({ length: Math.min(episodes, 24) }, (_, index) => {
                   const ep = index + 1;
                   const isWatched = progress[anime.id] >= ep;
-                  const isCurrent = progress[anime.id] === ep;
+                  const isCurrent = currentEpisode?.number === ep;
                   return (
                     <button
                       key={ep}
                       type="button"
                       className={`episode-card ${isCurrent ? 'active' : ''} ${isWatched ? 'watched' : ''}`}
-                      onClick={() => markWatched(ep)}
+                      disabled={!gogoId}
+                      onClick={() => {
+                        if (gogoId) {
+                          const epObj = { id: `${gogoId}-episode-${ep}`, number: ep, title: `Episode ${ep}` };
+                          selectEpisode(epObj);
+                        }
+                      }}
                     >
                       <strong>{String(ep).padStart(2, '0')}</strong>
                       <span>Episode {ep}</span>
                       {isWatched && <span className="ep-check">✓ Watched</span>}
+                      {isCurrent && <span className="ep-now-playing">▶ Now Playing</span>}
                     </button>
                   );
                 })}
               </div>
             ) : (
               <p className="status">Episode list not available yet.</p>
+            )}
+
+            {gogoEpisodes.length === 0 && gogoId && (
+              <p className="status">Loading episode list from Gogoanime...</p>
             )}
           </div>
         </div>
@@ -289,51 +395,46 @@ function AnimeDetails() {
           {/* Quick Actions */}
           <div className="sidebar-block">
             <h3>Quick Actions</h3>
-            {streamingLinks.length > 0 && (
-              <a
-                href={streamingLinks[0].url}
-                target="_blank"
-                rel="noopener noreferrer"
+            {currentEpisode && (
+              <button
                 className="button button-primary full-width"
+                onClick={() => {
+                  const el = document.querySelector('.video-player-section');
+                  if (el) el.scrollIntoView({ behavior: 'smooth' });
+                }}
               >
                 <span className="material-symbols-outlined">play_circle</span>
-                Watch on {streamingLinks[0].name}
-              </a>
+                Continue Episode {currentEpisode.number}
+              </button>
             )}
-            {anime.externalLinks?.length > 0 && (
-              <div className="external-links">
-                {anime.externalLinks.slice(0, 4).map((link, i) => (
-                  <a
-                    key={i}
-                    href={link.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="button button-secondary full-width"
-                  >
-                    <span className="material-symbols-outlined">open_in_new</span>
-                    {link.site}
-                  </a>
-                ))}
-              </div>
-            )}
+            <button
+              className="button button-secondary full-width"
+              onClick={() => {
+                if (gogoEpisodes.length > 0) {
+                  const nextUnwatched = gogoEpisodes.find(ep => !progress[anime.id] || progress[anime.id] < ep.number);
+                  selectEpisode(nextUnwatched || gogoEpisodes[0]);
+                }
+              }}
+            >
+              <span className="material-symbols-outlined">playlist_play</span>
+              {progress[anime.id] ? 'Continue Watching' : 'Start Watching'}
+            </button>
           </div>
 
           {/* Watch Progress */}
-          {progress[anime.id] && (
+          {progress[anime.id] && gogoEpisodes.length > 0 && (
             <div className="sidebar-block">
               <h3>Progress</h3>
               <div className="progress-bar-container">
                 <div className="progress-bar-label">
-                  Episode {progress[anime.id]}{episodes > 0 ? ` of ${episodes}` : ''}
+                  Episode {progress[anime.id]} of {gogoEpisodes.length}
                 </div>
-                {episodes > 0 && (
-                  <div className="progress-bar-track">
-                    <div
-                      className="progress-bar-fill"
-                      style={{ width: `${Math.round((progress[anime.id] / episodes) * 100)}%` }}
-                    />
-                  </div>
-                )}
+                <div className="progress-bar-track">
+                  <div
+                    className="progress-bar-fill"
+                    style={{ width: `${Math.round((progress[anime.id] / gogoEpisodes.length) * 100)}%` }}
+                  />
+                </div>
               </div>
             </div>
           )}
@@ -365,6 +466,32 @@ function AnimeDetails() {
             </div>
           )}
 
+          {/* External Streaming Links */}
+          {streamingLinks.length > 0 && (
+            <div className="sidebar-block">
+              <h3>Watch on Official Sites</h3>
+              <div className="streaming-links-sidebar">
+                {streamingLinks.slice(0, 5).map((link, i) => (
+                  <a
+                    key={i}
+                    href={link.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="streaming-sidebar-item"
+                  >
+                    <img
+                      src={`https://www.google.com/s2/favicons?domain=${new URL(link.url).hostname}&sz=64`}
+                      alt={link.name}
+                      onError={(e) => { e.target.style.display = 'none'; }}
+                    />
+                    <span>{link.name}</span>
+                    <span className="material-symbols-outlined">open_in_new</span>
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Trailers / Promos */}
           {videos?.promo?.length > 0 && (
             <div className="sidebar-block">
@@ -391,7 +518,7 @@ function AnimeDetails() {
             <div className="sidebar-block">
               <h3>You Might Also Like</h3>
               <div className="related-list">
-                {anime.recommendations.nodes.slice(0, 4).map((rec) => {
+                {anime.recommendations.nodes.slice(0, 6).map((rec) => {
                   const m = rec.mediaRecommendation;
                   return (
                     <Link key={m.id} to={`/anime/${m.id}`} className="related-item">
