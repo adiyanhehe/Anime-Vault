@@ -269,6 +269,9 @@ select {
   border-radius: 1.25rem;
   position: relative;
 }
+.poster-image {
+  position: relative;
+}
 .poster-card img {
   width: 100%;
   height: 360px;
@@ -289,6 +292,10 @@ select {
 .poster-info {
   padding: 1rem;
   background: rgba(16, 18, 33, 0.95);
+}
+.search-results {
+  display: grid;
+  gap: 1.5rem;
 }
 .poster-info h4 {
   margin: 0 0 0.5rem;
@@ -734,6 +741,271 @@ select {
   background: #ddb7ff;
   border-radius: 999px;
 }
+/* ========================
+   JIKAN / STREAMING STYLES
+   ======================== */
+
+/* Trailer Embed */
+.trailer-section {
+  margin-bottom: 2rem;
+}
+.trailer-embed {
+  position: relative;
+  width: 100%;
+  padding-bottom: 56.25%; /* 16:9 */
+  margin-top: 1rem;
+  border-radius: 1.25rem;
+  overflow: hidden;
+  background: #000;
+}
+.trailer-embed iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+/* Streaming Section */
+.streaming-section {
+  margin-bottom: 2rem;
+}
+.streaming-grid {
+  display: grid;
+  gap: 0.85rem;
+  margin-top: 1rem;
+}
+.streaming-card {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 1rem;
+  align-items: center;
+  padding: 1rem 1.25rem;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 1rem;
+  text-decoration: none;
+  color: inherit;
+  transition: background 0.2s, border-color 0.2s;
+}
+.streaming-card:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(221, 183, 255, 0.25);
+}
+.streaming-card img {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 0.5rem;
+  object-fit: contain;
+}
+.streaming-card div {
+  display: grid;
+  gap: 0.25rem;
+}
+.streaming-card strong {
+  display: block;
+  font-size: 0.95rem;
+}
+.streaming-card span {
+  color: #cfc2d6;
+  font-size: 0.85rem;
+}
+.external-icon {
+  color: #ddb7ff;
+  font-size: 1.3rem;
+}
+
+/* Info Grid */
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+  margin: 1.5rem 0;
+  padding: 1.25rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 1.25rem;
+}
+.info-item {
+  display: grid;
+  gap: 0.25rem;
+}
+.info-label {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #cfc2d6;
+  font-weight: 600;
+}
+.info-value {
+  color: #fff;
+  font-size: 0.95rem;
+}
+
+/* Episode Watched State */
+.episode-card.watched {
+  border-color: rgba(76, 215, 246, 0.25);
+  background: rgba(76, 215, 246, 0.06);
+}
+.episode-card .ep-title {
+  font-size: 0.82rem;
+  color: #cfc2d6;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.episode-card .ep-date {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.5);
+}
+.episode-card .ep-check {
+  font-size: 0.75rem;
+  color: #4cd7f6;
+  font-weight: 600;
+}
+.scroll-episodes {
+  max-height: 500px;
+  overflow-y: auto;
+  padding-right: 0.5rem;
+}
+
+/* Sidebar Poster */
+.sidebar-poster {
+  margin-bottom: 1rem;
+}
+.sidebar-poster img {
+  width: 100%;
+  border-radius: 1rem;
+  display: block;
+}
+
+/* External Links */
+.external-links {
+  display: grid;
+  gap: 0.65rem;
+}
+
+/* Details List (sidebar) */
+.details-list {
+  display: grid;
+  gap: 0.65rem;
+  margin: 0;
+}
+.details-list dt {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #cfc2d6;
+  font-weight: 600;
+}
+.details-list dd {
+  margin: 0;
+  color: #fff;
+  font-size: 0.92rem;
+}
+
+/* Genre Tags */
+.genre-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+.genre-tag {
+  padding: 0.5rem 0.85rem;
+  border-radius: 999px;
+  background: rgba(221, 183, 255, 0.12);
+  color: #ddb7ff;
+  text-decoration: none;
+  font-size: 0.82rem;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+.genre-tag:hover {
+  background: rgba(221, 183, 255, 0.22);
+}
+
+/* Promo Videos */
+.promo-list {
+  display: grid;
+  gap: 0.75rem;
+}
+.promo-item {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.65rem;
+  border-radius: 0.85rem;
+  background: rgba(255, 255, 255, 0.03);
+  text-decoration: none;
+  color: inherit;
+  transition: background 0.2s;
+}
+.promo-item:hover {
+  background: rgba(255, 255, 255, 0.07);
+}
+.promo-item img {
+  width: 4rem;
+  height: 2.8rem;
+  object-fit: cover;
+  border-radius: 0.5rem;
+}
+.promo-item span {
+  font-size: 0.85rem;
+  color: #cfc2d6;
+  line-height: 1.3;
+}
+
+/* Related Items (recommendations) */
+.related-item {
+  display: grid;
+  grid-template-columns: 3.5rem 1fr;
+  gap: 0.85rem;
+  align-items: center;
+  padding: 0.65rem;
+  border-radius: 0.85rem;
+  background: rgba(255, 255, 255, 0.03);
+  text-decoration: none;
+  color: inherit;
+  transition: background 0.2s;
+}
+.related-item:hover {
+  background: rgba(255, 255, 255, 0.07);
+}
+.related-item img {
+  width: 3.5rem;
+  height: 4.5rem;
+  object-fit: cover;
+  border-radius: 0.5rem;
+}
+.related-item p {
+  margin: 0;
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+/* Progress Bar */
+.progress-bar-container {
+  display: grid;
+  gap: 0.5rem;
+}
+.progress-bar-label {
+  font-size: 0.85rem;
+  color: #cfc2d6;
+}
+.progress-bar-track {
+  width: 100%;
+  height: 0.5rem;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #ddb7ff, #b76dff);
+  border-radius: 999px;
+  transition: width 0.4s ease;
+}
+
 @media (max-width: 1080px) {
   .section-dual,
   .section-panels,

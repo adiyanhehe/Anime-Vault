@@ -32,10 +32,12 @@ export async function fetchTrendingAnime(page = 1, perPage = 18) {
       Page(page: $page, perPage: $perPage) {
         media(sort: TRENDING_DESC, type: ANIME) {
           id
-          title { romaji }
+          idMal
+          title { romaji english }
           episodes
           coverImage { large medium }
           genres
+          format
         }
       }
     }
@@ -51,6 +53,7 @@ export async function searchAnime(search, page = 1, perPage = 18) {
       Page(page: $page, perPage: $perPage) {
         media(search: $search, type: ANIME, sort: POPULARITY_DESC) {
           id
+          idMal
           title { romaji }
           episodes
           coverImage { large medium }
@@ -69,11 +72,37 @@ export async function fetchAnimeById(id) {
     query ($id: Int) {
       Media(id: $id, type: ANIME) {
         id
-        title { romaji english }
+        idMal
+        title { romaji english native }
         description
         episodes
+        status
+        season
+        seasonYear
         genres
-        coverImage { large extraLarge }
+        averageScore
+        meanScore
+        popularity
+        format
+        duration
+        source
+        studios { nodes { name } }
+        trailer { id site thumbnail }
+        startDate { year month day }
+        endDate { year month day }
+        coverImage { large extraLarge color }
+        bannerImage
+        externalLinks { site url }
+        recommendations(page: 1, perPage: 6, sort: RATING_DESC) {
+          nodes {
+            mediaRecommendation {
+              id
+              idMal
+              title { romaji }
+              coverImage { large medium }
+            }
+          }
+        }
       }
     }
   `;
