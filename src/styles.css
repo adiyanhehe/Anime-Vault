@@ -1419,6 +1419,41 @@ select {
   color: rgba(255, 255, 255, 0.4);
 }
 
+/* Error Boundary */
+.error-boundary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 80vh;
+  padding: 2rem;
+}
+.error-boundary-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  text-align: center;
+  background: rgba(29, 30, 46, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 1.5rem;
+  padding: 3rem 2rem;
+  max-width: 480px;
+  backdrop-filter: blur(20px);
+}
+.error-boundary-content h2 {
+  margin: 0;
+  font-size: 1.5rem;
+}
+.error-boundary-content p {
+  margin: 0;
+  color: #cfc2d6;
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+.error-boundary-content .button + .button {
+  margin-top: 0.5rem;
+}
+
 /* Responsive video player */
 @media (max-width: 860px) {
   .video-player {
