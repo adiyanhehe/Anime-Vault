@@ -29,7 +29,7 @@ function AnimeCard({ anime, isFavorite, onToggleFavorite, progress }) {
           className="favorite-btn"
           aria-label={isFavorite ? `Remove ${title} from favorites` : `Add ${title} to favorites`}
         >
-          {isFavorite ? '★ Favorited' : '☆ Favorite'}
+          {isFavorite ? 'Favorited' : 'Favorite'}
         </button>
       </div>
     </Link>

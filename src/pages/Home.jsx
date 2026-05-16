@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import AnimeCard from '../components/AnimeCard';
 import { fetchTrendingAnime } from '../api/anilist';
 
@@ -7,10 +7,18 @@ const FAVORITES_KEY = 'animevault_favorites';
 const RECENTS_KEY = 'animevault_recently_viewed';
 const PROGRESS_KEY = 'animevault_progress';
 
+function getTitle(anime) {
+  return anime?.title?.english || anime?.title?.romaji || anime?.title?.native || 'Unknown Title';
+}
+
+function getImage(anime) {
+  return anime?.coverImage?.extraLarge || anime?.coverImage?.large || anime?.coverImage?.medium;
+}
+
 function Home() {
   const [animeList, setAnimeList] = useState([]);
   const [favorites, setFavorites] = useState(() => JSON.parse(localStorage.getItem(FAVORITES_KEY) || '[]'));
-  const [recentlyViewed, setRecentlyViewed] = useState(() => JSON.parse(localStorage.getItem(RECENTS_KEY) || '[]'));
+  const [recentlyViewed] = useState(() => JSON.parse(localStorage.getItem(RECENTS_KEY) || '[]'));
   const [progress] = useState(() => JSON.parse(localStorage.getItem(PROGRESS_KEY) || '{}'));
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -38,26 +46,25 @@ function Home() {
     localStorage.setItem(FAVORITES_KEY, JSON.stringify(favorites));
   }, [favorites]);
 
-  const heroAnime = animeList[0] || {};
+  const heroAnime = animeList[0] || null;
+  const heroTitle = getTitle(heroAnime);
+  const heroDescription = heroAnime?.description
+    ? heroAnime.description.replace(/<[^>]+>/g, '').slice(0, 220)
+    : 'Track what you are watching, jump back into recent episodes, and browse trending series from one focused dashboard.';
+
   const trending = animeList.slice(0, 8);
   const actionList = useMemo(
     () => animeList.filter((anime) => anime.genres?.includes('Action')).slice(0, 6),
     [animeList]
   );
-  const romanceList = useMemo(
-    () => animeList.filter((anime) => anime.genres?.includes('Romance')).slice(0, 2),
-    [animeList]
-  );
-  const isekaiList = useMemo(
-    () => animeList.filter((anime) => anime.genres?.includes('Isekai')).slice(0, 2),
-    [animeList]
-  );
-  const recentMap = useMemo(() => new Map(recentlyViewed.map((item) => [item.id, item])), [recentlyViewed]);
+  const spotlightList = animeList.slice(1, 4);
+  const recentItems = useMemo(() => recentlyViewed.slice(0, 5), [recentlyViewed]);
+  const nextUpCount = Object.values(progress).filter(Boolean).length;
 
   function handleSearch(e) {
     e.preventDefault();
-    if (!searchValue.trim()) return;
-    navigate('/search');
+    const query = searchValue.trim();
+    navigate(query ? `/search?q=${encodeURIComponent(query)}` : '/search');
   }
 
   function toggleFavorite(anime) {
@@ -65,7 +72,7 @@ function Home() {
       if (current.some((item) => item.id === anime.id)) {
         return current.filter((item) => item.id !== anime.id);
       }
-      return [...current, { id: anime.id, title: anime.title.romaji }];
+      return [...current, { id: anime.id, title: getTitle(anime) }];
     });
   }
 
@@ -77,52 +84,85 @@ function Home() {
       <section className="hero-section">
         <div className="hero-background">
           <img
-            src={heroAnime.coverImage?.large || heroAnime.coverImage?.medium || 'https://images.unsplash.com/photo-1515879218367-8466d910aaa4?auto=format&w=1600&q=80'}
-            alt={heroAnime.title?.romaji || 'Featured Anime'}
+            src={getImage(heroAnime) || 'https://images.unsplash.com/photo-1515879218367-8466d910aaa4?auto=format&w=1600&q=80'}
+            alt={heroTitle}
           />
           <div className="hero-overlay" />
-          <div className="hero-overlay-dark" />
         </div>
 
         <div className="hero-content">
           <div className="hero-meta">
-            <span className="tag">TRENDING #1</span>
-            <span className="subtag">Season 4 Now Airing</span>
+            <span className="tag">Trending Now</span>
+            {heroAnime?.averageScore && <span className="subtag">{heroAnime.averageScore}% Match</span>}
+            {heroAnime?.format && <span className="subtag">{heroAnime.format}</span>}
           </div>
-          <h1>{heroAnime.title?.romaji || 'Cyber Nexus: Rebirth'}</h1>
-          <p>
-            In a world where memories are traded like currency, a young hacker discovers a fragment of the original reality that could bring down the entire virtual empire.
-          </p>
+          <h1>{heroTitle}</h1>
+          <p>{heroDescription}</p>
           <div className="hero-actions">
-            <button className="button button-primary" onClick={() => navigate(`/anime/${heroAnime.id}`)}>
+            <button className="button button-primary" onClick={() => heroAnime?.id && navigate(`/anime/${heroAnime.id}`)}>
               <span className="material-symbols-outlined">play_arrow</span>
               Watch Now
             </button>
-            <button className="button button-secondary" onClick={() => setSearchValue('')}>
-              <span className="material-symbols-outlined">add</span>
-              Add to List
+            <button className="button button-secondary" onClick={() => navigate('/search')}>
+              <span className="material-symbols-outlined">explore</span>
+              Browse Library
             </button>
           </div>
           <form className="hero-search" onSubmit={handleSearch}>
             <span className="material-symbols-outlined search-icon">search</span>
             <input
               type="text"
-              placeholder="Search for your favorite anime, studio, or character..."
+              placeholder="Search anime, studios, or genres"
               value={searchValue}
               onChange={(e) => setSearchValue(e.target.value)}
             />
-            <button type="submit" className="search-submit">Browse</button>
+            <button type="submit" className="search-submit">Search</button>
           </form>
         </div>
+
+        <aside className="hero-rail" aria-label="Home summary">
+          <div>
+            <strong>{animeList.length}</strong>
+            <span>Trending</span>
+          </div>
+          <div>
+            <strong>{favorites.length}</strong>
+            <span>Favorites</span>
+          </div>
+          <div>
+            <strong>{nextUpCount}</strong>
+            <span>In Progress</span>
+          </div>
+        </aside>
       </section>
+
+      {recentItems.length > 0 && (
+        <section className="section continue-section">
+          <div className="section-header">
+            <div>
+              <span className="eyebrow">Continue</span>
+              <h2>Recently Viewed</h2>
+            </div>
+            <button className="text-button" onClick={() => navigate('/search')}>Browse More</button>
+          </div>
+          <div className="continue-list">
+            {recentItems.map((item) => (
+              <Link key={item.id} to={`/anime/${item.id}`} className="continue-item">
+                <span>{item.title}</span>
+                <small>{progress[item.id] ? `Episode ${progress[item.id]}` : 'Details'}</small>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
 
       <section className="section section-trending">
         <div className="section-header">
           <div>
+            <span className="eyebrow">Popular</span>
             <h2>Trending Now</h2>
-            <div className="section-line" />
           </div>
-          <button className="text-button">View All</button>
+          <button className="text-button" onClick={() => navigate('/search')}>View All</button>
         </div>
         <div className="trending-carousel custom-scrollbar">
           {trending.map((anime) => (
@@ -137,72 +177,46 @@ function Home() {
         </div>
       </section>
 
-      <section className="section section-grid">
+      <section className="section home-feature-grid">
         <div className="section-heading">
-          <h2>Action</h2>
+          <div>
+            <span className="eyebrow">High Energy</span>
+            <h2>Action Picks</h2>
+          </div>
         </div>
         <div className="poster-grid">
-          {actionList.length > 0 ? actionList.map((anime) => (
-            <article key={anime.id} className="poster-card glass-card">
+          {(actionList.length > 0 ? actionList : animeList.slice(2, 8)).map((anime) => (
+            <Link key={anime.id} to={`/anime/${anime.id}`} className="poster-card">
               <div className="poster-image">
-                <img src={anime.coverImage?.medium || anime.coverImage?.large} alt={anime.title.romaji} />
-                <span className="poster-badge">NEW EP</span>
+                <img src={getImage(anime)} alt={getTitle(anime)} />
+                <span className="poster-badge">{anime.format || 'TV'}</span>
               </div>
               <div className="poster-info">
-                <h4>{anime.title.romaji}</h4>
-                <p>{anime.episodes || 'TBA'} Episodes</p>
+                <h4>{getTitle(anime)}</h4>
+                <p>{anime.episodes ? `${anime.episodes} episodes` : 'Episodes TBA'}</p>
               </div>
-            </article>
-          )) : <p className="status">No action titles available right now.</p>}
+            </Link>
+          ))}
         </div>
       </section>
 
-      <section className="section section-dual">
-        <div className="category-panel">
-          <div className="panel-header">
-            <span className="material-symbols-outlined category-icon">favorite</span>
-            <h2>Romance</h2>
+      <section className="section spotlight-section">
+        <div className="section-header">
+          <div>
+            <span className="eyebrow">Spotlight</span>
+            <h2>Worth a Look</h2>
           </div>
-          <div className="panel-list">
-            {(romanceList.length ? romanceList : animeList.slice(0, 2)).map((anime) => (
-              <div key={anime.id} className="panel-row glass-card">
-                <img src={anime.coverImage?.medium || anime.coverImage?.large} alt={anime.title.romaji} />
-                <div>
-                  <h4>{anime.title.romaji}</h4>
-                  <p>{anime.genres?.slice(0, 2).join(' / ') || 'Romance'}</p>
-                </div>
+        </div>
+        <div className="spotlight-grid">
+          {spotlightList.map((anime) => (
+            <Link key={anime.id} to={`/anime/${anime.id}`} className="spotlight-item">
+              <img src={getImage(anime)} alt={getTitle(anime)} />
+              <div>
+                <strong>{getTitle(anime)}</strong>
+                <span>{anime.genres?.slice(0, 3).join(' / ') || anime.format || 'Anime'}</span>
               </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="category-panel">
-          <div className="panel-header">
-            <span className="material-symbols-outlined category-icon">auto_awesome</span>
-            <h2>Isekai</h2>
-          </div>
-          <div className="panel-list">
-            {(isekaiList.length ? isekaiList : animeList.slice(1, 3)).map((anime) => (
-              <div key={anime.id} className="panel-row glass-card">
-                <img src={anime.coverImage?.medium || anime.coverImage?.large} alt={anime.title.romaji} />
-                <div>
-                  <h4>{anime.title.romaji}</h4>
-                  <p>{anime.genres?.slice(0, 2).join(' / ') || 'Isekai'}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="section section-panels">
-        <div className="panel glass-card">
-          <h3>Favorites</h3>
-          <p>{favorites.length > 0 ? favorites.map((item) => item.title).join(', ') : 'Add favorites to curate your vault.'}</p>
-        </div>
-        <div className="panel glass-card">
-          <h3>Recently Viewed</h3>
-          <p>{recentlyViewed.length > 0 ? [...recentMap.values()].slice(0, 6).map((item) => item.title).join(' • ') : 'Watch an anime to build your recent queue.'}</p>
+            </Link>
+          ))}
         </div>
       </section>
     </section>
