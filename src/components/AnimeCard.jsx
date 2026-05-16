@@ -1,36 +1,70 @@
 import { Link } from 'react-router-dom';
+import { Play, Star, Heart } from 'lucide-react';
 
-function AnimeCard({ anime, isFavorite, onToggleFavorite, progress }) {
+function AnimeCard({ anime, isFavorite, onToggleFavorite, linkPrefix = '/anime/' }) {
+  const title = anime.title?.romaji || anime.title?.english || anime.title?.native || 'Unknown Title';
+  const score = anime.averageScore || anime.meanScore;
+  const year = anime.seasonYear;
+  const episodes = anime.episodes;
+  const chapters = anime.chapters;
+
   function handleFavoriteClick(e) {
     e.preventDefault();
     e.stopPropagation();
     onToggleFavorite(anime);
   }
 
-  const title = anime.title?.romaji || 'Unknown Title';
-  const imgSrc = anime.coverImage?.large || anime.coverImage?.medium;
-
   return (
-    <Link to={`/anime/${anime.id}`} className="anime-card glass-card" aria-label={`View ${title} details`}>
+    <Link to={`${linkPrefix}${anime.id}`} className="anime-card-v2" title={title}>
       <div className="card-media">
-        <img src={imgSrc} alt={title} />
-        <div className="card-badge">
-          <span>HD</span>
-          <span>{anime.genres?.includes('Dub') ? 'DUB' : 'SUB'}</span>
+        <img 
+          src={anime.coverImage?.large || anime.coverImage?.extraLarge} 
+          alt={title} 
+          loading="lazy"
+        />
+        <div className="card-overlay">
+          <div className="play-icon-wrapper">
+            <Play fill="white" size={24} />
+          </div>
+        </div>
+        
+        <button 
+          className={`card-favorite-btn-v2 ${isFavorite ? 'active' : ''}`}
+          onClick={handleFavoriteClick}
+          aria-label={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+        >
+          <Heart size={18} fill={isFavorite ? 'currentColor' : 'none'} />
+        </button>
+
+        <div className="card-badges">
+          {score && (
+            <span className="badge-score">
+              <Star size={12} fill="currentColor" /> {score}%
+            </span>
+          )}
+          {episodes && (
+            <span className="badge-ep">
+              {episodes} EP
+            </span>
+          )}
+          {!episodes && chapters && (
+            <span className="badge-ep" style={{ background: 'rgba(0, 255, 136, 0.2)', color: '#00ff88' }}>
+              {chapters} CH
+            </span>
+          )}
         </div>
       </div>
-      <div className="card-content">
-        <h3>{title}</h3>
-        <p>{anime.episodes ? `Episodes: ${anime.episodes}` : 'Episodes: TBA'}</p>
-        {progress ? <p className="progress">Progress: Ep {progress}</p> : null}
-        <button
-          type="button"
-          onClick={handleFavoriteClick}
-          className="favorite-btn"
-          aria-label={isFavorite ? `Remove ${title} from favorites` : `Add ${title} to favorites`}
-        >
-          {isFavorite ? 'Favorited' : 'Favorite'}
-        </button>
+      <div className="card-info">
+        <h3 className="card-title">{title}</h3>
+        <div className="card-meta">
+          <span>{anime.format || 'Anime'}</span>
+          {year && (
+            <>
+              <span className="dot">•</span>
+              <span>{year}</span>
+            </>
+          )}
+        </div>
       </div>
     </Link>
   );

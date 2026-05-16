@@ -1,11 +1,20 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import AnimeCard from '../components/AnimeCard';
-import { fetchTrendingAnime } from '../api/anilist';
+import { fetchTrendingAnime, fetchAnimeById, fetchAnimeBySeason } from '../api/anilist';
+import LatestSection from '../components/LatestSection';
+import { 
+  Play, Calendar, Star, Info, ChevronRight, 
+  Sparkles, ShieldAlert, Hash, Filter, Zap 
+} from 'lucide-react';
 
-const FAVORITES_KEY = 'animevault_favorites';
-const RECENTS_KEY = 'animevault_recently_viewed';
-const PROGRESS_KEY = 'animevault_progress';
+const GENRES = [
+  'Action', 'Adventure', 'Comedy', 'Drama', 'Fantasy', 'Horror', 'Mystery', 
+  'Psychological', 'Romance', 'Sci-Fi', 'Slice of Life', 'Sports', 'Supernatural'
+];
+
+const SEASONS = ['WINTER', 'SPRING', 'SUMMER', 'FALL'];
+const YEARS = [2024, 2023, 2022, 2021, 2020];
 
 function getTitle(anime) {
   return anime?.title?.english || anime?.title?.romaji || anime?.title?.native || 'Unknown Title';
@@ -15,22 +24,44 @@ function getImage(anime) {
   return anime?.coverImage?.extraLarge || anime?.coverImage?.large || anime?.coverImage?.medium;
 }
 
+function getBanner(anime) {
+  return anime?.bannerImage || getImage(anime);
+}
+
 function Home() {
   const [animeList, setAnimeList] = useState([]);
-  const [favorites, setFavorites] = useState(() => JSON.parse(localStorage.getItem(FAVORITES_KEY) || '[]'));
-  const [recentlyViewed] = useState(() => JSON.parse(localStorage.getItem(RECENTS_KEY) || '[]'));
-  const [progress] = useState(() => JSON.parse(localStorage.getItem(PROGRESS_KEY) || '{}'));
+  const [seasonalList, setSeasonalList] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [seasonalLoading, setSeasonalLoading] = useState(false);
   const [error, setError] = useState('');
-  const [searchValue, setSearchValue] = useState('');
+  
+  const [selectedSeason, setSelectedSeason] = useState('SPRING');
+  const [selectedYear, setSelectedYear] = useState(2024);
+
+  const [favorites, setFavorites] = useState(() => JSON.parse(localStorage.getItem('animevault_favorites') || '[]'));
   const navigate = useNavigate();
 
   useEffect(() => {
     async function load() {
       try {
         setLoading(true);
-        setError('');
-        const data = await fetchTrendingAnime();
+        let data = await fetchTrendingAnime();
+        
+        const coteIndex = data.findIndex(a => 
+          a.title?.english?.toLowerCase().includes('classroom of the elite') || 
+          a.title?.romaji?.toLowerCase().includes('youkoso jitsuryoku')
+        );
+
+        if (coteIndex === -1) {
+          try {
+            const cote = await fetchAnimeById(144192);
+            if (cote) data.unshift(cote);
+          } catch (e) { console.warn('COTE fetch failed', e); }
+        } else if (coteIndex > 0) {
+          const cote = data.splice(coteIndex, 1)[0];
+          data.unshift(cote);
+        }
+
         setAnimeList(data);
       } catch (err) {
         setError(err.message || 'Failed to load trending anime');
@@ -38,187 +69,168 @@ function Home() {
         setLoading(false);
       }
     }
-
     load();
   }, []);
 
   useEffect(() => {
-    localStorage.setItem(FAVORITES_KEY, JSON.stringify(favorites));
-  }, [favorites]);
+    async function loadSeasonal() {
+      try {
+        setSeasonalLoading(true);
+        const data = await fetchAnimeBySeason(selectedSeason, selectedYear);
+        setSeasonalList(data);
+      } catch (err) {
+        console.error('Failed to load seasonal', err);
+      } finally {
+        setSeasonalLoading(false);
+      }
+    }
+    loadSeasonal();
+  }, [selectedSeason, selectedYear]);
 
   const heroAnime = animeList[0] || null;
-  const heroTitle = getTitle(heroAnime);
-  const heroDescription = heroAnime?.description
-    ? heroAnime.description.replace(/<[^>]+>/g, '').slice(0, 220)
-    : 'Track what you are watching, jump back into recent episodes, and browse trending series from one focused dashboard.';
-
-  const trending = animeList.slice(0, 8);
-  const actionList = useMemo(
-    () => animeList.filter((anime) => anime.genres?.includes('Action')).slice(0, 6),
-    [animeList]
-  );
-  const spotlightList = animeList.slice(1, 4);
-  const recentItems = useMemo(() => recentlyViewed.slice(0, 5), [recentlyViewed]);
-  const nextUpCount = Object.values(progress).filter(Boolean).length;
-
-  function handleSearch(e) {
-    e.preventDefault();
-    const query = searchValue.trim();
-    navigate(query ? `/search?q=${encodeURIComponent(query)}` : '/search');
-  }
+  const trending = animeList.slice(0, 12);
 
   function toggleFavorite(anime) {
     setFavorites((current) => {
-      if (current.some((item) => item.id === anime.id)) {
-        return current.filter((item) => item.id !== anime.id);
-      }
-      return [...current, { id: anime.id, title: getTitle(anime) }];
+      const next = current.some((item) => item.id === anime.id)
+        ? current.filter((item) => item.id !== anime.id)
+        : [...current, { id: anime.id, title: getTitle(anime) }];
+      localStorage.setItem('animevault_favorites', JSON.stringify(next));
+      return next;
     });
   }
 
-  if (loading) return <p className="status">Loading trending anime...</p>;
-  if (error) return <p className="status error">{error}</p>;
+  if (loading) return (
+    <div className="status-container">
+      <div className="spinner" />
+      <p>Loading the vault...</p>
+    </div>
+  );
 
   return (
-    <section className="home-page">
-      <section className="hero-section">
-        <div className="hero-background">
-          <img
-            src={getImage(heroAnime) || 'https://images.unsplash.com/photo-1515879218367-8466d910aaa4?auto=format&w=1600&q=80'}
-            alt={heroTitle}
-          />
-          <div className="hero-overlay" />
+    <section className="home-v2">
+      {/* Hero Section */}
+      <div className="hero-v2">
+        <div className="hero-img-wrapper">
+          <img src={getBanner(heroAnime)} alt={getTitle(heroAnime)} />
+          <div className="hero-overlay-v2" />
         </div>
-
-        <div className="hero-content">
-          <div className="hero-meta">
-            <span className="tag">Trending Now</span>
-            {heroAnime?.averageScore && <span className="subtag">{heroAnime.averageScore}% Match</span>}
-            {heroAnime?.format && <span className="subtag">{heroAnime.format}</span>}
-          </div>
-          <h1>{heroTitle}</h1>
-          <p>{heroDescription}</p>
-          <div className="hero-actions">
-            <button className="button button-primary" onClick={() => heroAnime?.id && navigate(`/anime/${heroAnime.id}`)}>
-              <span className="material-symbols-outlined">play_arrow</span>
-              Watch Now
-            </button>
-            <button className="button button-secondary" onClick={() => navigate('/search')}>
-              <span className="material-symbols-outlined">explore</span>
-              Browse Library
-            </button>
-          </div>
-          <form className="hero-search" onSubmit={handleSearch}>
-            <span className="material-symbols-outlined search-icon">search</span>
-            <input
-              type="text"
-              placeholder="Search anime, studios, or genres"
-              value={searchValue}
-              onChange={(e) => setSearchValue(e.target.value)}
-            />
-            <button type="submit" className="search-submit">Search</button>
-          </form>
-        </div>
-
-        <aside className="hero-rail" aria-label="Home summary">
-          <div>
-            <strong>{animeList.length}</strong>
-            <span>Trending</span>
-          </div>
-          <div>
-            <strong>{favorites.length}</strong>
-            <span>Favorites</span>
-          </div>
-          <div>
-            <strong>{nextUpCount}</strong>
-            <span>In Progress</span>
-          </div>
-        </aside>
-      </section>
-
-      {recentItems.length > 0 && (
-        <section className="section continue-section">
-          <div className="section-header">
-            <div>
-              <span className="eyebrow">Continue</span>
-              <h2>Recently Viewed</h2>
+        <div className="hero-content-v2">
+          <div className="hero-info-v2">
+            <span className="hero-rank"><Sparkles size={14} /> #1 Trending</span>
+            <h1 className="hero-title-v2">{getTitle(heroAnime)}</h1>
+            <div className="hero-meta-v2">
+              <span><Calendar size={16} /> {heroAnime?.seasonYear}</span>
+              <span><Star size={16} /> {heroAnime?.averageScore}%</span>
+              <span>{heroAnime?.format}</span>
             </div>
-            <button className="text-button" onClick={() => navigate('/search')}>Browse More</button>
+            <p className="hero-desc-v2">
+              {heroAnime?.description?.replace(/<[^>]+>/g, '').slice(0, 220)}...
+            </p>
+            <div className="hero-btns-v2">
+              <button className="btn-play-v2" onClick={() => navigate(`/anime/${heroAnime.id}`)}>
+                <Play size={20} fill="white" /> Watch Now
+              </button>
+              <button className="btn-info-v2" onClick={() => navigate(`/anime/${heroAnime.id}`)}>
+                <Info size={20} /> Details
+              </button>
+            </div>
           </div>
-          <div className="continue-list">
-            {recentItems.map((item) => (
-              <Link key={item.id} to={`/anime/${item.id}`} className="continue-item">
-                <span>{item.title}</span>
-                <small>{progress[item.id] ? `Episode ${progress[item.id]}` : 'Details'}</small>
+        </div>
+      </div>
+
+      <div className="home-main-v2">
+        {/* Security & Updates */}
+        <div className="security-notice-v2" style={{ marginTop: '-4.5rem', zIndex: 10, position: 'relative' }}>
+          <ShieldAlert size={28} color="#ffa500" />
+          <div>
+            <p>
+              <strong>Security & Stability Update</strong>
+              Stable Zen Mode added. Removed restrictive attributes for 100% server compatibility. AniWave stable mirrors integrated.
+            </p>
+          </div>
+        </div>
+
+        {/* Latest from External Servers */}
+        <LatestSection />
+
+        {/* Seasonal Browser */}
+        <section className="home-section-v2">
+          <div className="section-header-v2">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+              <h2>Seasonal Browser</h2>
+              <div className="seasonal-controls-v2" style={{ display: 'flex', gap: '0.5rem' }}>
+                <select 
+                  value={selectedSeason} 
+                  onChange={e => setSelectedSeason(e.target.value)}
+                  className="server-dropdown-v2"
+                  style={{ minWidth: '120px', padding: '0.4rem 2rem 0.4rem 0.8rem' }}
+                >
+                  {SEASONS.map(s => <option key={s} value={s}>{s}</option>)}
+                </select>
+                <select 
+                  value={selectedYear} 
+                  onChange={e => setSelectedYear(Number(e.target.value))}
+                  className="server-dropdown-v2"
+                  style={{ minWidth: '100px', padding: '0.4rem 2rem 0.4rem 0.8rem' }}
+                >
+                  {YEARS.map(y => <option key={y} value={y}>{y}</option>)}
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div className="trending-grid-v2" style={{ opacity: seasonalLoading ? 0.5 : 1, transition: 'opacity 0.2s', marginTop: '1.5rem' }}>
+            {seasonalList.length > 0 ? (
+              seasonalList.slice(0, 12).map(anime => (
+                <AnimeCard 
+                  key={anime.id} 
+                  anime={anime} 
+                  isFavorite={favorites.some(f => f.id === anime.id)}
+                  onToggleFavorite={toggleFavorite}
+                />
+              ))
+            ) : (
+              <p>No seasonal data found for this period.</p>
+            )}
+          </div>
+        </section>
+
+        {/* Popular Genres */}
+        <section className="home-section-v2">
+          <div className="section-header-v2" style={{ marginBottom: '1rem' }}>
+            <h2>Popular Genres</h2>
+          </div>
+          <div className="genres-container-v2" style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '2rem' }}>
+            {GENRES.map(genre => (
+              <Link key={genre} to={`/search?genre=${genre}`} className="genre-tag-v2">
+                <Hash size={14} opacity={0.6} />
+                {genre}
               </Link>
             ))}
           </div>
         </section>
-      )}
 
-      <section className="section section-trending">
-        <div className="section-header">
-          <div>
-            <span className="eyebrow">Popular</span>
-            <h2>Trending Now</h2>
-          </div>
-          <button className="text-button" onClick={() => navigate('/search')}>View All</button>
-        </div>
-        <div className="trending-carousel custom-scrollbar">
-          {trending.map((anime) => (
-            <AnimeCard
-              key={anime.id}
-              anime={anime}
-              isFavorite={favorites.some((item) => item.id === anime.id)}
-              onToggleFavorite={toggleFavorite}
-              progress={progress[anime.id]}
-            />
-          ))}
-        </div>
-      </section>
-
-      <section className="section home-feature-grid">
-        <div className="section-heading">
-          <div>
-            <span className="eyebrow">High Energy</span>
-            <h2>Action Picks</h2>
-          </div>
-        </div>
-        <div className="poster-grid">
-          {(actionList.length > 0 ? actionList : animeList.slice(2, 8)).map((anime) => (
-            <Link key={anime.id} to={`/anime/${anime.id}`} className="poster-card">
-              <div className="poster-image">
-                <img src={getImage(anime)} alt={getTitle(anime)} />
-                <span className="poster-badge">{anime.format || 'TV'}</span>
-              </div>
-              <div className="poster-info">
-                <h4>{getTitle(anime)}</h4>
-                <p>{anime.episodes ? `${anime.episodes} episodes` : 'Episodes TBA'}</p>
-              </div>
+        {/* Global Trending */}
+        <section className="home-section-v2">
+          <div className="section-header-v2">
+            <h2>Global Trending</h2>
+            <Link to="/search?trending=true" className="view-all">
+              View All <ChevronRight size={18} />
             </Link>
-          ))}
-        </div>
-      </section>
-
-      <section className="section spotlight-section">
-        <div className="section-header">
-          <div>
-            <span className="eyebrow">Spotlight</span>
-            <h2>Worth a Look</h2>
           </div>
-        </div>
-        <div className="spotlight-grid">
-          {spotlightList.map((anime) => (
-            <Link key={anime.id} to={`/anime/${anime.id}`} className="spotlight-item">
-              <img src={getImage(anime)} alt={getTitle(anime)} />
-              <div>
-                <strong>{getTitle(anime)}</strong>
-                <span>{anime.genres?.slice(0, 3).join(' / ') || anime.format || 'Anime'}</span>
-              </div>
-            </Link>
-          ))}
-        </div>
-      </section>
+          <div className="trending-grid-v2" style={{ marginTop: '1.5rem' }}>
+            {trending.map(anime => (
+              <AnimeCard 
+                key={anime.id} 
+                anime={anime} 
+                isFavorite={favorites.some(f => f.id === anime.id)}
+                onToggleFavorite={toggleFavorite}
+              />
+            ))}
+          </div>
+        </section>
+      </div>
     </section>
   );
 }

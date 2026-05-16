@@ -1,16 +1,16 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import AnimeCard from '../components/AnimeCard';
-import SearchBar from '../components/SearchBar';
 import { searchAnime, fetchTrendingAnime } from '../api/anilist';
-
-const FAVORITES_KEY = 'animevault_favorites';
+import { Filter, Search as SearchIcon, X } from 'lucide-react';
 
 const GENRES = [
   'Action', 'Adventure', 'Comedy', 'Drama', 'Fantasy',
   'Horror', 'Mystery', 'Romance', 'Sci-Fi', 'Slice of Life',
   'Sports', 'Supernatural', 'Thriller'
 ];
+
+const TYPES = ['ANIME', 'MANGA'];
 
 function Search() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -19,20 +19,22 @@ function Search() {
   const [error, setError] = useState('');
   const [query, setQuery] = useState(searchParams.get('q') || '');
   const [selectedGenre, setSelectedGenre] = useState(searchParams.get('genre') || '');
-  const [favorites, setFavorites] = useState(() => JSON.parse(localStorage.getItem(FAVORITES_KEY) || '[]'));
+  const [selectedType, setSelectedType] = useState(searchParams.get('type') || 'ANIME');
+  const [favorites, setFavorites] = useState(() => JSON.parse(localStorage.getItem('animevault_favorites') || '[]'));
 
-  // On mount or URL change, run search
   useEffect(() => {
     const q = searchParams.get('q');
     const genre = searchParams.get('genre');
-    if (q) {
-      setQuery(q);
-      runSearch(q, genre);
-    } else if (genre) {
-      setQuery('');
-      runSearchByGenre(genre);
+    const type = searchParams.get('type') || 'ANIME';
+    const trending = searchParams.get('trending');
+
+    setSelectedType(type);
+    
+    if (trending) {
+      loadTrending();
+    } else if (q || genre) {
+      runSearch(q, genre, type);
     } else {
-      // Load trending as default
       loadTrending();
     }
   }, [searchParams]);
@@ -50,12 +52,11 @@ function Search() {
     }
   }
 
-  async function runSearch(searchTerm, genreFilter) {
-    if (!searchTerm && !genreFilter) return;
+  async function runSearch(searchTerm, genreFilter, typeFilter) {
     try {
       setLoading(true);
       setError('');
-      const data = await searchAnime(searchTerm || genreFilter);
+      const data = await searchAnime(searchTerm || genreFilter || 'Popular', typeFilter);
       setResults(data);
     } catch (err) {
       setError(err.message || 'Search failed');
@@ -64,41 +65,37 @@ function Search() {
     }
   }
 
-  async function runSearchByGenre(genre) {
-    try {
-      setLoading(true);
-      setError('');
-      const data = await searchAnime(genre);
-      setResults(data);
-    } catch (err) {
-      setError(err.message || 'Search failed');
-    } finally {
-      setLoading(false);
-    }
+  function handleSearchSubmit(e) {
+    e.preventDefault();
+    const params = {};
+    if (query) params.q = query;
+    if (selectedGenre) params.genre = selectedGenre;
+    params.type = selectedType;
+    setSearchParams(params);
   }
 
-  function handleSearch(searchTerm) {
-    if (!searchTerm.trim()) return;
-    setQuery(searchTerm);
-    setSelectedGenre('');
-    setSearchParams({ q: searchTerm });
+  function handleGenreToggle(genre) {
+    const newGenre = selectedGenre === genre ? '' : genre;
+    setSelectedGenre(newGenre);
+    const params = { type: selectedType };
+    if (query) params.q = query;
+    if (newGenre) params.genre = newGenre;
+    setSearchParams(params);
   }
 
-  function handleGenreClick(genre) {
-    if (selectedGenre === genre) {
-      setSelectedGenre('');
-      setSearchParams({});
-      return;
-    }
-    setSelectedGenre(genre);
-    setQuery('');
-    setSearchParams({ genre });
+  function handleTypeChange(type) {
+    setSelectedType(type);
+    const params = { type };
+    if (query) params.q = query;
+    if (selectedGenre) params.genre = selectedGenre;
+    setSearchParams(params);
   }
 
   function handleReset() {
     setQuery('');
     setSelectedGenre('');
-    setSearchParams({});
+    setSelectedType('ANIME');
+    setSearchParams({ type: 'ANIME' });
   }
 
   function toggleFavorite(anime) {
@@ -106,68 +103,87 @@ function Search() {
       const next = current.some((item) => item.id === anime.id)
         ? current.filter((item) => item.id !== anime.id)
         : [...current, { id: anime.id, title: anime.title?.romaji || 'Unknown' }];
-      localStorage.setItem(FAVORITES_KEY, JSON.stringify(next));
+      localStorage.setItem('animevault_favorites', JSON.stringify(next));
       return next;
     });
   }
 
   return (
-    <section className="search-page">
-      <div className="search-header">
-        <div>
-          <span className="eyebrow">Browse</span>
-          <h1>Find your next favorite series</h1>
-          <p className="subtext">Search through trending anime, movies, and specials with smart filters.</p>
-        </div>
-        <div className="search-topbar glass-card">
-          <SearchBar onSearch={handleSearch} defaultValue={query} />
-          <div className="filter-summary">
-            <span>{results.length > 0 ? `${results.length} results` : ''}</span>
-            <div className="chips">
-              {selectedGenre && <span className="chip active">{selectedGenre}</span>}
+    <section className="search-page-v2">
+      <div className="search-sidebar-v2">
+        <div className="sidebar-section">
+          <div className="sidebar-header-v2">
+            <div className="header-title">
+              <Filter size={20} />
+              <h2>Filters</h2>
             </div>
+            <button className="reset-btn" onClick={handleReset}>Reset</button>
+          </div>
+        </div>
+
+        <div className="sidebar-section">
+          <h3>Category</h3>
+          <div className="type-toggle">
+            {TYPES.map(t => (
+              <button 
+                key={t}
+                className={`type-btn ${selectedType === t ? 'active' : ''}`}
+                onClick={() => handleTypeChange(t)}
+              >
+                {t}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="sidebar-section">
+          <h3>Genres</h3>
+          <div className="genre-list-v2">
+            {GENRES.map(g => (
+              <button 
+                key={g}
+                className={`genre-pill-v2 ${selectedGenre === g ? 'active' : ''}`}
+                onClick={() => handleGenreToggle(g)}
+              >
+                {g}
+              </button>
+            ))}
           </div>
         </div>
       </div>
 
-      <div className="search-grid">
-        <aside className="search-sidebar glass-panel">
-          <div className="sidebar-header">
-            <h2>Filters</h2>
-            <button className="text-button" onClick={handleReset}>Reset</button>
-          </div>
-          <div className="filter-block">
-            <h3>Genre</h3>
-            <div className="filter-list">
-              {GENRES.map((genre) => (
-                <button
-                  key={genre}
-                  className={genre === selectedGenre ? 'filter-pill active' : 'filter-pill'}
-                  onClick={() => handleGenreClick(genre)}
-                >
-                  {genre}
-                </button>
+      <div className="search-main-v2">
+        <form className="search-box-v2" onSubmit={handleSearchSubmit}>
+          <SearchIcon className="search-icon-v2" size={20} />
+          <input 
+            type="text" 
+            placeholder={`Search ${selectedType.toLowerCase()}...`}
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+          {query && <X className="clear-btn-v2" size={20} onClick={() => setQuery('')} />}
+        </form>
+
+        <div className="results-info-v2">
+          <span>{results.length} results found</span>
+        </div>
+
+        <div className="results-container-v2">
+          {loading && <div className="loading-grid">{Array(10).fill(0).map((_, i) => <div key={i} className="skeleton-card" />)}</div>}
+          {!loading && error && <div className="error-msg">{error}</div>}
+          {!loading && !error && (
+            <div className="results-grid-v2">
+              {results.map((anime) => (
+                <AnimeCard
+                  key={anime.id}
+                  anime={anime}
+                  isFavorite={favorites.some((item) => item.id === anime.id)}
+                  onToggleFavorite={toggleFavorite}
+                  linkPrefix={selectedType === 'MANGA' ? '/manga/' : '/anime/'}
+                />
               ))}
             </div>
-          </div>
-        </aside>
-
-        <div className="search-results">
-          {loading && <p className="status">Searching...</p>}
-          {error && <p className="status error">{error}</p>}
-          {!loading && !error && results.length === 0 && (
-            <p className="status">No results found. Try a different search term or genre.</p>
           )}
-          <div className="results-grid">
-            {results.map((anime) => (
-              <AnimeCard
-                key={anime.id}
-                anime={anime}
-                isFavorite={favorites.some((item) => item.id === anime.id)}
-                onToggleFavorite={toggleFavorite}
-              />
-            ))}
-          </div>
         </div>
       </div>
     </section>
