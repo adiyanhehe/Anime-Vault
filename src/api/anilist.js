@@ -101,7 +101,7 @@ export async function searchAnime(search, type = 'ANIME', page = 1, perPage = 18
 export async function fetchAnimeById(id) {
   const query = `
     query ($id: Int) {
-      Media(id: $id, type: ANIME) {
+      Media(id: $id) {
         id
         idMal
         title { romaji english native }
