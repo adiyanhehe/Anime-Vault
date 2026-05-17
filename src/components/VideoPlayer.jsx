@@ -30,17 +30,11 @@ function VideoPlayer({ sources, poster, title, embedUrl, isZen }) {
   }, [sources]);
 
   if (embedUrl) {
-    const isAniwave = embedUrl.includes('aniwaves.ru');
-    
     return (
-      <div 
-        className={`video-player-wrapper-v2 embed-container ${isZen ? 'zen-active' : ''} ${isAniwave ? 'aniwave-wrapper' : ''}`}
-        style={isAniwave ? { overflow: 'hidden', position: 'relative' } : {}}
-      >
+      <div className={`video-player-wrapper-v2 embed-container ${isZen ? 'zen-active' : ''}`}>
         <iframe
           src={embedUrl}
-          className={`embed-iframe ${isAniwave ? 'aniwave-iframe' : ''}`}
-          style={isAniwave ? { marginTop: '-85px', height: 'calc(100% + 85px)' } : {}}
+          className="embed-iframe"
           allowFullScreen
           allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
           title={title}

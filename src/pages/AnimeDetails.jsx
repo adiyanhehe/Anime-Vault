@@ -151,15 +151,9 @@ const SERVERS = [
     key: 'VidsrcPM',
     label: 'Server 12 · Vidsrc.pm',
     build: ({ malId, ep }) => malId ? `https://vidsrc.pm/embed/anime/${malId}/${ep}` : null,
-  },
-  {
-    key: 'AniWave',
-    label: 'Server 13 · AniWave Mirror (Stable)',
-    build: ({ slug, anilistId, ep }) => (slug && anilistId) ? `https://aniwaves.ru/watch/${slug}-${anilistId}/ep-${ep}` : null,
-  },
   {
     key: 'Native',
-    label: 'Server 14 · Native Scraper (Slow)',
+    label: 'Server 13 · Native Scraper (Slow)',
     build: () => null, // handled via videoSources
   },
 ];
@@ -344,15 +338,12 @@ function AnimeDetails() {
 
     const tmdbId = findExternalId(anime.externalLinks, 'themoviedb');
     const imdbId = findExternalId(anime.externalLinks, 'imdb');
-    const titleForSlug = anime.title?.romaji || anime.title?.english || 'anime';
-    const slug = titleForSlug.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 
     return server.build({
       anilistId: id,
       malId: anime.idMal,
       tmdbId,
       imdbId,
-      slug,
       ep: currentEpisode.number,
       season: 1,
     });
@@ -456,12 +447,15 @@ function AnimeDetails() {
                 ))}
               </select>
 
-              <button
-                onClick={() => setActiveServer('AniWave')}
-                className={`server-external-btn ${activeServer === 'AniWave' ? 'active' : ''}`}
+              <a
+                href={`https://aniwaves.ru/filter?keyword=${encodeURIComponent(animeTitle)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="server-external-btn"
+                style={{ textDecoration: 'none', display: 'flex', alignItems: 'center' }}
               >
-                <Sparkles size={14} /> AniWave Mirror
-              </button>
+                <Sparkles size={14} /> Search on AniWave
+              </a>
             </div>
           </div>
         )}
