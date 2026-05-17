@@ -16,6 +16,7 @@ import {
   Plus,
   RefreshCw,
   ChevronDown,
+  Zap,
 } from 'lucide-react';
 
 const PROGRESS_KEY = 'animevault_progress';
