@@ -154,8 +154,8 @@ const SERVERS = [
   },
   {
     key: 'ZoroTV',
-    label: 'Server 13 · ZoroTV Mirror (No Ads)',
-    build: ({ titleForSlug, ep }) => titleForSlug ? `https://zorotv.com.ro/${titleForSlug.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')}-episode-${ep}/` : null,
+    label: 'Server 13 · ZoroTV Search Mirror (No Ads)',
+    build: ({ titleForSlug }) => titleForSlug ? `https://zorotv.com.ro/?s=${encodeURIComponent(titleForSlug)}` : null,
   },
   {
     key: 'Native',

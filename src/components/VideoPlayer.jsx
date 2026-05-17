@@ -46,8 +46,8 @@ function VideoPlayer({ sources, poster, title, embedUrl, isZen }) {
           title={title}
           referrerPolicy="no-referrer-when-downgrade"
           loading="lazy"
-          // Block ALL ADS and Popups permanently
-          sandbox="allow-scripts allow-same-origin allow-presentation"
+          // Block ALL ADS and Popups permanently but allow searching
+          sandbox="allow-scripts allow-same-origin allow-presentation allow-forms"
         />
       </div>
     );
