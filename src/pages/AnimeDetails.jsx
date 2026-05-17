@@ -17,6 +17,7 @@ import {
   RefreshCw,
   ChevronDown,
   Zap,
+  Sparkles,
 } from 'lucide-react';
 
 const PROGRESS_KEY = 'animevault_progress';
@@ -163,7 +164,7 @@ const SERVERS = [
   },
 ];
 
-const DEFAULT_SERVER = 'VidLink';
+const DEFAULT_SERVER = 'VidsrcICU';
 
 function AnimeDetails() {
   const { id } = useParams();
@@ -402,6 +403,21 @@ function AnimeDetails() {
           <div className="player-status-bar">
             <AlertCircle size={14} />
             <span>{playerStatus}</span>
+          </div>
+        )}
+
+        {/* Fallback External Link for broken iframes */}
+        {embedUrl && (
+          <div style={{ display: 'flex', justifyContent: 'center', margin: '1rem 0' }}>
+            <a 
+              href={embedUrl} 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="btn-info-v2"
+              style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '0.6rem 1.5rem', background: 'var(--brand-color)', color: '#fff', textDecoration: 'none', borderRadius: '8px', fontWeight: 600 }}
+            >
+              <ExternalLink size={16} /> Open Player in New Tab (Bypasses Blocks)
+            </a>
           </div>
         )}
 
