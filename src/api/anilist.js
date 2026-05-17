@@ -47,11 +47,11 @@ export function stripHtml(htmlText = '') {
   return htmlText.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
 }
 
-export async function fetchTrendingAnime(page = 1, perPage = 18) {
+export async function fetchTrendingMedia(type = 'ANIME', page = 1, perPage = 18) {
   const query = `
-    query ($page: Int, $perPage: Int) {
+    query ($type: MediaType, $page: Int, $perPage: Int) {
       Page(page: $page, perPage: $perPage) {
-        media(sort: TRENDING_DESC, type: ANIME) {
+        media(sort: TRENDING_DESC, type: $type) {
           id
           idMal
           title { romaji english }
@@ -68,7 +68,7 @@ export async function fetchTrendingAnime(page = 1, perPage = 18) {
     }
   `;
 
-  const data = await postQuery(query, { page, perPage });
+  const data = await postQuery(query, { type, page, perPage });
   return data.Page.media;
 }
 

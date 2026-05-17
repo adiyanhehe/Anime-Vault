@@ -4,18 +4,21 @@ const MANGADEX_API = 'https://api.mangadex.org';
  * Searches MangaDex for a manga by its title.
  * Returns the first matching manga's ID.
  */
-export async function searchMangaDex(title) {
-  try {
-    const res = await fetch(`${MANGADEX_API}/manga?title=${encodeURIComponent(title)}&limit=5&includes[]=cover_art`);
-    const data = await res.json();
-    if (data.data && data.data.length > 0) {
-      return data.data[0];
+export async function searchMangaDex(titles) {
+  const titleList = Array.isArray(titles) ? titles : [titles];
+  for (const t of titleList) {
+    if (!t) continue;
+    try {
+      const res = await fetch(`${MANGADEX_API}/manga?title=${encodeURIComponent(t)}&limit=5&includes[]=cover_art`);
+      const data = await res.json();
+      if (data.data && data.data.length > 0) {
+        return data.data[0];
+      }
+    } catch (err) {
+      console.error('MangaDex search failed for title:', t, err);
     }
-    return null;
-  } catch (err) {
-    console.error('MangaDex search failed:', err);
-    return null;
   }
+  return null;
 }
 
 /**
@@ -56,9 +59,15 @@ export async function fetchChapterPages(chapterId) {
     const data = await res.json();
     
     if (data.baseUrl) {
-      return data.chapter.data.map(filename => 
-        `${data.baseUrl}/data/${data.chapter.hash}/${filename}`
-      );
+      if (data.chapter.data && data.chapter.data.length > 0) {
+        return data.chapter.data.map(filename => 
+          `${data.baseUrl}/data/${data.chapter.hash}/${filename}`
+        );
+      } else if (data.chapter.dataSaver && data.chapter.dataSaver.length > 0) {
+        return data.chapter.dataSaver.map(filename => 
+          `${data.baseUrl}/data-saver/${data.chapter.hash}/${filename}`
+        );
+      }
     }
     return [];
   } catch (err) {

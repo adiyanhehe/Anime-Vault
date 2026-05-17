@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import AnimeCard from '../components/AnimeCard';
-import { fetchTrendingAnime, fetchAnimeById, fetchAnimeBySeason } from '../api/anilist';
+import { fetchTrendingMedia, fetchAnimeById, fetchAnimeBySeason } from '../api/anilist';
 import LatestSection from '../components/LatestSection';
 import { 
   Play, Calendar, Star, Info, ChevronRight, 
@@ -45,7 +45,7 @@ function Home() {
     async function load() {
       try {
         setLoading(true);
-        let data = await fetchTrendingAnime();
+        let data = await fetchTrendingMedia('ANIME');
         
         const coteIndex = data.findIndex(a => 
           a.title?.english?.toLowerCase().includes('classroom of the elite') || 

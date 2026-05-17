@@ -37,8 +37,13 @@ function MangaDetails() {
         setManga(data);
         
         // After loading AniList data, find the manga on MangaDex
-        const title = safeTitle(data.title);
-        findMangaDex(title);
+        const titlesToTry = [
+          data.title?.english,
+          data.title?.romaji,
+          data.title?.native
+        ].filter(Boolean);
+        
+        findMangaDex(titlesToTry);
       } catch (err) {
         setError(err.message);
       } finally {
@@ -49,9 +54,9 @@ function MangaDetails() {
     window.scrollTo(0, 0);
   }, [id]);
 
-  async function findMangaDex(title) {
+  async function findMangaDex(titles) {
     setLoadingChapters(true);
-    const mdexManga = await searchMangaDex(title);
+    const mdexManga = await searchMangaDex(titles);
     if (mdexManga) {
       const chaps = await fetchMangaChapters(mdexManga.id);
       // Remove duplicates based on chapter number
@@ -228,7 +233,7 @@ function MangaDetails() {
               <h2 style={{ margin: 0 }}>
                 Chapters
                 <span style={{ fontSize: '0.85rem', fontWeight: 400, color: 'var(--text-muted)', marginLeft: '0.5rem' }}>
-                  ({chapters.length})
+                  ({chapters.length}) - Source: MangaDex
                 </span>
               </h2>
             </div>

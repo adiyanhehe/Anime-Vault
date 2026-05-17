@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import AnimeCard from '../components/AnimeCard';
-import { searchAnime, fetchTrendingAnime } from '../api/anilist';
+import { searchAnime, fetchTrendingMedia } from '../api/anilist';
 import { Filter, Search as SearchIcon, X } from 'lucide-react';
 
 const GENRES = [
@@ -31,19 +31,19 @@ function Search() {
     setSelectedType(type);
     
     if (trending) {
-      loadTrending();
+      loadTrending(type);
     } else if (q || genre) {
       runSearch(q, genre, type);
     } else {
-      loadTrending();
+      loadTrending(type);
     }
   }, [searchParams]);
 
-  async function loadTrending() {
+  async function loadTrending(typeToLoad) {
     try {
       setLoading(true);
       setError('');
-      const data = await fetchTrendingAnime();
+      const data = await fetchTrendingMedia(typeToLoad);
       setResults(data);
     } catch (err) {
       setError(err.message || 'Failed to load trending');
