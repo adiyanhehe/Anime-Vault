@@ -162,6 +162,7 @@ const SERVERS = [
         ? raw
             .replace(/\s*\([^)]*\)/g, '') // Remove content in parentheses like (TV), (Dub)
             .replace(/\s*(?:season|part|cour|s\d+|episode|ep|\d+(?:st|nd|rd|th)\s*season|tv|dub|sub|uncensored)\b.*$/gi, '') // Strip suffix and everything after
+            .replace(/[\s\-:]*(?<!\d)(?:[2-9]|i{2,4}|iv|vi{1,3}|ix)$/gi, '') // Strip trailing standalone digit 2-9 or roman numeral II-IX
             .replace(/[:\-,\s]+$/, '') // Clean up trailing colons, hyphens, and spaces
             .trim()
         : null;
