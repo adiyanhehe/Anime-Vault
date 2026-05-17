@@ -3756,3 +3756,20 @@ select {
     max-width: 100vw !important;
   }
 }
+
+/* ── Official External Chapter Buttons ── */
+.episode-btn-v2.external {
+  border-color: rgba(0, 191, 255, 0.2);
+}
+.episode-btn-v2.external:hover {
+  background: rgba(0, 191, 255, 0.12);
+  border-color: rgba(0, 191, 255, 0.4);
+}
+.episode-btn-v2.external.active {
+  background: rgba(0, 191, 255, 0.2);
+  border-color: #00bfff;
+  box-shadow: 0 4px 16px rgba(0, 191, 255, 0.25);
+}
+.episode-btn-v2.external .episode-label {
+  color: #00bfff;
+}

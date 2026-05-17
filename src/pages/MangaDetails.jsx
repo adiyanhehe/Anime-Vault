@@ -74,6 +74,10 @@ function MangaDetails() {
   }
 
   async function openChapter(chapter) {
+    if (chapter.externalUrl) {
+      window.open(chapter.externalUrl, '_blank', 'noopener,noreferrer');
+      return;
+    }
     setActiveChapter(chapter);
     setIsReaderOpen(true);
     setLoadingPages(true);
@@ -245,10 +249,11 @@ function MangaDetails() {
                 {chapters.map(chap => (
                   <button
                     key={chap.id}
-                    className={`episode-btn-v2 ${activeChapter?.id === chap.id ? 'active' : ''}`}
+                    className={`episode-btn-v2 ${activeChapter?.id === chap.id ? 'active' : ''} ${chap.externalUrl ? 'external' : ''}`}
                     onClick={() => openChapter(chap)}
+                    title={chap.externalUrl ? 'Official External Link' : `Read Chapter ${chap.chapter}`}
                   >
-                    <span className="episode-label">CH</span>
+                    <span className="episode-label">{chap.externalUrl ? 'OFFICIAL' : 'CH'}</span>
                     <span className="episode-number">{chap.chapter || '?'}</span>
                   </button>
                 ))}
