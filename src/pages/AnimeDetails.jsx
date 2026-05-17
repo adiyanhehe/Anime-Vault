@@ -155,7 +155,10 @@ const SERVERS = [
   {
     key: 'ZoroTV',
     label: 'Server 13 · ZoroTV Search Mirror (No Ads)',
-    build: ({ titleForSlug }) => titleForSlug ? `https://zorotv.com.ro/?s=${encodeURIComponent(titleForSlug)}` : null,
+    build: ({ englishTitle, titleForSlug }) => {
+      const search = englishTitle || titleForSlug;
+      return search ? `https://zorotv.com.ro/?s=${encodeURIComponent(search)}` : null;
+    },
   },
   {
     key: 'Native',
@@ -344,13 +347,15 @@ function AnimeDetails() {
 
     const tmdbId = findExternalId(anime.externalLinks, 'themoviedb');
     const imdbId = findExternalId(anime.externalLinks, 'imdb');
-    const titleForSlug = anime.title?.romaji || anime.title?.english || animeTitle;
+    const englishTitle = anime.title?.english || null;
+    const titleForSlug = anime.title?.romaji || englishTitle || animeTitle;
 
     return server.build({
       anilistId: id,
       malId: anime.idMal,
       tmdbId,
       imdbId,
+      englishTitle,
       titleForSlug,
       ep: currentEpisode.number,
       season: 1,
