@@ -498,6 +498,36 @@ function MovieWatch() {
               </div>
             )}
           </div>
+
+          {/* ⚡ HIGHLY NOTICEABLE ERROR RESOLUTION BANNER */}
+          <div style={{
+            marginTop: '12px',
+            padding: '14px 18px',
+            borderRadius: '12px',
+            background: 'linear-gradient(135deg, rgba(255, 26, 117, 0.12) 0%, rgba(255, 26, 117, 0.04) 100%)',
+            border: '2px solid rgba(255, 26, 117, 0.35)',
+            boxShadow: '0 0 25px rgba(255, 26, 117, 0.15), inset 0 0 30px rgba(255, 26, 117, 0.03)',
+            fontSize: '0.85rem',
+            color: '#ff6b9d',
+            fontWeight: '600',
+            textAlign: 'center',
+            lineHeight: '1.6',
+            animation: 'pulse-glow 2s ease-in-out infinite'
+          }}>
+            <span style={{ fontSize: '1.2rem', marginRight: '6px' }}>⚠️</span>
+            <strong style={{ color: '#fff' }}>Stream not playing?</strong>
+            {' '}Click <strong style={{
+              color: '#fff',
+              background: 'var(--brand-color)',
+              padding: '2px 10px',
+              borderRadius: '6px',
+              fontSize: '0.8rem'
+            }}>Server 1 (VidLink)</strong> above — it's the fastest and most reliable server!
+            <br/>
+            <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', fontWeight: '400' }}>
+              Xps mirror auto-selected for best speed &bull; Works with all content
+            </span>
+          </div>
         </div>
 
         {isSeries && seasonNumbers.length > 0 && (
