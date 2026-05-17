@@ -502,31 +502,27 @@ function MovieWatch() {
           {/* ⚡ HIGHLY NOTICEABLE ERROR RESOLUTION BANNER */}
           <div style={{
             marginTop: '12px',
-            padding: '14px 18px',
+            padding: '16px',
             borderRadius: '12px',
-            background: 'linear-gradient(135deg, rgba(255, 26, 117, 0.12) 0%, rgba(255, 26, 117, 0.04) 100%)',
-            border: '2px solid rgba(255, 26, 117, 0.35)',
-            boxShadow: '0 0 25px rgba(255, 26, 117, 0.15), inset 0 0 30px rgba(255, 26, 117, 0.03)',
-            fontSize: '0.85rem',
+            background: 'linear-gradient(135deg, rgba(255, 26, 117, 0.15) 0%, rgba(255, 26, 117, 0.05) 100%)',
+            border: '2px solid rgba(255, 26, 117, 0.4)',
+            boxShadow: '0 0 30px rgba(255, 26, 117, 0.2), inset 0 0 40px rgba(255, 26, 117, 0.03)',
+            fontSize: '0.9rem',
             color: '#ff6b9d',
-            fontWeight: '600',
+            fontWeight: '700',
             textAlign: 'center',
-            lineHeight: '1.6',
+            lineHeight: '1.7',
             animation: 'pulse-glow 2s ease-in-out infinite'
           }}>
-            <span style={{ fontSize: '1.2rem', marginRight: '6px' }}>⚠️</span>
-            <strong style={{ color: '#fff' }}>Stream not playing?</strong>
-            {' '}Click <strong style={{
-              color: '#fff',
+            <span style={{ fontSize: '1.3rem' }}>⚠️</span>
+            {' '}If an error shows simply click on{' '}
+            <strong style={{
+              color: '#000',
               background: 'var(--brand-color)',
-              padding: '2px 10px',
+              padding: '2px 12px',
               borderRadius: '6px',
-              fontSize: '0.8rem'
-            }}>Server 1 (VidLink)</strong> above — it's the fastest and most reliable server!
-            <br/>
-            <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', fontWeight: '400' }}>
-              Xps mirror auto-selected for best speed &bull; Works with all content
-            </span>
+              fontSize: '0.85rem'
+            }}>server chose reccomended xps</strong>
           </div>
         </div>
 
