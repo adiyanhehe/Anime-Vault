@@ -1,4 +1,4 @@
-const MANGADEX_API = 'https://api.mangadex.org';
+const MANGADEX_API = 'https://corsproxy.io/?https://api.mangadex.org';
 
 function cleanString(str) {
   return str ? str.toLowerCase().replace(/[^a-z0-9]/g, '').trim() : '';
