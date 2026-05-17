@@ -153,13 +153,8 @@ const SERVERS = [
     build: ({ malId, ep }) => malId ? `https://vidsrc.pm/embed/anime/${malId}/${ep}` : null,
   },
   {
-    key: 'AniWave',
-    label: 'Server 13 · AniWave Mirror (Stable)',
-    build: ({ malId, ep }) => malId ? `https://aniwaves.ru/embed/${malId}/${ep}` : null,
-  },
-  {
     key: 'Native',
-    label: 'Server 14 · Native Scraper (Slow)',
+    label: 'Server 13 · Native Scraper (Slow)',
     build: () => null, // handled via videoSources
   },
 ];
@@ -452,13 +447,6 @@ function AnimeDetails() {
                   <option key={s.key} value={s.key}>{s.label}</option>
                 ))}
               </select>
-
-              <button
-                onClick={() => setActiveServer('AniWave')}
-                className={`server-external-btn ${activeServer === 'AniWave' ? 'active' : ''}`}
-              >
-                <Sparkles size={14} /> AniWave Mirror
-              </button>
             </div>
           </div>
         )}

@@ -40,11 +40,8 @@ function VideoPlayer({ sources, poster, title, embedUrl, isZen }) {
           title={title}
           referrerPolicy="no-referrer-when-downgrade"
           loading="lazy"
-          // Zen Mode: No popups, no modals, just the player
-          sandbox={isZen 
-            ? "allow-scripts allow-same-origin allow-forms allow-presentation" 
-            : undefined
-          }
+          // Block ALL ADS and Popups permanently
+          sandbox="allow-scripts allow-same-origin allow-presentation"
         />
       </div>
     );
