@@ -72,7 +72,7 @@ function findExternalId(links, siteName) {
 const SERVERS = [
   {
     key: 'VidLink',
-    label: 'Server 1 · VidLink Sub (Fastest)',
+    label: 'VidLink • Sub (Recommended)',
     build: ({ malId, tmdbId, ep }) => {
       if (malId) return `https://vidlink.pro/anime/${malId}/${ep}/sub?primaryColor=ff1a75&nextbutton=true`;
       if (tmdbId) return `https://vidlink.pro/tv/${tmdbId}/1/${ep}?primaryColor=ff1a75&nextbutton=true`;
@@ -81,7 +81,7 @@ const SERVERS = [
   },
   {
     key: 'VidLinkDub',
-    label: 'Server 2 · VidLink Dub',
+    label: 'VidLink • Dub',
     build: ({ malId, tmdbId, ep }) => {
       if (malId) return `https://vidlink.pro/anime/${malId}/${ep}/dub?primaryColor=ff1a75&nextbutton=true`;
       if (tmdbId) return `https://vidlink.pro/tv/${tmdbId}/1/${ep}?primaryColor=ff1a75&nextbutton=true`;
@@ -90,17 +90,17 @@ const SERVERS = [
   },
   {
     key: 'VidsrcICU',
-    label: 'Server 3 · Vidsrc.icu Sub (AniList)',
+    label: 'Vidsrc ICU • Sub (Default)',
     build: ({ anilistId, ep }) => `https://vidsrc.icu/embed/anime/${anilistId}/${ep}/0`,
   },
   {
     key: 'VidsrcICUDub',
-    label: 'Server 4 · Vidsrc.icu Dub (AniList)',
+    label: 'Vidsrc ICU • Dub',
     build: ({ anilistId, ep }) => `https://vidsrc.icu/embed/anime/${anilistId}/${ep}/1`,
   },
   {
     key: 'VidsrcCC',
-    label: 'Server 5 · Vidsrc.cc',
+    label: 'Vidsrc CC',
     build: ({ malId, tmdbId, ep }) =>
       tmdbId
         ? `https://vidsrc.cc/v2/embed/tv/${tmdbId}/1/${ep}`
@@ -110,17 +110,17 @@ const SERVERS = [
   },
   {
     key: 'VidsrcNL',
-    label: 'Server 6 · Vidsrc.nl',
+    label: 'Vidsrc NL',
     build: ({ malId, ep }) => malId ? `https://vidsrc.nl/embed/anime/${malId}/${ep}` : null,
   },
   {
     key: 'VidsrcDev',
-    label: 'Server 7 · Vidsrc.dev (TMDB)',
+    label: 'Vidsrc Dev (TMDB)',
     build: ({ tmdbId, ep }) => tmdbId ? `https://vidsrc.dev/embed/tv/${tmdbId}/1/${ep}` : null,
   },
   {
     key: 'MultiEmbed',
-    label: 'Server 8 · MultiEmbed (TMDB)',
+    label: 'MultiEmbed',
     build: ({ tmdbId, imdbId, malId, ep }) => {
       if (tmdbId) return `https://multiembed.mov/?video_id=${tmdbId}&tmdb=1&s=1&e=${ep}`;
       if (imdbId) return `https://multiembed.mov/?video_id=${imdbId}&tmdb=1&s=1&e=${ep}`;
@@ -129,12 +129,12 @@ const SERVERS = [
   },
   {
     key: 'VidsrcIN',
-    label: 'Server 9 · Vidsrc.in',
+    label: 'Vidsrc IN',
     build: ({ malId, ep }) => malId ? `https://vidsrc.in/embed/anime/${malId}/${ep}` : null,
   },
   {
     key: 'Smashy',
-    label: 'Server 10 · SmashyStream',
+    label: 'SmashyStream',
     build: ({ tmdbId, imdbId, ep }) => 
       tmdbId 
         ? `https://embed.smashystream.com/playere.php?tmdb=${tmdbId}&season=1&episode=${ep}` 
@@ -144,30 +144,38 @@ const SERVERS = [
   },
   {
     key: 'VidsrcSU',
-    label: 'Server 11 · Vidsrc.su',
+    label: 'Vidsrc SU',
     build: ({ malId, ep }) => malId ? `https://vidsrc.su/embed/anime/${malId}/${ep}` : null,
   },
   {
     key: 'VidsrcPM',
-    label: 'Server 12 · Vidsrc.pm',
+    label: 'Vidsrc PM',
     build: ({ malId, ep }) => malId ? `https://vidsrc.pm/embed/anime/${malId}/${ep}` : null,
   },
   {
     key: 'ZoroTV',
-    label: 'Server 13 · ZoroTV Search Mirror (No Ads)',
+    label: 'ZoroTV Mirror (Search)',
     build: ({ englishTitle, titleForSlug }) => {
-      const search = englishTitle || titleForSlug;
-      return search ? `https://zorotv.com.ro/?s=${encodeURIComponent(search)}` : null;
+      // Strip season/episode/part/cour/tv/specials and everything after it for exact anime name search
+      const raw = englishTitle || titleForSlug;
+      const clean = raw
+        ? raw
+            .replace(/\s*\([^)]*\)/g, '') // Remove content in parentheses like (TV), (Dub)
+            .replace(/\s*(?:season|part|cour|s\d+|episode|ep|\d+(?:st|nd|rd|th)\s*season|tv|dub|sub|uncensored)\b.*$/gi, '') // Strip suffix and everything after
+            .replace(/[:\-,\s]+$/, '') // Clean up trailing colons, hyphens, and spaces
+            .trim()
+        : null;
+      return clean ? `https://zorotv.com.ro/?s=${encodeURIComponent(clean)}` : null;
     },
   },
   {
     key: 'Native',
-    label: 'Server 14 · Native Scraper (Slow)',
+    label: 'Native Scraper (Slow)',
     build: () => null, // handled via videoSources
   },
 ];
 
-const DEFAULT_SERVER = 'VidsrcICU';
+const DEFAULT_SERVER = 'ZoroTV';
 
 function AnimeDetails() {
   const { id } = useParams();
