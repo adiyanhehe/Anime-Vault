@@ -381,7 +381,13 @@ function MovieWatch() {
 
           <div className="watch-iframe-container" style={{ position: 'relative', overflow: 'hidden' }}>
             {activeServer === 'local_hls' ? (
-              <div className="local-player-wrapper" style={{ width: '100%', height: '100%', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+              <div className="local-player-wrapper" style={{ width: '100%', minHeight: '400px', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+                {!customHlsUrl && hlsStatus === 'idle' && (
+                  <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.85rem', textAlign: 'center', padding: '20px' }}>
+                    <Tv size={32} style={{ opacity: 0.3, marginBottom: '10px' }}/>
+                    <p>Select this server to begin stream resolution</p>
+                  </div>
+                )}
                 <video ref={videoRef} id="custom-hls-video" controls autoPlay style={{ width: '100%', height: '100%', objectFit: 'contain' }} poster={meta.background || meta.poster}/>
                 
                 {hlsStatus === 'resolving' && (
@@ -477,11 +483,19 @@ function MovieWatch() {
                   </div>
                 )}
               </div>
-            ) : (
+            ) : playerSrc ? (
               <iframe id="watch-player-iframe" src={playerSrc} title={meta.name}
                 allowFullScreen frameBorder="0"
                 allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
                 referrerPolicy="origin-when-cross-origin"/>
+            ) : (
+              <div style={{
+                width: '100%', minHeight: '400px', background: '#000',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                color: 'rgba(255,255,255,0.3)', fontSize: '0.85rem'
+              }}>
+                <p>Loading player...</p>
+              </div>
             )}
           </div>
         </div>
