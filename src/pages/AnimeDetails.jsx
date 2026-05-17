@@ -153,9 +153,9 @@ const SERVERS = [
     build: ({ malId, ep }) => malId ? `https://vidsrc.pm/embed/anime/${malId}/${ep}` : null,
   },
   {
-    key: 'AniWave',
-    label: 'Server 13 · AniWave Search Mirror',
-    build: ({ titleForSlug }) => titleForSlug ? `https://aniwaves.ru/filter?keyword=${encodeURIComponent(titleForSlug)}` : null,
+    key: 'ZoroTV',
+    label: 'Server 13 · ZoroTV Mirror (No Ads)',
+    build: ({ titleForSlug, ep }) => titleForSlug ? `https://zorotv.com.ro/${titleForSlug.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')}-episode-${ep}/` : null,
   },
   {
     key: 'Native',
