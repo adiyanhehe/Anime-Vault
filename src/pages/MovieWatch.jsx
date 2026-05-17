@@ -10,7 +10,7 @@ function MovieWatch() {
   const [loading, setLoading] = useState(true);
   const [activeSeason, setActiveSeason] = useState(null);
   const [activeEpisode, setActiveEpisode] = useState(null);
-  const [activeServer, setActiveServer] = useState('vidlink');
+  const [activeServer, setActiveServer] = useState('autoembed');
   const [playerSrc, setPlayerSrc] = useState('');
 
   // Custom Local HLS Player states
