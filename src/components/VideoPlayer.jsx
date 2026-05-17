@@ -30,11 +30,17 @@ function VideoPlayer({ sources, poster, title, embedUrl, isZen }) {
   }, [sources]);
 
   if (embedUrl) {
+    const isAniwave = embedUrl.includes('aniwaves.ru');
+    
     return (
-      <div className={`video-player-wrapper-v2 embed-container ${isZen ? 'zen-active' : ''}`}>
+      <div 
+        className={`video-player-wrapper-v2 embed-container ${isZen ? 'zen-active' : ''} ${isAniwave ? 'aniwave-wrapper' : ''}`}
+        style={isAniwave ? { overflow: 'hidden', position: 'relative' } : {}}
+      >
         <iframe
           src={embedUrl}
-          className="embed-iframe"
+          className={`embed-iframe ${isAniwave ? 'aniwave-iframe' : ''}`}
+          style={isAniwave ? { marginTop: '-85px', height: 'calc(100% + 85px)' } : {}}
           allowFullScreen
           allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
           title={title}
