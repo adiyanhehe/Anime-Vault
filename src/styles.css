@@ -3773,3 +3773,831 @@ select {
 .episode-btn-v2.external .episode-label {
   color: #00bfff;
 }
+
+/* ─────────────────────────────────────────────────────────────
+   🎬 DRAMAS & MOVIES SECTION PREMIUM STYLES
+   ───────────────────────────────────────────────────────────── */
+
+.dramas-movies-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
+  color: var(--text-primary);
+  min-height: 100vh;
+}
+
+/* ── Hero Banner ── */
+.movies-hero-banner {
+  background: linear-gradient(135deg, rgba(255, 26, 117, 0.15) 0%, rgba(14, 165, 233, 0.15) 100%), rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 24px;
+  padding: 4rem 2rem;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 3rem;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+.movies-hero-banner::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(circle at 50% 50%, transparent 30%, #0a0a0c 90%);
+  pointer-events: none;
+}
+
+.hero-banner-content {
+  position: relative;
+  z-index: 2;
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+.hero-banner-content h1 {
+  font-size: 3rem;
+  font-weight: 800;
+  letter-spacing: -1px;
+  margin-bottom: 0.5rem;
+  background: linear-gradient(to right, #ff1a75, #38bdf8);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.hero-banner-content p {
+  color: var(--text-secondary);
+  font-size: 1.1rem;
+  margin-bottom: 2.5rem;
+}
+
+/* ── Search Bar ── */
+.movies-search-bar {
+  display: flex;
+  align-items: center;
+  background: rgba(10, 10, 12, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 0.4rem 0.6rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+
+.movies-search-bar:focus-within {
+  border-color: rgba(255, 26, 117, 0.5);
+  box-shadow: 0 0 15px rgba(255, 26, 117, 0.25), 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.movies-search-bar .search-icon {
+  color: var(--text-muted);
+  margin-left: 0.8rem;
+}
+
+.movies-search-bar input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #fff;
+  font-size: 1.05rem;
+  padding: 0.6rem 0.8rem;
+}
+
+.movies-search-bar .clear-search-btn {
+  color: var(--text-muted);
+  cursor: pointer;
+  margin-right: 0.8rem;
+  transition: color 0.2s ease;
+}
+
+.movies-search-bar .clear-search-btn:hover {
+  color: #fff;
+}
+
+.movies-search-bar button {
+  background: linear-gradient(135deg, #ff1a75 0%, #dd0060 100%);
+  border: none;
+  outline: none;
+  color: #fff;
+  font-weight: 600;
+  padding: 0.7rem 1.6rem;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(255, 26, 117, 0.2);
+}
+
+.movies-search-bar button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(255, 26, 117, 0.35);
+}
+
+/* ── Tabs Selector ── */
+.movies-tabs-container {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  padding-bottom: 1rem;
+}
+
+.movies-tab-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 0.8rem 1.8rem;
+  color: var(--text-secondary);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.movies-tab-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+.movies-tab-btn.active {
+  background: rgba(255, 26, 117, 0.1);
+  border-color: rgba(255, 26, 117, 0.4);
+  color: #ff1a75;
+  box-shadow: 0 4px 12px rgba(255, 26, 117, 0.15);
+}
+
+/* ── Content Grid & Cards ── */
+.movies-results-wrapper .results-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 2rem;
+}
+
+.movies-results-wrapper .results-header h2 {
+  font-size: 1.6rem;
+  margin: 0;
+}
+
+.back-to-latest {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--text-secondary);
+  padding: 0.6rem 1.2rem;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.back-to-latest:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.movies-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 1.8rem;
+  margin-bottom: 3rem;
+}
+
+.movie-card {
+  display: flex;
+  flex-direction: column;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 16px;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  position: relative;
+}
+
+.movie-card:hover {
+  transform: translateY(-6px);
+  border-color: rgba(255, 26, 117, 0.3);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.4), 0 0 15px rgba(255, 26, 117, 0.1);
+}
+
+.movie-card-poster {
+  aspect-ratio: 2/3;
+  position: relative;
+  overflow: hidden;
+  background: #0f0f12;
+}
+
+.movie-card-poster img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.4s ease;
+}
+
+.movie-card:hover .movie-card-poster img {
+  transform: scale(1.06);
+}
+
+.movie-card-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: 2;
+}
+
+.movie-card:hover .movie-card-overlay {
+  opacity: 1;
+}
+
+.movie-card-overlay svg {
+  background: rgba(255, 26, 117, 0.85);
+  padding: 0.8rem;
+  border-radius: 50%;
+  box-shadow: 0 4px 16px rgba(255, 26, 117, 0.4);
+  transform: scale(0.8);
+  transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.movie-card:hover .movie-card-overlay svg {
+  transform: scale(1);
+}
+
+.movie-type-badge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background: rgba(14, 165, 233, 0.9);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.25rem 0.6rem;
+  border-radius: 6px;
+  z-index: 3;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.movie-quality-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--text-secondary);
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.2rem 0.5rem;
+  border-radius: 6px;
+  z-index: 3;
+}
+
+.movie-card-info {
+  padding: 1rem;
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 0.4rem;
+  background: linear-gradient(to top, rgba(0,0,0,0.4), transparent);
+}
+
+.movie-card-info h3 {
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin: 0;
+  color: var(--text-primary);
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.movie-year {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.no-results {
+  text-align: center;
+  padding: 4rem 1rem;
+  color: var(--text-secondary);
+  font-size: 1.1rem;
+}
+
+/* ── Pagination ── */
+.movies-pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1.5rem;
+  margin-top: 1rem;
+}
+
+.movies-pagination button {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--text-secondary);
+  padding: 0.6rem 1.4rem;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.movies-pagination button:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+
+.movies-pagination button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.movies-pagination span {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   📺 MOVIE WATCH & DETAILS PAGE PREMIUM STYLES
+   ───────────────────────────────────────────────────────────── */
+
+.watch-loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 80vh;
+  gap: 1.5rem;
+}
+
+.watch-error-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 70vh;
+  text-align: center;
+  padding: 2rem;
+}
+
+.watch-error-container h2 {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+}
+
+.watch-error-container p {
+  color: var(--text-secondary);
+  margin-bottom: 2rem;
+}
+
+.watch-detail-container {
+  position: relative;
+  min-height: 100vh;
+}
+
+/* ── Blurred Hero Backdrop ── */
+.watch-hero-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 480px;
+  background-size: cover;
+  background-position: center 20%;
+  filter: blur(35px) brightness(0.4);
+  opacity: 0.45;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.watch-hero-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(to bottom, transparent, #0a0a0c);
+}
+
+.watch-main-layout {
+  position: relative;
+  z-index: 1;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
+}
+
+.watch-back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-secondary);
+  font-weight: 600;
+  margin-bottom: 2rem;
+  transition: color 0.2s ease;
+}
+
+.watch-back-link:hover {
+  color: #ff1a75;
+}
+
+/* ── Showcase Panel ── */
+.watch-meta-showcase {
+  display: flex;
+  gap: 3rem;
+  margin-bottom: 3.5rem;
+  align-items: flex-start;
+}
+
+.showcase-poster {
+  flex-shrink: 0;
+  width: 250px;
+  aspect-ratio: 2/3;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.showcase-poster img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.showcase-details {
+  flex-grow: 1;
+}
+
+.showcase-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+  margin-bottom: 1.2rem;
+  align-items: center;
+}
+
+.showcase-badges span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 0.4rem 0.8rem;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.badge-rating {
+  color: #f59e0b !important;
+  border-color: rgba(245, 158, 11, 0.3) !important;
+  background: rgba(245, 158, 11, 0.08) !important;
+}
+
+.badge-type {
+  background: rgba(255, 26, 117, 0.1) !important;
+  color: #ff1a75 !important;
+  border-color: rgba(255, 26, 117, 0.3) !important;
+}
+
+.showcase-details h1 {
+  font-size: 2.8rem;
+  font-weight: 800;
+  letter-spacing: -1px;
+  margin: 0 0 1.2rem 0;
+  line-height: 1.2;
+}
+
+.showcase-genres {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.genre-pill {
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 0.3rem 0.8rem;
+  border-radius: 20px;
+  color: var(--text-secondary);
+}
+
+.showcase-synopsis {
+  color: var(--text-secondary);
+  font-size: 1.05rem;
+  line-height: 1.6;
+  margin: 0 0 1.8rem 0;
+}
+
+.showcase-cast, .showcase-director {
+  font-size: 0.95rem;
+  margin-bottom: 0.5rem;
+  color: var(--text-secondary);
+}
+
+.showcase-cast strong, .showcase-director strong {
+  color: var(--text-primary);
+}
+
+/* ── Player Section ── */
+.watch-player-wrapper {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  margin-bottom: 3.5rem;
+}
+
+.watch-player-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.2rem 1.8rem;
+  background: rgba(255, 255, 255, 0.02);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.watch-player-header h2 {
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin: 0;
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 60vw;
+}
+
+.badge-quality {
+  font-size: 0.75rem;
+  font-weight: 700;
+  background: rgba(14, 165, 233, 0.1);
+  color: #0ea5e9;
+  border: 1px solid rgba(14, 165, 233, 0.3);
+  padding: 0.3rem 0.7rem;
+  border-radius: 8px;
+}
+
+.watch-iframe-container {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16/9;
+  background: #000;
+}
+
+.watch-iframe-container iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* ── Season & Episode Grid ── */
+.watch-series-selector {
+  background: rgba(255, 255, 255, 0.01);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  border-radius: 20px;
+  padding: 2rem;
+}
+
+.season-tabs-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+  margin-bottom: 2rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  padding-bottom: 1.2rem;
+}
+
+.season-tab-btn {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  color: var(--text-secondary);
+  font-weight: 600;
+  padding: 0.6rem 1.4rem;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.season-tab-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+
+.season-tab-btn.active {
+  background: rgba(255, 26, 117, 0.12);
+  border-color: rgba(255, 26, 117, 0.4);
+  color: #ff1a75;
+}
+
+.episode-selector-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1.5rem;
+}
+
+.episode-card-btn {
+  display: flex;
+  flex-direction: column;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 14px;
+  overflow: hidden;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  padding: 0;
+  outline: none;
+}
+
+.episode-card-btn:hover {
+  transform: translateY(-3px);
+  border-color: rgba(255, 26, 117, 0.3);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.episode-card-btn.active {
+  border-color: #ff1a75;
+  background: rgba(255, 26, 117, 0.08);
+  box-shadow: 0 4px 16px rgba(255, 26, 117, 0.15);
+}
+
+.ep-card-thumb {
+  position: relative;
+  aspect-ratio: 16/9;
+  width: 100%;
+  overflow: hidden;
+  background: #0f0f12;
+}
+
+.ep-card-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.episode-card-btn:hover .ep-card-thumb img {
+  transform: scale(1.04);
+}
+
+.ep-card-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.episode-card-btn:hover .ep-card-overlay {
+  opacity: 1;
+}
+
+.ep-card-overlay svg {
+  background: rgba(255, 26, 117, 0.9);
+  padding: 0.5rem;
+  border-radius: 50%;
+  box-shadow: 0 2px 8px rgba(255, 26, 117, 0.4);
+}
+
+.ep-card-num {
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
+  background: rgba(10, 10, 12, 0.85);
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.2rem 0.5rem;
+  border-radius: 5px;
+}
+
+.ep-card-details {
+  padding: 0.8rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  justify-content: center;
+  flex-grow: 1;
+}
+
+.ep-card-details h4 {
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin: 0;
+  color: var(--text-primary);
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.episode-card-btn.active .ep-card-details h4 {
+  color: #ff1a75;
+}
+
+.ep-card-date {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+/* ── Responsive Queries ── */
+@media (max-width: 992px) {
+  .hero-banner-content h1 {
+    font-size: 2.4rem;
+  }
+  .watch-meta-showcase {
+    flex-direction: column;
+    gap: 2rem;
+    align-items: center;
+    text-align: center;
+  }
+  .showcase-poster {
+    width: 200px;
+  }
+  .showcase-badges, .showcase-genres {
+    justify-content: center;
+  }
+  .showcase-details h1 {
+    font-size: 2.2rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .movies-hero-banner {
+    padding: 3rem 1.2rem;
+  }
+  .movies-search-bar {
+    flex-direction: column;
+    background: transparent;
+    border: none;
+    gap: 1rem;
+    padding: 0;
+  }
+  .movies-search-bar input {
+    background: rgba(10, 10, 12, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    width: 100%;
+    padding: 0.8rem 1rem;
+  }
+  .movies-search-bar button {
+    width: 100%;
+    padding: 0.8rem;
+  }
+  .movies-tab-btn {
+    padding: 0.7rem 1.2rem;
+    font-size: 0.9rem;
+  }
+  .movies-grid {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 1rem;
+  }
+  .movie-card-info {
+    padding: 0.7rem;
+  }
+  .movie-card-info h3 {
+    font-size: 0.85rem;
+  }
+  .watch-series-selector {
+    padding: 1.2rem;
+  }
+  .episode-selector-grid {
+    grid-template-columns: 1fr;
+  }
+}

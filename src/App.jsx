@@ -4,6 +4,8 @@ import Home from './pages/Home';
 import Search from './pages/Search';
 import AnimeDetails from './pages/AnimeDetails';
 import MangaDetails from './pages/MangaDetails';
+import DramasMovies from './pages/DramasMovies';
+import MovieWatch from './pages/MovieWatch';
 import About from './pages/About';
 import { Contact, FAQ, Terms, Privacy, DMCA, RequestAnime } from './pages/StaticPages';
 
@@ -41,6 +43,12 @@ function App() {
             Mangas
           </NavLink>
           <NavLink
+            to="/dramas-movies"
+            className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}
+          >
+            Dramas & Movies
+          </NavLink>
+          <NavLink
             to="/search?trending=true"
             className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}
           >
@@ -68,6 +76,8 @@ function App() {
           <Route path="/search" element={<Search />} />
           <Route path="/anime/:id" element={<AnimeDetails />} />
           <Route path="/manga/:id" element={<MangaDetails />} />
+          <Route path="/dramas-movies" element={<DramasMovies />} />
+          <Route path="/watch/:type/:id" element={<MovieWatch />} />
           <Route path="/about" element={<About />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/faq" element={<FAQ />} />
