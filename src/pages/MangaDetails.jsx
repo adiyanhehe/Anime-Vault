@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { fetchAnimeById, stripHtml } from '../api/anilist';
 import { searchMangaDex, fetchMangaChapters, fetchChapterPages } from '../api/manga';
-import { BookOpen, Calendar, Star, Users, ArrowLeft, ArrowRight, X, Loader2, Heart } from 'lucide-react';
+import { BookOpen, Calendar, Star, Users, ArrowLeft, ArrowRight, X, Loader2, Heart, ExternalLink } from 'lucide-react';
 
 function safeTitle(title) {
   if (!title) return 'Unknown Title';
@@ -254,7 +254,34 @@ function MangaDetails() {
                 ))}
               </div>
             ) : (
-              <p>No English chapters found on MangaDex for this title.</p>
+              <div className="official-links-container">
+                <p style={{ marginBottom: '1.5rem', color: 'var(--text-secondary)' }}>
+                  This manga is officially licensed. Community chapters are unavailable due to DMCA, but you can read it on the official platforms below:
+                </p>
+                {manga.externalLinks && manga.externalLinks.length > 0 ? (
+                  <div className="streaming-links-sidebar" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '1rem' }}>
+                    {manga.externalLinks
+                      .filter(link => ['MANGA Plus', 'VIZ', 'Shonen Jump Plus', 'Mangas.io', 'Official Site'].includes(link.site))
+                      .map((link, i) => (
+                        <a key={i} href={link.url} target="_blank" rel="noopener noreferrer" className="streaming-sidebar-item">
+                          <span style={{ fontWeight: 600, color: '#fff' }}>{link.site}</span>
+                          <ExternalLink size={16} />
+                        </a>
+                      ))}
+                    {/* Fallback if none of the specific sites match but there are external links */}
+                    {manga.externalLinks.filter(link => ['MANGA Plus', 'VIZ', 'Shonen Jump Plus', 'Mangas.io', 'Official Site'].includes(link.site)).length === 0 && 
+                      manga.externalLinks.map((link, i) => (
+                        <a key={i} href={link.url} target="_blank" rel="noopener noreferrer" className="streaming-sidebar-item">
+                          <span style={{ fontWeight: 600, color: '#fff' }}>{link.site}</span>
+                          <ExternalLink size={16} />
+                        </a>
+                      ))
+                    }
+                  </div>
+                ) : (
+                  <p>No English chapters or official links found for this title.</p>
+                )}
+              </div>
             )}
           </div>
         </div>
