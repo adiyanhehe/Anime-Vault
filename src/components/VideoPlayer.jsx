@@ -30,6 +30,21 @@ function VideoPlayer({ sources, poster, title, embedUrl, isZen }) {
   }, [sources]);
 
   if (embedUrl) {
+    const isAniwave = embedUrl.includes('aniwaves.ru');
+
+    if (isAniwave) {
+      return (
+        <div className="video-player-error" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '2rem' }}>
+          <Settings size={48} style={{ marginBottom: '1rem', color: 'var(--brand-color)' }} />
+          <h3>AniWave Cannot Be Embedded</h3>
+          <p style={{ color: 'var(--text-muted)', maxWidth: '400px', marginTop: '0.5rem' }}>
+            AniWave's video servers (like echovideo) strictly block being embedded inside other websites. 
+            To use AniWave, you must click the pink <strong>"Open Player in New Tab"</strong> button below.
+          </p>
+        </div>
+      );
+    }
+
     return (
       <div className={`video-player-wrapper-v2 embed-container ${isZen ? 'zen-active' : ''}`}>
         <iframe
