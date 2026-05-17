@@ -4601,3 +4601,221 @@ select {
     grid-template-columns: 1fr;
   }
 }
+
+/* Desktop definitions for movie & loading grids */
+.trending-grid-v2,
+.loading-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 1.5rem;
+}
+
+/* ============================================================
+   PREMIUM MOBILE BOTTOM NAVIGATION & RESPONSIVE REFINEMENTS
+   ============================================================ */
+
+.bottom-nav {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 68px;
+  background: rgba(3, 15, 22, 0.95);
+  backdrop-filter: blur(25px);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  z-index: 9999;
+  justify-content: space-around;
+  align-items: center;
+  padding: 0 1rem;
+  box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.5);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.bottom-nav-link {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-size: 0.72rem;
+  font-weight: 700;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  flex: 1;
+  height: 100%;
+}
+
+.bottom-nav-link svg {
+  color: var(--text-tertiary);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.bottom-nav-link:hover {
+  color: #fff;
+}
+
+.bottom-nav-link:hover svg {
+  color: #fff;
+  transform: translateY(-2px);
+}
+
+.bottom-nav-link.active {
+  color: var(--brand-color);
+}
+
+.bottom-nav-link.active svg {
+  color: var(--brand-color);
+  transform: translateY(-2px);
+  filter: drop-shadow(0 0 8px rgba(255, 26, 117, 0.5));
+}
+
+@media (max-width: 768px) {
+  .bottom-nav {
+    display: flex;
+  }
+
+  .app-shell {
+    padding-bottom: 74px !important;
+  }
+
+  /* Hide top main navigation to prevent header wrapping */
+  .topnav {
+    display: none !important;
+  }
+
+  .topbar-actions {
+    display: none !important;
+  }
+
+  .topbar {
+    justify-content: center !important;
+    padding: 0.8rem 1rem !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  }
+
+  .made-by-v2 {
+    display: none !important;
+  }
+
+  /* Horizontal swipeable genre pills on mobile - YouTube/Netflix style */
+  .genre-list-v2 {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    padding: 0.25rem 0.5rem 0.75rem 0.5rem !important;
+    gap: 0.6rem !important;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none; /* Firefox */
+  }
+
+  .genre-list-v2::-webkit-scrollbar {
+    display: none; /* Chrome, Safari */
+  }
+
+  .genre-pill-v2 {
+    flex-shrink: 0 !important;
+    padding: 0.5rem 1rem !important;
+    font-size: 0.8rem !important;
+    border-radius: 20px !important;
+    background: rgba(255, 255, 255, 0.04) !important;
+  }
+
+  /* Clean full bleed layouts on mobile */
+  .content {
+    padding: 1rem 1rem 3rem 1rem !important;
+  }
+
+  .search-page-v2 {
+    gap: 1.5rem !important;
+    padding: 0.5rem 0 !important;
+  }
+
+  /* Compact button stacks for mobile details pages */
+  .detail-actions-v2,
+  .hero-btns-v2 {
+    flex-direction: column !important;
+    width: 100% !important;
+    gap: 0.75rem !important;
+  }
+
+  .detail-actions-v2 button,
+  .detail-actions-v2 a,
+  .hero-btns-v2 button,
+  .hero-btns-v2 a {
+    width: 100% !important;
+    justify-content: center !important;
+    padding: 0.8rem 1.5rem !important;
+  }
+}
+
+@media (max-width: 600px) {
+  /* Enforce beautiful 2-column card grid on mobile viewports */
+  .anime-grid-v2,
+  .results-grid-v2,
+  .trending-grid-v2,
+  .movies-grid {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)) !important;
+    gap: 1rem !important;
+  }
+  
+  /* Details Hero banner on 375px viewports */
+  .detail-hero-v2 {
+    height: auto !important;
+    min-height: unset !important;
+    border-radius: 16px !important;
+    margin-bottom: 2rem !important;
+  }
+  
+  .detail-hero-content-v2 {
+    padding: 1.5rem 1rem !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    text-align: center !important;
+  }
+  
+  .detail-poster-v2 {
+    width: 130px !important;
+    min-width: 130px !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6) !important;
+  }
+}
+
+/* Local HLS Player Premium Animations & Micro-Interactions */
+.spin-icon {
+  animation: spin 3s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(255, 26, 117, 0.7);
+  }
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 8px rgba(255, 26, 117, 0);
+  }
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(255, 26, 117, 0);
+  }
+}
+
+

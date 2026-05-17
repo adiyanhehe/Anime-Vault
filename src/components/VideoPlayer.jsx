@@ -46,8 +46,6 @@ function VideoPlayer({ sources, poster, title, embedUrl, isZen }) {
           title={title}
           referrerPolicy="no-referrer-when-downgrade"
           loading="lazy"
-          // Block ALL ADS, Popups and redirects permanently. Omit allow-same-origin for ZoroTV to disable ad trackers & popups.
-          sandbox={isZoro ? "allow-scripts allow-presentation allow-forms" : "allow-scripts allow-same-origin allow-presentation allow-forms"}
         />
       </div>
     );

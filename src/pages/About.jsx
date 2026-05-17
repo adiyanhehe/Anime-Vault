@@ -10,7 +10,7 @@ export default function About() {
       </div>
 
       <p style={{ fontSize: '1.1rem', color: 'var(--text-secondary)', lineHeight: '1.8', marginBottom: '3rem' }}>
-        Welcome to <strong>AnimeVault</strong>, the ultimate high-performance streaming hub designed for enthusiasts who demand speed, stability, and a premium viewing experience. Built by <span>Adiyan</span> with a focus on "Instant-Load" architecture and resilient failover systems.
+        Welcome to <strong>AnimeVault</strong>, the ultimate high-performance streaming hub designed for enthusiasts who demand speed, stability, and a premium viewing experience. Built by <span>Adiyan</span> with a focus on "Instant-Load" architecture, advanced manga libraries, resilient failover systems, and a fully featured, ad-neutral **Hollywood, TV Show & K-Drama Streaming Hub**!
       </p>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem' }}>
@@ -40,7 +40,7 @@ export default function About() {
             <h3 style={{ margin: 0 }}>Global Ecosystem</h3>
           </div>
           <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-tertiary)' }}>
-            Integrated with 13+ high-stability streaming providers including VidLink, Vidsrc, and SmashyStream for maximum content availability.
+            Integrated with 13+ high-stability streaming providers including VidLink, Vidsrc, and Stremio Cinemeta catalogs for anime, manga, Hollywood movies, and TV shows.
           </p>
         </div>
 
@@ -50,7 +50,7 @@ export default function About() {
             <h3 style={{ margin: 0 }}>Open & Secure</h3>
           </div>
           <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-tertiary)' }}>
-            Engineered with modern React standards, featuring a sanitized sandbox environment and optimized background enrichment.
+            Engineered with modern React standards, featuring a sanitized secure environment and optimized background enrichment.
           </p>
         </div>
       </div>

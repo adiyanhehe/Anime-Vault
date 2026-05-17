@@ -39,6 +39,7 @@ function Home() {
   const [selectedYear, setSelectedYear] = useState(2024);
 
   const [favorites, setFavorites] = useState(() => JSON.parse(localStorage.getItem('animevault_favorites') || '[]'));
+  const [activeSlide, setActiveSlide] = useState(0);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -87,7 +88,15 @@ function Home() {
     loadSeasonal();
   }, [selectedSeason, selectedYear]);
 
-  const heroAnime = animeList[0] || null;
+  // Slideshow interval timer
+  useEffect(() => {
+    if (animeList.length === 0) return;
+    const interval = setInterval(() => {
+      setActiveSlide(prev => (prev + 1) % Math.min(5, animeList.length));
+    }, 6000);
+    return () => clearInterval(interval);
+  }, [animeList]);
+
   const trending = animeList.slice(0, 12);
 
   function toggleFavorite(anime) {
@@ -109,35 +118,103 @@ function Home() {
 
   return (
     <section className="home-v2">
-      {/* Hero Section */}
-      <div className="hero-v2">
-        <div className="hero-img-wrapper">
-          <img src={getBanner(heroAnime)} alt={getTitle(heroAnime)} />
-          <div className="hero-overlay-v2" />
-        </div>
-        <div className="hero-content-v2">
-          <div className="hero-info-v2">
-            <span className="hero-rank"><Sparkles size={14} /> #1 Trending</span>
-            <h1 className="hero-title-v2">{getTitle(heroAnime)}</h1>
-            <div className="hero-meta-v2">
-              <span><Calendar size={16} /> {heroAnime?.seasonYear}</span>
-              <span><Star size={16} /> {heroAnime?.averageScore}%</span>
-              <span>{heroAnime?.format}</span>
-            </div>
-            <p className="hero-desc-v2">
-              {heroAnime?.description?.replace(/<[^>]+>/g, '').slice(0, 220)}...
-            </p>
-            <div className="hero-btns-v2">
-              <button className="btn-play-v2" onClick={() => navigate(`/anime/${heroAnime.id}`)}>
-                <Play size={20} fill="white" /> Watch Now
-              </button>
-              <button className="btn-info-v2" onClick={() => navigate(`/anime/${heroAnime.id}`)}>
-                <Info size={20} /> Details
-              </button>
-            </div>
+      {/* Immersive Hero Slideshow Carousel (Flashcards) */}
+      {animeList.length > 0 && (
+        <div className="hero-v2 hero-carousel-v2" style={{ position: 'relative', overflow: 'hidden', height: '520px' }}>
+          {animeList.slice(0, 5).map((anime, index) => {
+            const isActive = index === activeSlide;
+            return (
+              <div
+                key={anime.id}
+                className={`carousel-slide ${isActive ? 'active' : ''}`}
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: '100%',
+                  height: '100%',
+                  opacity: isActive ? 1 : 0,
+                  visibility: isActive ? 'visible' : 'hidden',
+                  transition: 'opacity 0.8s ease-in-out, visibility 0.8s ease-in-out',
+                  zIndex: isActive ? 2 : 1
+                }}
+              >
+                <div className="hero-img-wrapper" style={{ width: '100%', height: '100%' }}>
+                  <img src={getBanner(anime)} alt={getTitle(anime)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  <div className="hero-overlay-v2" />
+                </div>
+                <div className="hero-content-v2" style={{ zIndex: 5 }}>
+                  <div className="hero-info-v2" style={{
+                    transform: isActive ? 'translateY(0)' : 'translateY(20px)',
+                    opacity: isActive ? 1 : 0,
+                    transition: 'all 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.2s'
+                  }}>
+                    <span className="hero-rank" style={{
+                      color: 'var(--brand-color)',
+                      background: 'rgba(0,0,0,0.6)',
+                      border: '1px solid var(--brand-color)',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      width: 'fit-content',
+                      padding: '4px 12px',
+                      borderRadius: '20px',
+                      fontSize: '0.75rem',
+                      fontWeight: 'bold',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.05em'
+                    }}><Sparkles size={14} /> #{index + 1} Trending</span>
+                    <h1 className="hero-title-v2">{getTitle(anime)}</h1>
+                    <div className="hero-meta-v2">
+                      <span><Calendar size={16} /> {anime?.seasonYear}</span>
+                      <span><Star size={16} /> {anime?.averageScore}%</span>
+                      <span>{anime?.format}</span>
+                    </div>
+                    <p className="hero-desc-v2">
+                      {anime?.description?.replace(/<[^>]+>/g, '').slice(0, 220)}...
+                    </p>
+                    <div className="hero-btns-v2">
+                      <button className="btn-play-v2" onClick={() => navigate(`/anime/${anime.id}`)}>
+                        <Play size={20} fill="black" /> Watch Now
+                      </button>
+                      <button className="btn-info-v2" onClick={() => navigate(`/anime/${anime.id}`)}>
+                        <Info size={20} /> Details
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+
+          {/* Carousel Slide Indicators / Dots */}
+          <div className="carousel-dots" style={{
+            position: 'absolute',
+            bottom: '25px',
+            right: '40px',
+            zIndex: 10,
+            display: 'flex',
+            gap: '8px'
+          }}>
+            {animeList.slice(0, 5).map((_, index) => (
+              <button
+                key={index}
+                onClick={() => setActiveSlide(index)}
+                style={{
+                  width: index === activeSlide ? '30px' : '10px',
+                  height: '10px',
+                  borderRadius: '5px',
+                  border: 'none',
+                  background: index === activeSlide ? 'var(--brand-color)' : 'rgba(255, 255, 255, 0.3)',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease',
+                  boxShadow: index === activeSlide ? '0 0 10px var(--brand-color)' : 'none'
+                }}
+              />
+            ))}
           </div>
         </div>
-      </div>
+      )}
 
       <div className="home-main-v2">
         {/* Security & Updates */}
