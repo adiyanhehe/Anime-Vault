@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { Play, Star, Heart } from 'lucide-react';
 
 function AnimeCard({ anime, isFavorite, onToggleFavorite, linkPrefix = '/anime/' }) {
-  const title = anime.title?.romaji || anime.title?.english || anime.title?.native || 'Unknown Title';
+  const title = anime.title?.english || anime.title?.romaji || anime.title?.native || 'Unknown Title';
   const score = anime.averageScore || anime.meanScore;
   const year = anime.seasonYear;
   const episodes = anime.episodes;

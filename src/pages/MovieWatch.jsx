@@ -1,11 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Star, Clock, Calendar, Film, Play, AlertTriangle, Settings, Tv } from 'lucide-react';
+import { ArrowLeft, Star, Clock, Calendar, Film, Play, AlertTriangle, Settings, Tv, Download, Heart } from 'lucide-react';
 import { fetchMediaMeta } from '../api/movies';
-import Hls from 'hls.js';
+import CommentsSection from '../components/CommentsSection';
+import { useUser } from '../api/UserContext';
 
 function MovieWatch() {
   const { type, id } = useParams();
+  const { user, addToHistory, updateContinueWatching, toggleLike, isLiked } = useUser();
   const [meta, setMeta] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeSeason, setActiveSeason] = useState(null);
@@ -13,273 +15,77 @@ function MovieWatch() {
   const [activeServer, setActiveServer] = useState('autoembed');
   const [playerSrc, setPlayerSrc] = useState('');
 
-  // Custom Local HLS Player states
-  const [customHlsUrl, setCustomHlsUrl] = useState('');
-  const [showPlayerSettings, setShowPlayerSettings] = useState(false);
-  const [hlsStatus, setHlsStatus] = useState('idle');
-  const [hlsResolvedUrl, setHlsResolvedUrl] = useState('');
-  const videoRef = useRef(null);
-  const hlsRef = useRef(null);
 
-  const CORS_PROXIES = [
-    'https://api.allorigins.win/raw?url=',
-    'https://corsproxy.io/?',
-    'https://thingproxy.freeboard.io/fetch/',
-    'https://api.codetabs.com/v1/proxy?quest='
-  ];
+  function getPlayerUrl(server, mediaType, id, seasonNum, episodeNum) {
+    const isSeries = mediaType === 'tv' || mediaType === 'series';
+    const s = seasonNum || 1;
+    const e = episodeNum || 1;
+    const isImdb = id.startsWith('tt');
+    const param = isImdb ? `imdb=${id}` : `tmdb=${id}`;
 
-  async function fetchViaProxy(url) {
-    for (const proxy of CORS_PROXIES) {
-      try {
-        const finalUrl = proxy.includes('corsproxy.io') 
-          ? proxy + url 
-          : proxy + encodeURIComponent(url);
-        const res = await fetch(finalUrl, {
-          headers: {
-            'X-Requested-With': 'XMLHttpRequest',
-            'Referer': 'https://vidlink.pro/',
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-          },
-          signal: AbortSignal.timeout(10000)
-        });
-        if (res.ok) {
-          const text = await res.text();
-          if (text && text.length > 100) return text;
-        }
-      } catch (e) {}
+    if (server === 'autoembed') {
+      return isSeries
+        ? `https://vidsrc-embed.ru/embed/tv?${param}&season=${s}&episode=${e}&autoplay=1&autonext=1`
+        : `https://vidsrc-embed.ru/embed/movie?${param}&autoplay=1`;
     }
-    throw new Error('fetchViaProxy failed');
-  }
-
-  /**
-   * Primary: Extract m3u8 from VidLink's own page
-   * VidLink works perfectly as an iframe. We try to fetch their page
-   * and extract the direct video source URL.
-   */
-  async function resolveFromVidLink(imdbId, isTv, season, episode) {
-    const s = season || 1;
-    const e = episode || 1;
-
-    const urls = isTv
-      ? [
-          `https://vidlink.pro/tv/${imdbId}/${s}/${e}`,
-          `https://vidlink.pro/api/tv/${imdbId}/${s}/${e}`
-        ]
-      : [
-          `https://vidlink.pro/movie/${imdbId}`,
-          `https://vidlink.pro/api/movie/${imdbId}`
-        ];
-
-    for (const url of urls) {
-      try {
-        console.log('[HLS] VidLink fetch:', url);
-        const html = await fetchViaProxy(url);
-
-        // Look for any m3u8 URL in the response
-        const m3u8Match = html.match(/https?:\/\/[^"'\s<>]+\.m3u8[^"'\s<>]*/i);
-        if (m3u8Match) {
-          const found = m3u8Match[0].replace(/&/g, '&');
-          console.log('[HLS] Found VidLink m3u8:', found);
-          return found;
-        }
-
-        // Look for "file" or "src" or "url" in JSON responses
-        const jsonMatch = html.match(/"file"\s*:\s*"([^"]+)"/) 
-          || html.match(/"src"\s*:\s*"([^"]+)"/) 
-          || html.match(/"url"\s*:\s*"([^"]+)"/);
-        if (jsonMatch && jsonMatch[1].includes('.m3u8')) {
-          const found = jsonMatch[1].replace(/&/g, '&');
-          console.log('[HLS] Found VidLink file:', found);
-          return found;
-        }
-
-        // Look for iframe and follow it
-        const iframeMatch = html.match(/<iframe[^>]*src=["']([^"']+)["'][^>]*>/i);
-        if (iframeMatch) {
-          let playerUrl = iframeMatch[1];
-          if (playerUrl.startsWith('//')) playerUrl = 'https:' + playerUrl;
-          else if (playerUrl.startsWith('/')) playerUrl = 'https://vidlink.pro' + playerUrl;
-          
-          const playerHtml = await fetchViaProxy(playerUrl);
-          const playerM3u8 = playerHtml.match(/https?:\/\/[^"'\s<>]+\.m3u8[^"'\s<>]*/i);
-          if (playerM3u8) {
-            const found = playerM3u8[0].replace(/&/g, '&');
-            console.log('[HLS] Found iframe m3u8:', found);
-            return found;
-          }
-        }
-      } catch (e) {
-        console.log('[HLS] VidLink attempt failed:', url, e.message);
-      }
+    if (server === '2embed') {
+      return isSeries
+        ? `https://www.2embed.cc/embedtv/${id}?s=${s}&e=${e}`
+        : `https://www.2embed.cc/embed/${id}`;
     }
-    throw new Error('VidLink resolve failed');
-  }
-
-  /**
-   * Secondary: Try 2Embed/CloudNestra XPS mirror
-   */
-  async function resolveFrom2EmbedXps(imdbId, isTv, season, episode) {
-    const s = season || 1;
-    const e = episode || 1;
-
-    const domains = {
-      v1: 'neonhorizonworkshops.com',
-      v2: 'wanderlynest.com',
-      v3: 'orchidpixelgardens.com',
-      v4: 'cloudnestra.com',
-      v5: 'cdnstr.com'
-    };
-
-    const embedUrls = isTv
-      ? [
-          `https://www.2embed.cc/embedtv/${imdbId}&s=${s}&e=${e}`,
-          `https://vidsrc-embed.ru/embedtv/${imdbId}&s=${s}&e=${e}`
-        ]
-      : [
-          `https://www.2embed.cc/embed/${imdbId}`,
-          `https://vidsrc-embed.ru/embed/${imdbId}`
-        ];
-
-    for (const embedUrl of embedUrls) {
-      try {
-        console.log('[HLS] 2Embed fetch:', embedUrl);
-        const html = await fetchViaProxy(embedUrl);
-
-        // Direct m3u8 check
-        const directM3u8 = html.match(/https?:\/\/[^"'\s<>]+\.m3u8[^"'\s<>]*/i);
-        if (directM3u8) return directM3u8[0].replace(/&/g, '&');
-
-        // Find cloudnestra RCP hash
-        const rcpParts = html.match(/cloudnestra\.com\/rcp\/([A-Za-z0-9+/=_-]+)/i);
-        if (!rcpParts) continue;
-
-        const rcpHash = rcpParts[1];
-        console.log('[HLS] RCP hash:', rcpHash);
-
-        const proHtml = await fetchViaProxy(`https://cloudnestra.com/prorcp/${rcpHash}`);
-        const fileMatch = proHtml.match(/file:\s*["']([^"']+?)["']/i);
-        if (!fileMatch) continue;
-
-        const mirrors = fileMatch[1].split(' or ');
-        
-        function resolve(url) {
-          return url.replace(/\{(v[1-5])\}/g, (_, k) => domains[k] || 'cloudnestra.com');
-        }
-
-        // Pick XPS mirror (cdnstr contains app2)
-        for (const m of mirrors) {
-          const r = resolve(m.trim());
-          if (r.includes('cdnstr') || r.includes('app2') || r.includes('v5')) {
-            console.log('[HLS] XPS MIRROR:', r);
-            return r;
-          }
-        }
-        // Fallback to last mirror
-        if (mirrors.length > 0) {
-          const r = resolve(mirrors[mirrors.length - 1].trim());
-          console.log('[HLS] Last mirror:', r);
-          return r;
-        }
-      } catch (e) {
-        console.log('[HLS] 2Embed failed:', e.message);
-      }
+    if (server === 'multiembed') {
+      const tmdbFlag = isImdb ? '0' : '1';
+      return isSeries
+        ? `https://multiembed.mov/?video_id=${id}&tmdb=${tmdbFlag}&s=${s}&e=${e}`
+        : `https://multiembed.mov/?video_id=${id}&tmdb=${tmdbFlag}`;
     }
-    throw new Error('2Embed XPS failed');
-  }
-
-  async function resolveRealHlsStream(imdbId, mediaType, season, episode) {
-    setHlsStatus('resolving');
-    const isTv = mediaType === 'tv' || mediaType === 'series';
-    const s = season || 1;
-    const e = episode || 1;
-
-    console.log(`[HLS] ⚡ Resolving ${imdbId} S${s}E${e}`);
-
-    // Try VidLink first (most likely to work), then 2Embed XPS
-    const strategies = [
-      { name: 'VidLink', fn: () => resolveFromVidLink(imdbId, isTv, s, e) },
-      { name: '2Embed XPS', fn: () => resolveFrom2EmbedXps(imdbId, isTv, s, e) }
-    ];
-
-    for (const { name, fn } of strategies) {
-      try {
-        console.log(`[HLS] ▶ ${name}`);
-        const url = await fn();
-        if (url) {
-          setHlsResolvedUrl(url);
-          setCustomHlsUrl(url);
-          setHlsStatus('resolved');
-          console.log(`[HLS] ✅ ${name}:`, url);
-          return url;
-        }
-      } catch (e) {
-        console.log(`[HLS] ✗ ${name}: ${e.message}`);
-      }
-    }
-
-    console.error('[HLS] ❌ All strategies failed');
-    setHlsStatus('failed');
-    // Auto-switch to Server 1 (VidLink) after 2.5s
-    setTimeout(() => {
-      setActiveServer(prev => prev === 'local_hls' ? 'vidlink' : prev);
-    }, 2500);
-    return null;
+    return '';
   }
 
   useEffect(() => {
     loadMeta();
-  }, [type, id]);
+  }, [id, type]);
 
   useEffect(() => {
-    if (meta) {
-      const epNum = activeEpisode ? activeEpisode.episode : 1;
-      setPlayerSrc(getPlayerUrl(activeServer, type, id, activeSeason, epNum));
-
-      if (activeServer === 'local_hls') {
-        setHlsStatus('idle');
-        setHlsResolvedUrl('');
-        setCustomHlsUrl('');
-        setTimeout(() => resolveRealHlsStream(id, type, activeSeason, epNum), 50);
-      }
+    const url = getPlayerUrl(activeServer, type, id, activeSeason, activeEpisode?.episode);
+    if (playerSrc !== url) {
+      setPlayerSrc(url);
     }
-  }, [activeServer, activeSeason, activeEpisode, meta]);
+  }, [activeServer, activeEpisode, id, type, activeSeason]);
 
+  // Sync watch history to Neon Postgres when user logs in or meta loads
   useEffect(() => {
-    return () => {
-      if (hlsRef.current) { hlsRef.current.destroy(); hlsRef.current = null; }
-    };
-  }, []);
-
-  useEffect(() => {
-    if (hlsRef.current) { hlsRef.current.destroy(); hlsRef.current = null; }
-    if (activeServer === 'local_hls' && videoRef.current && customHlsUrl) {
-      const video = videoRef.current;
-      if (video.canPlayType('application/vnd.apple.mpegurl')) {
-        video.src = customHlsUrl;
-      } else if (Hls.isSupported()) {
-        const hls = new Hls({ maxMaxBufferLength: 30, enableWorker: true, debug: false });
-        hlsRef.current = hls;
-        hls.loadSource(customHlsUrl);
-        hls.attachMedia(video);
-        hls.on(Hls.Events.ERROR, (_e, d) => {
-          if (d.fatal && d.response?.code === 0) setHlsStatus('failed');
-        });
-      }
+    if (user && meta) {
+      addToHistory(id, type, meta.name || meta.title, meta.poster_path ? `https://image.tmdb.org/t/p/w500${meta.poster_path}` : '');
     }
-  }, [activeServer, customHlsUrl]);
+  }, [user, meta, id, type]);
 
-  function getPlayerUrl(server, mediaType, imdbId, seasonNum, episodeNum) {
-    const isSeries = mediaType === 'tv' || mediaType === 'series';
-    const s = seasonNum || 1;
-    const e = episodeNum || 1;
-    if (server === 'autoembed') return isSeries ? `https://www.2embed.cc/embedtv/${imdbId}&s=${s}&e=${e}` : `https://www.2embed.cc/embed/${imdbId}`;
-    if (server === 'vidlink') return isSeries ? `https://vidlink.pro/tv/${imdbId}/${s}/${e}` : `https://vidlink.pro/movie/${imdbId}`;
-    return '';
-  }
+  // Sync Continue Watching to Neon Postgres when active season/episode changes
+  useEffect(() => {
+    if (user && meta) {
+      const poster = meta.poster_path ? `https://image.tmdb.org/t/p/w500${meta.poster_path}` : '';
+      updateContinueWatching(
+        id, 
+        type, 
+        meta.name || meta.title, 
+        poster, 
+        activeSeason || 1, 
+        activeEpisode?.episode || 1,
+        0, // progress not tracked on standard embedding
+        0  // duration not tracked on standard embedding
+      );
+    }
+  }, [user, meta, activeSeason, activeEpisode]);
 
   async function loadMeta() {
     setLoading(true);
     const data = await fetchMediaMeta(type, id);
+    if (data && data.videos) {
+      data.videos = data.videos.map(v => ({
+        ...v,
+        episode: v.number !== undefined ? v.number : v.episode
+      }));
+    }
     setMeta(data);
     if (data && (type === 'tv' || type === 'series')) {
       const seasons = {};
@@ -300,20 +106,13 @@ function MovieWatch() {
     document.getElementById('watch-player-iframe')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
 
-  function retryResolver() {
-    const epNum = activeEpisode?.episode || 1;
-    setHlsStatus('idle');
-    setHlsResolvedUrl('');
-    setCustomHlsUrl('');
-    setTimeout(() => resolveRealHlsStream(id, type, activeSeason, epNum), 50);
-  }
 
-  if (loading) return <div className="watch-loading-container"><div className="spinner"/><p>Loading media credentials...</p></div>;
+  if (loading) return <div className="watch-loading-container"><div className="spinner" /><p>Loading media credentials...</p></div>;
   if (!meta) return (
     <div className="watch-error-container">
-      <AlertTriangle size={48} className="error-icon"/>
+      <AlertTriangle size={48} className="error-icon" />
       <h2>Failed to Load Media</h2>
-      <Link to="/dramas-movies" className="btn-back"><ArrowLeft size={16}/> Back</Link>
+      <Link to="/dramas-movies" className="btn-back"><ArrowLeft size={16} /> Back</Link>
     </div>
   );
 
@@ -324,25 +123,58 @@ function MovieWatch() {
   }
   const seasonNumbers = Object.keys(seasonsMap).map(Number).sort();
 
+  const isImdb = id.startsWith('tt');
+  const sNum = activeSeason || 1;
+  const eNum = activeEpisode?.episode || 1;
+  const downloadUrls = {
+    twoembed: isSeries
+      ? `https://www.2embed.cc/download/tv/${id}/${sNum}/${eNum}`
+      : `https://www.2embed.cc/download/movie/${id}`,
+    vidlink: isSeries
+      ? `https://vidlink.pro/download/tv/${id}/${sNum}/${eNum}?primaryColor=ff1a75`
+      : `https://vidlink.pro/download/movie/${id}?primaryColor=ff1a75`
+  };
+
   return (
     <div className="watch-detail-container">
-      <div className="watch-hero-bg" style={{ backgroundImage: `url(${meta.background})` }}><div className="watch-hero-overlay"/></div>
+      <div className="watch-hero-bg" style={{ backgroundImage: `url(${meta.background})` }}><div className="watch-hero-overlay" /></div>
       <div className="watch-main-layout">
-        <Link to="/dramas-movies" className="watch-back-link"><ArrowLeft size={18}/> Back to Movies & Dramas</Link>
+        <Link to="/dramas-movies" className="watch-back-link"><ArrowLeft size={18} /> Back to Movies & Dramas</Link>
         <div className="watch-meta-showcase">
           <div className="showcase-poster">
             <img src={meta.poster || `https://live.metahub.space/poster/medium/${id}/img`} alt={meta.name}
-              onError={(e) => { e.target.onerror = null; e.target.src = 'https://images.unsplash.com/photo-1598899134739-24c46f58b8c0?q=80&w=300&auto=format&fit=crop'; }}/>
+              onError={(e) => { e.target.onerror = null; e.target.src = 'https://images.unsplash.com/photo-1598899134739-24c46f58b8c0?q=80&w=300&auto=format&fit=crop'; }} />
           </div>
           <div className="showcase-details">
             <div className="showcase-badges">
-              {meta.imdbRating && <span className="badge-rating"><Star size={14} fill="currentColor"/> {meta.imdbRating}</span>}
-              {meta.runtime && <span className="badge-runtime"><Clock size={14}/> {meta.runtime}</span>}
-              {meta.releaseInfo && <span className="badge-year"><Calendar size={14}/> {meta.releaseInfo}</span>}
+              {meta.imdbRating && <span className="badge-rating"><Star size={14} fill="currentColor" /> {meta.imdbRating}</span>}
+              {meta.runtime && <span className="badge-runtime"><Clock size={14} /> {meta.runtime}</span>}
+              {meta.releaseInfo && <span className="badge-year"><Calendar size={14} /> {meta.releaseInfo}</span>}
               <span className="badge-type">{isSeries ? 'TV SERIES' : 'MOVIE'}</span>
             </div>
-            <h1>{meta.name}</h1>
-            {meta.genres?.length > 0 && <div className="showcase-genres">{meta.genres.map(g => <span key={g} className="genre-pill">{g}</span>)}</div>}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap', marginBottom: '12px' }}>
+              <h1 style={{ margin: 0 }}>{meta.name}</h1>
+              <button 
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: '8px',
+                  padding: '6px 14px', fontSize: '0.8rem', fontWeight: '800', borderRadius: '10px',
+                  color: isLiked(id, type) ? '#ff1a75' : 'var(--text-secondary)',
+                  borderColor: isLiked(id, type) ? '#ff1a75' : 'var(--glass-border)',
+                  background: isLiked(id, type) ? 'rgba(255, 26, 117, 0.1)' : 'var(--glass)',
+                  border: '1px solid',
+                  boxShadow: isLiked(id, type) ? '0 0 10px rgba(255, 26, 117, 0.2)' : 'none',
+                  transition: 'all 0.2s ease', cursor: 'pointer'
+                }}
+                onClick={() => {
+                  const poster = meta.poster_path ? `https://image.tmdb.org/t/p/w500${meta.poster_path}` : '';
+                  toggleLike(id, type, meta.name || meta.title, poster);
+                }}
+              >
+                <Heart size={16} fill={isLiked(id, type) ? '#ff1a75' : 'none'} />
+                {isLiked(id, type) ? 'Liked' : 'Like'}
+              </button>
+            </div>
+            {meta.genres?.length > 0 && <div className="showcase-genres" style={{ marginTop: 0 }}>{meta.genres.map(g => <span key={g} className="genre-pill">{g}</span>)}</div>}
             <p className="showcase-synopsis">{meta.description}</p>
           </div>
         </div>
@@ -350,7 +182,7 @@ function MovieWatch() {
         <div className="watch-player-wrapper">
           <div className="watch-player-header">
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Film size={20} className="glow-icon"/>
+              <Film size={20} className="glow-icon" />
               <h2 style={{ fontSize: '1.1rem' }}>Streaming: {isSeries && activeEpisode ? `S${activeSeason} E${activeEpisode.episode}` : meta.name}</h2>
             </div>
             <div className="player-server-selector" style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
@@ -358,9 +190,9 @@ function MovieWatch() {
                 <span style={{ fontSize: '0.8rem', color: 'var(--text-tertiary)', fontWeight: 'bold' }}>SERVER:</span>
                 <div className="server-pills" style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
                   {[
-                    { id: 'vidlink', name: 'Server 1 (VidLink)' },
-                    { id: 'autoembed', name: 'Server 2 (2Embed)' },
-                    { id: 'local_hls', name: 'Local HLS Player' }
+                    { id: 'autoembed', name: 'Server 1 (VidSrc)' },
+                    { id: '2embed', name: 'Server 2 (2Embed)' },
+                    { id: 'multiembed', name: 'Server 3 (MultiEmbed)' }
                   ].map(srv => (
                     <button key={srv.id}
                       className={`server-pill-btn ${activeServer === srv.id ? 'active' : ''}`}
@@ -376,118 +208,58 @@ function MovieWatch() {
                   ))}
                 </div>
               </div>
+              <div className="download-mirrors-row" style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                <span style={{ fontSize: '0.8rem', color: 'var(--text-tertiary)', fontWeight: 'bold' }}>DOWNLOAD:</span>
+                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                  <a href={downloadUrls.twoembed} target="_blank" rel="noopener noreferrer"
+                    style={{
+                      display: 'inline-flex', alignItems: 'center', gap: '4px',
+                      padding: '4px 10px', fontSize: '0.72rem', fontWeight: '800', borderRadius: '8px',
+                      border: '1px solid rgba(236, 72, 153, 0.4)',
+                      background: 'rgba(236, 72, 153, 0.08)', color: '#ec4899',
+                      textDecoration: 'none', cursor: 'pointer', transition: 'all 0.2s ease',
+                      boxShadow: '0 0 8px rgba(236, 72, 153, 0.1)'
+                    }}
+                    onMouseEnter={e => {
+                      e.currentTarget.style.background = 'rgba(236, 72, 153, 0.18)';
+                      e.currentTarget.style.boxShadow = '0 0 12px rgba(236, 72, 153, 0.25)';
+                    }}
+                    onMouseLeave={e => {
+                      e.currentTarget.style.background = 'rgba(236, 72, 153, 0.08)';
+                      e.currentTarget.style.boxShadow = '0 0 8px rgba(236, 72, 153, 0.1)';
+                    }}>
+                    <Download size={12} /> 2Embed
+                  </a>
+                  <a href={downloadUrls.vidlink} target="_blank" rel="noopener noreferrer"
+                    style={{
+                      display: 'inline-flex', alignItems: 'center', gap: '4px',
+                      padding: '4px 10px', fontSize: '0.72rem', fontWeight: '800', borderRadius: '8px',
+                      border: '1px solid rgba(6, 182, 212, 0.4)',
+                      background: 'rgba(6, 182, 212, 0.08)', color: '#06b6d4',
+                      textDecoration: 'none', cursor: 'pointer', transition: 'all 0.2s ease',
+                      boxShadow: '0 0 8px rgba(6, 182, 212, 0.1)'
+                    }}
+                    onMouseEnter={e => {
+                      e.currentTarget.style.background = 'rgba(6, 182, 212, 0.18)';
+                      e.currentTarget.style.boxShadow = '0 0 12px rgba(6, 182, 212, 0.25)';
+                    }}
+                    onMouseLeave={e => {
+                      e.currentTarget.style.background = 'rgba(6, 182, 212, 0.08)';
+                      e.currentTarget.style.boxShadow = '0 0 8px rgba(6, 182, 212, 0.1)';
+                    }}>
+                    <Download size={12} /> VidLink
+                  </a>
+                </div>
+              </div>
             </div>
           </div>
 
           <div className="watch-iframe-container" style={{ position: 'relative', overflow: 'hidden' }}>
-            {activeServer === 'local_hls' ? (
-              <div className="local-player-wrapper" style={{ width: '100%', minHeight: '400px', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
-                {!customHlsUrl && hlsStatus === 'idle' && (
-                  <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.85rem', textAlign: 'center', padding: '20px' }}>
-                    <Tv size={32} style={{ opacity: 0.3, marginBottom: '10px' }}/>
-                    <p>Select this server to begin stream resolution</p>
-                  </div>
-                )}
-                <video ref={videoRef} id="custom-hls-video" controls autoPlay style={{ width: '100%', height: '100%', objectFit: 'contain' }} poster={meta.background || meta.poster}/>
-                
-                {hlsStatus === 'resolving' && (
-                  <div style={{
-                    position: 'absolute', bottom: '70px', left: '50%', transform: 'translateX(-50%)',
-                    background: 'rgba(255, 179, 0, 0.15)', backdropFilter: 'blur(12px)',
-                    border: '1px solid rgba(255, 179, 0, 0.35)', padding: '8px 20px', borderRadius: '30px',
-                    fontSize: '0.75rem', fontWeight: '600', color: '#ffc107',
-                    display: 'flex', alignItems: 'center', gap: '10px',
-                    boxShadow: '0 4px 20px rgba(255, 179, 0, 0.15)', zIndex: 8, whiteSpace: 'nowrap'
-                  }}>
-                    <span style={{ display: 'inline-block', width: '8px', height: '8px', background: '#ffc107', borderRadius: '50%', animation: 'pulse 1s infinite' }}/>
-                    Scanning sources for <strong>{isSeries && activeEpisode ? `S${activeSeason} E${activeEpisode.episode}` : meta.name}</strong>...
-                  </div>
-                )}
-                
-                {hlsStatus === 'resolved' && (
-                  <div style={{
-                    position: 'absolute', bottom: '70px', left: '50%', transform: 'translateX(-50%)',
-                    background: 'rgba(0, 200, 100, 0.12)', backdropFilter: 'blur(12px)',
-                    border: '1px solid rgba(0, 200, 100, 0.3)', padding: '8px 20px', borderRadius: '30px',
-                    fontSize: '0.75rem', fontWeight: '600', color: '#00e676',
-                    display: 'flex', alignItems: 'center', gap: '10px',
-                    boxShadow: '0 4px 20px rgba(0, 200, 100, 0.1)', zIndex: 8, whiteSpace: 'nowrap'
-                  }}>
-                    <span>✓</span> Stream resolved — playing
-                  </div>
-                )}
-                
-                {hlsStatus === 'failed' && (
-                  <div style={{
-                    position: 'absolute', bottom: '70px', left: '50%', transform: 'translateX(-50%)',
-                    background: 'rgba(255, 26, 117, 0.12)', backdropFilter: 'blur(12px)',
-                    border: '1px solid rgba(255, 26, 117, 0.3)', padding: '8px 20px', borderRadius: '30px',
-                    fontSize: '0.75rem', fontWeight: '600', color: '#ff6b9d',
-                    display: 'flex', alignItems: 'center', gap: '10px',
-                    boxShadow: '0 4px 20px rgba(255, 26, 117, 0.1)', zIndex: 8, whiteSpace: 'nowrap'
-                  }}>
-                    <span>⚠</span> Could not resolve stream —
-                    <button onClick={() => setActiveServer('vidlink')}
-                      style={{ background: 'var(--brand-color)', color: '#000', border: 'none', borderRadius: '6px', padding: '2px 8px', fontSize: '0.7rem', fontWeight: '700', cursor: 'pointer' }}>
-                      Server 1 (VidLink)
-                    </button>
-                    <button onClick={retryResolver}
-                      style={{ background: 'rgba(255,255,255,0.1)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '6px', padding: '2px 8px', fontSize: '0.7rem', fontWeight: '600', cursor: 'pointer' }}>
-                      Retry
-                    </button>
-                  </div>
-                )}
-
-                <button onClick={() => setShowPlayerSettings(!showPlayerSettings)}
-                  style={{
-                    position: 'absolute', top: '16px', right: '16px',
-                    background: 'rgba(10, 10, 12, 0.75)', backdropFilter: 'blur(10px)',
-                    border: '1px solid rgba(255, 26, 117, 0.3)', borderRadius: '50%', width: '40px', height: '40px',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    color: 'var(--brand-color)', cursor: 'pointer', zIndex: 10
-                  }}>
-                  <Settings size={20} className={showPlayerSettings ? 'spin-icon' : ''}/>
-                </button>
-
-                {showPlayerSettings && (
-                  <div className="player-settings-drawer" style={{
-                    position: 'absolute', top: '70px', right: '16px', width: '320px',
-                    background: 'rgba(10, 10, 12, 0.9)', backdropFilter: 'blur(20px)',
-                    border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: '16px', padding: '16px',
-                    boxShadow: '0 10px 30px rgba(0,0,0,0.5)', zIndex: 10, color: '#fff', animation: 'fadeInUp 0.25s ease'
-                  }}>
-                    <h3 style={{ fontSize: '0.9rem', margin: '0 0 12px 0', fontWeight: '700', color: 'var(--brand-color)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <Tv size={16}/> Stream Resolver
-                    </h3>
-                    <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Direct .m3u8 URL:</label>
-                    <input type="text" value={customHlsUrl}
-                      onChange={e => setCustomHlsUrl(e.target.value)}
-                      placeholder="https://example.com/stream.m3u8"
-                      style={{
-                        background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
-                        borderRadius: '8px', padding: '8px 12px', fontSize: '0.8rem', color: '#fff',
-                        outline: 'none', width: '100%', marginBottom: '8px'
-                      }}/>
-                    <button onClick={retryResolver}
-                      style={{
-                        padding: '4px 10px', fontSize: '0.7rem', borderRadius: '6px',
-                        border: '1px solid rgba(255, 26, 117, 0.4)', background: 'rgba(255, 26, 117, 0.12)',
-                        color: '#ff6b9d', cursor: 'pointer', fontWeight: '600'
-                      }}>🔄 Re-resolve</button>
-                    {hlsResolvedUrl && (
-                      <div style={{ marginTop: '8px', padding: '6px 10px', background: 'rgba(0,200,100,0.05)', borderRadius: '6px', border: '1px solid rgba(0,200,100,0.15)' }}>
-                        <span style={{ fontSize: '0.65rem', color: '#00e676', fontWeight: '600' }}>✓ Resolved:</span>
-                        <p style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.5)', margin: '4px 0 0', wordBreak: 'break-all' }}>{hlsResolvedUrl}</p>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            ) : playerSrc ? (
-              <iframe id="watch-player-iframe" src={playerSrc} title={meta.name}
+            {playerSrc ? (
+              <iframe id="watch-player-iframe" key={playerSrc} src={playerSrc} title={meta.name}
                 allowFullScreen frameBorder="0"
                 allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
-                referrerPolicy="origin-when-cross-origin"/>
+                referrerPolicy="origin-when-cross-origin" />
             ) : (
               <div style={{
                 width: '100%', minHeight: '400px', background: '#000',
@@ -515,14 +287,22 @@ function MovieWatch() {
             animation: 'pulse-glow 2s ease-in-out infinite'
           }}>
             <span style={{ fontSize: '1.3rem' }}>⚠️</span>
-            {' '}If an error shows simply click on{' '}
+            {' '}If the player shows an error, try switching to{' '}
             <strong style={{
               color: '#000',
               background: 'var(--brand-color)',
               padding: '2px 12px',
               borderRadius: '6px',
               fontSize: '0.85rem'
-            }}>server chose reccomended xps</strong>
+            }}>Server 1 (VidSrc)</strong>
+            {' '}or{' '}
+            <strong style={{
+              color: '#000',
+              background: 'var(--brand-color)',
+              padding: '2px 12px',
+              borderRadius: '6px',
+              fontSize: '0.85rem'
+            }}>Server 2 (2Embed)</strong>
           </div>
         </div>
 
@@ -533,7 +313,7 @@ function MovieWatch() {
                 <button key={sNum} className={`season-tab-btn ${activeSeason === sNum ? 'active' : ''}`}
                   onClick={() => {
                     setActiveSeason(sNum);
-                    const sortedEps = seasonsMap[sNum].sort((a,b) => (a.episode||0)-(b.episode||0));
+                    const sortedEps = seasonsMap[sNum].sort((a, b) => (a.episode || 0) - (b.episode || 0));
                     if (sortedEps.length > 0) setActiveEpisode(sortedEps[0]);
                   }}>
                   Season {sNum === 0 ? 'Specials' : sNum}
@@ -541,7 +321,7 @@ function MovieWatch() {
               ))}
             </div>
             <div className="episode-selector-grid">
-              {activeSeason !== null && seasonsMap[activeSeason]?.sort((a,b) => (a.episode||0)-(b.episode||0)).map(ep => {
+              {activeSeason !== null && seasonsMap[activeSeason]?.sort((a, b) => (a.episode || 0) - (b.episode || 0)).map(ep => {
                 const isActive = activeEpisode?.episode === ep.episode;
                 return (
                   <button key={ep.id || ep.episode} className={`episode-card-btn ${isActive ? 'active' : ''}`}
@@ -549,8 +329,8 @@ function MovieWatch() {
                     <div className="ep-card-thumb">
                       <img src={ep.thumbnail || `https://episodes.metahub.space/${id}/${activeSeason}/${ep.episode}/w780.jpg`}
                         alt={ep.title || `E${ep.episode}`}
-                        onError={e => { e.target.onerror = null; e.target.src = 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?q=80&w=300&auto=format&fit=crop'; }}/>
-                      <div className="ep-card-overlay"><Play fill="white" size={16}/></div>
+                        onError={e => { e.target.onerror = null; e.target.src = 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?q=80&w=300&auto=format&fit=crop'; }} />
+                      <div className="ep-card-overlay"><Play fill="white" size={16} /></div>
                       <span className="ep-card-num">EP {ep.episode}</span>
                     </div>
                     <div className="ep-card-details">
@@ -562,6 +342,8 @@ function MovieWatch() {
             </div>
           </div>
         )}
+        
+        <CommentsSection mediaId={id} />
       </div>
     </div>
   );

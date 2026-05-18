@@ -1,6 +1,9 @@
-import { useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, NavLink, Route, Routes } from 'react-router-dom';
-import { Search as SearchIcon, Info, Home as HomeIcon, Tv as TvIcon } from 'lucide-react';
+import { 
+  Search as SearchIcon, Info, Home as HomeIcon, Tv as TvIcon, 
+  AlertTriangle, User, Sparkles, ShieldAlert 
+} from 'lucide-react';
 import Home from './pages/Home';
 import Search from './pages/Search';
 import AnimeDetails from './pages/AnimeDetails';
@@ -8,45 +11,84 @@ import MangaDetails from './pages/MangaDetails';
 import DramasMovies from './pages/DramasMovies';
 import MovieWatch from './pages/MovieWatch';
 import About from './pages/About';
+import Profile from './pages/Profile';
+import UserProfile from './pages/UserProfile';
+import AdminDashboard from './pages/AdminDashboard';
 import { Contact, FAQ, Terms, Privacy, DMCA, RequestAnime } from './pages/StaticPages';
 
 import Footer from './components/Footer';
+import AuthModal from './components/AuthModal';
+import ProfileModal from './components/ProfileModal';
+import { useUser } from './api/UserContext';
+import { fetchSiteSettings } from './api/db';
 
 function App() {
+  const { user, setShowAuthModal, setAuthTab } = useUser();
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [announcement, setAnnouncement] = useState('');
+  const [maintenanceMode, setMaintenanceMode] = useState(false);
+
   useEffect(() => {
-    let preventRedirect = false;
-
-    // Detect iframe interaction and activate redirect shield
-    const handleBlur = () => {
-      if (document.activeElement && document.activeElement.tagName === 'IFRAME') {
-        preventRedirect = true;
-        // Keep active for 3 seconds to intercept redirect bursts, then reset
-        setTimeout(() => {
-          preventRedirect = false;
-        }, 3000);
+    async function loadSettings() {
+      try {
+        const settings = await fetchSiteSettings();
+        if (settings.announcement) setAnnouncement(settings.announcement);
+        if (settings.maintenance === 'true') setMaintenanceMode(true);
+      } catch (err) {
+        console.error('Failed to load global site settings:', err);
       }
-    };
-
-    const handleBeforeUnload = (e) => {
-      if (preventRedirect) {
-        // Intercept top-level page hijacking
-        e.preventDefault();
-        e.returnValue = 'Redirect blocked by AnimeVault Secure Engine';
-        return 'Redirect blocked by AnimeVault Secure Engine';
-      }
-    };
-
-    window.addEventListener('blur', handleBlur);
-    window.addEventListener('beforeunload', handleBeforeUnload);
-
-    return () => {
-      window.removeEventListener('blur', handleBlur);
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-    };
+    }
+    loadSettings();
   }, []);
+
+  if (maintenanceMode && (!user || !user.is_admin)) {
+    return (
+      <div style={{
+        height: '100vh', display: 'flex', flexDirection: 'column',
+        justifyContent: 'center', alignItems: 'center', background: '#06060c',
+        color: '#fff', textAlign: 'center', padding: '20px', fontFamily: 'sans-serif'
+      }}>
+        <AlertTriangle size={64} style={{ color: '#ffd700', marginBottom: '20px', filter: 'drop-shadow(0 0 15px rgba(255, 215, 0, 0.4))' }} />
+        <h1 style={{ fontSize: '2.5rem', fontWeight: '900', margin: '0 0 12px' }}>Vault Offline</h1>
+        <p style={{ color: 'var(--text-secondary)', maxWidth: '500px', fontSize: '0.95rem', lineHeight: '1.6', margin: '0 0 30px' }}>
+          AnimeVault is currently undergoing emergency database optimizations. The command deck will return shortly!
+        </p>
+        
+        <button 
+          onClick={() => { setAuthTab('login'); setShowAuthModal(true); }}
+          style={{
+            padding: '10px 24px', background: 'rgba(255,255,255,0.03)',
+            border: '1px solid rgba(255,255,255,0.1)', color: '#fff',
+            borderRadius: '8px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: '800',
+            transition: 'all 0.2s'
+          }}
+          onMouseEnter={e => e.currentTarget.style.borderColor = '#ffd700'}
+          onMouseLeave={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'}
+        >
+          Administrator Login
+        </button>
+
+        <AuthModal />
+      </div>
+    );
+  }
 
   return (
     <div className="app-shell">
+      {announcement && (
+        <div style={{
+          background: 'linear-gradient(90deg, #ff1a75, #ffaa00)',
+          color: '#000', fontSize: '0.8rem', fontWeight: '900',
+          padding: '8px 20px', textAlign: 'center', letterSpacing: '0.5px',
+          boxShadow: '0 2px 10px rgba(0,0,0,0.3)', textShadow: '0 1px 2px rgba(255,255,255,0.3)',
+          display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px'
+        }}>
+          <Sparkles size={14} style={{ animation: 'bannerPulse 1.5s infinite alternate' }} />
+          <span>{announcement}</span>
+          <style>{`@keyframes bannerPulse { from { transform: scale(1); } to { transform: scale(1.2); } }`}</style>
+        </div>
+      )}
+
       {/* ... header ... */}
       <header className="topbar">
         <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
@@ -95,11 +137,37 @@ function App() {
             <Info size={16} /> About
           </NavLink>
         </nav>
-        <div className="topbar-actions">
+        <div className="topbar-actions" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <Link to="/search" className="search-trigger">
             <SearchIcon size={20} />
             <span>Search...</span>
           </Link>
+          {user ? (
+            <Link to="/profile" style={{
+              display: 'inline-flex', alignItems: 'center', gap: '6px',
+              padding: '6px 12px', fontSize: '0.8rem', fontWeight: '800', borderRadius: '8px',
+              border: '1px solid rgba(255, 26, 117, 0.3)', textDecoration: 'none',
+              background: 'rgba(255, 26, 117, 0.08)', color: 'var(--brand-color)',
+              cursor: 'pointer', transition: 'all 0.2s ease',
+              boxShadow: '0 0 10px rgba(255, 26, 117, 0.1)'
+            }} onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255, 26, 117, 0.18)'; e.currentTarget.style.boxShadow = '0 0 15px rgba(255, 26, 117, 0.3)'; }}
+               onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255, 26, 117, 0.08)'; e.currentTarget.style.boxShadow = '0 0 10px rgba(255, 26, 117, 0.1)'; }}>
+              <User size={14} />
+              <span>{user.username}</span>
+            </Link>
+          ) : (
+            <button onClick={() => { setAuthTab('login'); setShowAuthModal(true); }} style={{
+              display: 'inline-flex', alignItems: 'center', gap: '6px',
+              padding: '6px 12px', fontSize: '0.8rem', fontWeight: '800', borderRadius: '8px',
+              border: '1px solid var(--glass-border)',
+              background: 'var(--glass)', color: 'var(--text-secondary)',
+              cursor: 'pointer', transition: 'all 0.2s ease'
+            }} onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--brand-color)'; e.currentTarget.style.color = '#fff'; }}
+               onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--glass-border)'; e.currentTarget.style.color = 'var(--text-secondary)'; }}>
+              <User size={14} />
+              <span>Sign In</span>
+            </button>
+          )}
         </div>
       </header>
 
@@ -118,6 +186,9 @@ function App() {
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/dmca" element={<DMCA />} />
           <Route path="/request" element={<RequestAnime />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/user/:username" element={<UserProfile />} />
+          <Route path="/admin" element={<AdminDashboard />} />
         </Routes>
       </main>
 
@@ -155,6 +226,10 @@ function App() {
           <span>About</span>
         </NavLink>
       </nav>
+      
+      {/* Postgres Neon Modals */}
+      <AuthModal />
+      <ProfileModal isOpen={isProfileOpen} onClose={() => setIsProfileOpen(false)} />
     </div>
   );
 }

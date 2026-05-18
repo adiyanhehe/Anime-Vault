@@ -3,6 +3,8 @@ import { useParams, Link } from 'react-router-dom';
 import { fetchAnimeById, stripHtml } from '../api/anilist';
 import { findBestStreamingMatch, fetchStreamingEpisodes, fetchStreamingSources, probeMirrors } from '../api/streaming';
 import VideoPlayer from '../components/VideoPlayer';
+import CommentsSection from '../components/CommentsSection';
+import { useUser } from '../api/UserContext';
 import {
   Play,
   Calendar,
@@ -18,6 +20,7 @@ import {
   ChevronDown,
   Zap,
   Sparkles,
+  Heart,
 } from 'lucide-react';
 
 const PROGRESS_KEY = 'animevault_progress';
@@ -25,7 +28,7 @@ const RECENTS_KEY = 'animevault_recently_viewed';
 
 function safeTitle(title) {
   if (!title) return 'Unknown Title';
-  return title.romaji || title.english || title.native || 'Unknown Title';
+  return title.english || title.romaji || title.native || 'Unknown Title';
 }
 
 /** Build an instant episode list from AniList metadata — no scraper needed */
@@ -50,7 +53,7 @@ function findExternalId(links, siteName) {
   if (!links) return null;
   const link = links.find(l => l.site.toLowerCase().includes(siteName.toLowerCase()));
   if (!link) return null;
-  
+
   // Extract ID from URL
   const url = link.url;
   if (siteName.toLowerCase().includes('themoviedb')) {
@@ -61,7 +64,7 @@ function findExternalId(links, siteName) {
     const match = url.match(/\/title\/(tt\d+)/);
     return match ? match[1] : null;
   }
-  
+
   return url.split('/').filter(Boolean).pop();
 }
 
@@ -105,8 +108,8 @@ const SERVERS = [
       tmdbId
         ? `https://vidsrc.cc/v2/embed/tv/${tmdbId}/1/${ep}`
         : malId
-        ? `https://vidsrc.cc/v2/embed/anime/${malId}/${ep}`
-        : null,
+          ? `https://vidsrc.cc/v2/embed/anime/${malId}/${ep}`
+          : null,
   },
   {
     key: 'VidsrcNL',
@@ -135,12 +138,12 @@ const SERVERS = [
   {
     key: 'Smashy',
     label: 'SmashyStream',
-    build: ({ tmdbId, imdbId, ep }) => 
-      tmdbId 
-        ? `https://embed.smashystream.com/playere.php?tmdb=${tmdbId}&season=1&episode=${ep}` 
-        : imdbId 
-        ? `https://embed.smashystream.com/playere.php?imdb=${imdbId}&season=1&episode=${ep}`
-        : null,
+    build: ({ tmdbId, imdbId, ep }) =>
+      tmdbId
+        ? `https://embed.smashystream.com/playere.php?tmdb=${tmdbId}&season=1&episode=${ep}`
+        : imdbId
+          ? `https://embed.smashystream.com/playere.php?imdb=${imdbId}&season=1&episode=${ep}`
+          : null,
   },
   {
     key: 'VidsrcSU',
@@ -153,20 +156,21 @@ const SERVERS = [
     build: ({ malId, ep }) => malId ? `https://vidsrc.pm/embed/anime/${malId}/${ep}` : null,
   },
   {
-    key: 'ZoroTV',
-    label: 'ZoroTV Mirror (Search)',
-    build: ({ englishTitle, titleForSlug }) => {
-      // Strip season/episode/part/cour/tv/specials and everything after it for exact anime name search
-      const raw = englishTitle || titleForSlug;
-      const clean = raw
-        ? raw
-            .replace(/\s*\([^)]*\)/g, '') // Remove content in parentheses like (TV), (Dub)
-            .replace(/\s*(?:season|part|cour|s\d+|episode|ep|\d+(?:st|nd|rd|th)\s*season|tv|dub|sub|uncensored)\b.*$/gi, '') // Strip suffix and everything after
-            .replace(/[\s\-:]*(?<!\d)(?:[2-9]|i{2,4}|iv|vi{1,3}|ix)$/gi, '') // Strip trailing standalone digit 2-9 or roman numeral II-IX
-            .replace(/[:\-,\s]+$/, '') // Clean up trailing colons, hyphens, and spaces
-            .trim()
-        : null;
-      return clean ? `https://zorotv.com.ro/?s=${encodeURIComponent(clean)}` : null;
+    key: 'Miruro',
+    label: 'Miruro • Embed (Recommended)',
+    build: ({ titleForSlug }) => {
+      let clean = titleForSlug;
+      // Translate common Romaji titles to English equivalents for better WordPress search matching
+      clean = clean.replace(/Boku no Hero/gi, 'My Hero');
+      clean = clean.replace(/Shingeki no Kyojin/gi, 'Attack on Titan');
+
+      const words = clean.split(' ');
+      let query = words.slice(0, 3).join(' ');
+      const prepositions = ['to', 'no', 'in', 'at', 'the', 'a', 'of', 'and', 'with', 'for', 'by'];
+      if (words.length > 3 && prepositions.includes(words[2].toLowerCase())) {
+        query = words.slice(0, 4).join(' ');
+      }
+      return `https://miruro.ro/?s=${encodeURIComponent(query)}`;
     },
   },
   {
@@ -176,10 +180,11 @@ const SERVERS = [
   },
 ];
 
-const DEFAULT_SERVER = 'ZoroTV';
+const DEFAULT_SERVER = 'Miruro';
 
 function AnimeDetails() {
   const { id } = useParams();
+  const { user, addToHistory, toggleLike, isLiked } = useUser();
 
   const [anime, setAnime] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -207,7 +212,7 @@ function AnimeDetails() {
 
   // ───── Probe mirrors once per session (fire-and-forget) ─────
   useEffect(() => {
-    probeMirrors().catch(() => {});
+    probeMirrors().catch(() => { });
   }, []);
 
   // ───── Main data load ─────
@@ -257,7 +262,7 @@ function AnimeDetails() {
         localStorage.setItem(RECENTS_KEY, JSON.stringify(updated));
 
         // ── Background: Consumet enrichment ──
-        enrichWithConsumer(media, epList).catch(() => {});
+        enrichWithConsumer(media, epList).catch(() => { });
       } catch (err) {
         setError(err.message || 'Failed to load anime details.');
       } finally {
@@ -268,6 +273,13 @@ function AnimeDetails() {
     load();
     window.scrollTo(0, 0);
   }, [id]);
+
+  // Sync watch history to Neon Postgres when user logs in or anime loads
+  useEffect(() => {
+    if (user && anime) {
+      addToHistory(anime.id, 'anime', safeTitle(anime.title), anime.coverImage?.large);
+    }
+  }, [user, anime]);
 
   /** Fire-and-forget: try to replace episode list with richer consumet data */
   async function enrichWithConsumer(media, fallbackEps) {
@@ -357,7 +369,7 @@ function AnimeDetails() {
     const tmdbId = findExternalId(anime.externalLinks, 'themoviedb');
     const imdbId = findExternalId(anime.externalLinks, 'imdb');
     const englishTitle = anime.title?.english || null;
-    const titleForSlug = anime.title?.romaji || englishTitle || animeTitle;
+    const titleForSlug = englishTitle || anime.title?.romaji || animeTitle;
 
     return server.build({
       anilistId: id,
@@ -425,10 +437,10 @@ function AnimeDetails() {
         {/* Fallback External Link for broken iframes */}
         {embedUrl && (
           <div style={{ display: 'flex', justifyContent: 'center', margin: '1rem 0' }}>
-            <a 
-              href={embedUrl} 
-              target="_blank" 
-              rel="noopener noreferrer" 
+            <a
+              href={embedUrl}
+              target="_blank"
+              rel="noopener noreferrer"
               className="btn-info-v2"
               style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '0.6rem 1.5rem', background: 'var(--brand-color)', color: '#fff', textDecoration: 'none', borderRadius: '8px', fontWeight: 600 }}
             >
@@ -445,7 +457,7 @@ function AnimeDetails() {
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <h4 style={{ margin: 0 }}>Streaming Server</h4>
-                  <button 
+                  <button
                     className={`zen-toggle-v2 ${zenMode ? 'active' : ''}`}
                     onClick={() => setZenMode(!zenMode)}
                     title={zenMode ? 'Turn off Ad-Blocker' : 'Turn on Ad-Blocker (Zen Mode)'}
@@ -510,8 +522,20 @@ function AnimeDetails() {
               >
                 <Play size={20} fill="currentColor" /> Watch Now
               </button>
-              <button className="btn-info-v2">
-                <Plus size={20} /> Add to List
+              <button 
+                className="btn-info-v2"
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: '8px',
+                  color: isLiked(anime.id, 'anime') ? '#ff1a75' : 'var(--text-secondary)',
+                  borderColor: isLiked(anime.id, 'anime') ? '#ff1a75' : 'var(--glass-border)',
+                  background: isLiked(anime.id, 'anime') ? 'rgba(255, 26, 117, 0.1)' : 'var(--glass)',
+                  boxShadow: isLiked(anime.id, 'anime') ? '0 0 10px rgba(255, 26, 117, 0.2)' : 'none',
+                  transition: 'all 0.2s ease', cursor: 'pointer'
+                }}
+                onClick={() => toggleLike(anime.id, 'anime', safeTitle(anime.title), anime.coverImage?.large)}
+              >
+                <Heart size={20} fill={isLiked(anime.id, 'anime') ? '#ff1a75' : 'none'} /> 
+                {isLiked(anime.id, 'anime') ? 'Liked' : 'Like'}
               </button>
             </div>
           </div>
@@ -607,7 +631,8 @@ function AnimeDetails() {
               </div>
             </div>
           )}
-
+          
+          <CommentsSection mediaId={anime.id} />
         </div>
 
         {/* ── Sidebar ── */}

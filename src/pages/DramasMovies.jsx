@@ -20,7 +20,7 @@ const TRENDING_SHOWS = [
     genre: 'Action, Drama, Youth'
   },
   {
-    id: 'tt27923758',
+    id: 'tt28036189',
     name: 'When I Fly Towards You',
     type: 'tv',
     year: '2023',

@@ -12,6 +12,8 @@
     "lint": "echo 'No linter configured yet'"
   },
   "dependencies": {
+    "@neondatabase/auth": "^0.3.0-beta",
+    "@neondatabase/serverless": "^1.1.0",
     "@vidstack/react": "^1.12.13",
     "framer-motion": "^12.38.0",
     "hls.js": "^1.6.16",

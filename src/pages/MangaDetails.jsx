@@ -3,6 +3,8 @@ import { useParams, Link } from 'react-router-dom';
 import { fetchAnimeById, stripHtml } from '../api/anilist';
 import { searchMangaDex, fetchMangaChapters, fetchChapterPages } from '../api/manga';
 import { BookOpen, Calendar, Star, Users, ArrowLeft, ArrowRight, X, Loader2, Heart, ExternalLink } from 'lucide-react';
+import CommentsSection from '../components/CommentsSection';
+import { useUser } from '../api/UserContext';
 
 function safeTitle(title) {
   if (!title) return 'Unknown Title';
@@ -11,6 +13,7 @@ function safeTitle(title) {
 
 function MangaDetails() {
   const { id } = useParams();
+  const { user, addToHistory, toggleLike, isLiked } = useUser();
 
   // Media state (from AniList)
   const [manga, setManga] = useState(null);
@@ -53,6 +56,13 @@ function MangaDetails() {
     load();
     window.scrollTo(0, 0);
   }, [id]);
+
+  // Sync reading history to Neon Postgres when user logs in or manga loads
+  useEffect(() => {
+    if (user && manga) {
+      addToHistory(manga.id, 'manga', safeTitle(manga.title), manga.coverImage?.large);
+    }
+  }, [user, manga]);
 
   async function findMangaDex(titles) {
     setLoadingChapters(true);
@@ -217,8 +227,20 @@ function MangaDetails() {
               >
                 <BookOpen size={20} fill="currentColor" /> Read Chapter 1
               </button>
-              <button className="btn-info-v2">
-                <Heart size={20} /> Add to List
+              <button 
+                className="btn-info-v2"
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: '8px',
+                  color: isLiked(manga.id, 'manga') ? '#ff1a75' : 'var(--text-secondary)',
+                  borderColor: isLiked(manga.id, 'manga') ? '#ff1a75' : 'var(--glass-border)',
+                  background: isLiked(manga.id, 'manga') ? 'rgba(255, 26, 117, 0.1)' : 'var(--glass)',
+                  boxShadow: isLiked(manga.id, 'manga') ? '0 0 10px rgba(255, 26, 117, 0.2)' : 'none',
+                  transition: 'all 0.2s ease', cursor: 'pointer'
+                }}
+                onClick={() => toggleLike(manga.id, 'manga', safeTitle(manga.title), manga.coverImage?.large)}
+              >
+                <Heart size={20} fill={isLiked(manga.id, 'manga') ? '#ff1a75' : 'none'} /> 
+                {isLiked(manga.id, 'manga') ? 'Liked' : 'Like'}
               </button>
             </div>
           </div>
@@ -289,6 +311,8 @@ function MangaDetails() {
               </div>
             )}
           </div>
+          
+          <CommentsSection mediaId={manga.id} />
         </div>
 
         <aside className="sidebar-v2">

@@ -30,22 +30,23 @@ function VideoPlayer({ sources, poster, title, embedUrl, isZen }) {
   }, [sources]);
 
   if (embedUrl) {
-    const isZoro = embedUrl.includes('zorotv.com.ro');
+    const isMiruro = embedUrl.includes('miruro.ro');
 
     return (
       <div 
         className={`video-player-wrapper-v2 embed-container ${isZen ? 'zen-active' : ''}`}
-        style={isZoro ? { overflow: 'hidden', position: 'relative' } : {}}
+        style={isMiruro ? { overflow: 'hidden', position: 'relative' } : {}}
       >
         <iframe
           src={embedUrl}
           className="embed-iframe"
-          style={isZoro ? { marginTop: '-100px', height: 'calc(100% + 100px)' } : {}}
+          style={isMiruro ? { marginTop: '-100px', height: 'calc(100% + 100px)' } : {}}
           allowFullScreen
-          allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
+          allow="autoplay; fullscreen; picture-in-picture; encrypted-media; clipboard-write"
           title={title}
           referrerPolicy="no-referrer-when-downgrade"
           loading="lazy"
+          sandbox="allow-scripts allow-autoplay allow-fullscreen allow-picture-in-picture"
         />
       </div>
     );
