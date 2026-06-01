@@ -13,22 +13,25 @@
 }
 
 /* Hero Section */
-  .hero-download {
+.hero-download {
   position: relative;
   text-align: center;
   color: var(--foreground);
 }
-  .hero-banner-wrapper {
+
+.hero-banner-wrapper {
   position: relative;
   width: 100%;
 }
 
-    width: 100%;
-    max-height: 350px;
-    object-fit: cover;
-    border-radius: 1rem;
-    margin-top: 0;
-  }
+.hero-banner {
+  width: 100%;
+  max-height: 350px;
+  object-fit: cover;
+  border-radius: 1rem;
+  margin-top: 0;
+}
+
 
   .hero-overlay {
     position: absolute;
