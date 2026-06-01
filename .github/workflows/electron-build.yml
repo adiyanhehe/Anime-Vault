@@ -3,7 +3,12 @@ name: Electron Build CI
 on:
   push:
     branches: [ main ]
+    tags:
+      - 'v*'
   workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -32,8 +37,22 @@ jobs:
           else
             npm run electron:build -- --linux
           fi
+      
+      # Optional: still keep the artifacts for debugging if it's not a tag
       - name: Upload artifacts
+        if: "!startsWith(github.ref, 'refs/tags/')"
         uses: actions/upload-artifact@v4
         with:
           name: ${{ runner.os }}-installer
           path: release/*
+
+      # Automatically publish to GitHub Releases on tag (e.g. v0.1.0)
+      - name: Release to GitHub
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            release/*.exe
+            release/*.dmg
+            release/*.AppImage
+            release/*.deb
