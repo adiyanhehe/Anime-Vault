@@ -1,93 +1,176 @@
 /* src/styles/download.css */
 /* -------------------------------------------------
-   Download page – premium glass‑morphism design
-   Uses CSS variables defined in src/styles.css
-   (‑‑brand-color, ‑‑background, etc.).
+   Download page – large vertical cards, gradient UI
+   Matches the user's reference design
    ------------------------------------------------- */
 
 .download-page {
   min-height: 100vh;
   background: var(--background);
   color: var(--foreground);
-  font-family: "Inter", system-ui, sans-serif;
+  font-family: var(--font-main);
+  padding: 2rem 0;
 }
 
+/* Hero Section */
 .hero-download {
-  position: relative;
-  padding: 4rem 2rem;
   text-align: center;
-  overflow: hidden;
-  background: linear-gradient(135deg, hsl(210, 30%, 12%), hsl(210, 20%, 8%));
-}
-.hero-download::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: url("https://images.unsplash.com/photo-1586281380349-5d2c8c7c7c4a") center/cover;
-  opacity: 0.15;
-  mix-blend-mode: overlay;
-}
-.hero-download-content {
-  position: relative;
-  z-index: 1;
-}
-.hero-heading {
-  font-size: clamp(2.5rem, 8vw, 4rem);
-  margin: 0 0 0.5rem;
-  color: var(--brand-color);
-}
-.hero-subtitle,
-.hero-description {
-  font-size: clamp(1rem, 2.5vw, 1.25rem);
-  margin: 0.5rem 0;
+  padding: 4rem 2rem 2rem;
 }
 
-/* Animated overlay */
-.hero-overlay-animated {
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(circle at var(--x, 50%) var(--y, 50%),
-    hsla(210, 70%, 35%, 0.2) 0%,
-    transparent 60%);
-  animation: move 12s infinite linear;
-}
-@keyframes move {
-  0%   { --x: 0%;   --y: 0%; }
-  33%  { --x: 100%; --y: 0%; }
-  66%  { --x: 100%; --y: 100%; }
-  100% { --x: 0%;   --y: 100%; }
-}
-
-/* Card styles – reuse the glass‑morphism you already have */
-.download-card {
-  backdrop-filter: blur(12px) brightness(1.1);
-  background: rgba(255,255,255,0.06);
-  border: 1px solid rgba(255,255,255,0.09);
-  transition: transform 0.25s, box-shadow 0.25s;
-}
-.download-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
-}
-.download-btn {
+.gradient-text {
+  background: linear-gradient(90deg, #8a2be2, #4cd7f6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
   display: inline-block;
-  padding: 0.75rem 1.5rem;
-  border-radius: 0.5rem;
-  background: var(--brand-color);
-  color: #fff;
-  font-weight: 600;
-  text-decoration: none;
-  transition: background 0.2s, transform 0.1s;
+  font-size: clamp(3rem, 6vw, 4.5rem);
+  font-weight: 800;
+  margin-bottom: 0.5rem;
 }
-.download-btn:hover { background: hsl(210, 70%, 55%); }
-.download-btn:active { transform: scale(0.98); }
 
-.file-size { font-size: 0.85rem; opacity: 0.8; margin-top: 0.25rem; }
-.version-badge {
-  background: rgba(255,255,255,0.15);
-  color: var(--foreground);
-  padding: 0.2rem 0.5rem;
-  border-radius: 0.3rem;
-  font-size: 0.75rem;
-  margin-left: 0.5rem;
+.hero-subtitle {
+  color: var(--text-secondary);
+  font-size: 1.1rem;
+  margin-top: 0;
+}
+
+/* Platform Cards Grid */
+.downloads-section {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.platform-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
+}
+
+.platform-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 3rem 2rem;
+  background: rgba(21, 25, 35, 0.7);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 1.5rem;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.platform-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3);
+}
+
+.platform-icon-container {
+  margin-bottom: 1.5rem;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.platform-icon {
+  width: 72px;
+  height: 72px;
+  object-fit: contain;
+}
+
+.platform-badge {
+  background: rgba(138, 43, 226, 0.15);
+  color: #c48eff;
+  padding: 0.35rem 1rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+.platform-title {
+  font-size: 1.75rem;
+  margin: 0 0 0.75rem;
+  font-weight: 700;
+}
+
+.platform-desc {
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+  line-height: 1.5;
+  margin: 0 0 2rem;
+  flex-grow: 1;
+}
+
+.download-btn-gradient {
+  width: 100%;
+  padding: 1rem;
+  border-radius: 0.75rem;
+  background: linear-gradient(90deg, #8a2be2, #00d2ff);
+  color: white;
+  font-weight: 700;
+  font-size: 1.05rem;
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+  transition: opacity 0.2s, transform 0.1s;
+  display: inline-block;
+}
+
+.download-btn-gradient:hover {
+  opacity: 0.9;
+}
+
+.download-btn-gradient:active {
+  transform: scale(0.98);
+}
+
+/* Features Section */
+.features-section {
+  max-width: 1100px;
+  margin: 3rem auto 0;
+  padding: 2rem;
+}
+
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.5rem;
+}
+
+.feature-card {
+  padding: 1.5rem;
+  background: rgba(21, 25, 35, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.feature-icon {
+  color: #4cd7f6;
+  margin-bottom: 0.25rem;
+}
+
+.feature-title {
+  font-size: 1.1rem;
+  margin: 0;
+  font-weight: 700;
+}
+
+.feature-text {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.footer {
+  text-align: center;
+  padding: 3rem 2rem;
+  color: var(--text-tertiary);
+  font-size: 0.9rem;
 }
