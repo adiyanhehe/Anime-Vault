@@ -29,10 +29,13 @@ jobs:
         run: npm ci
       - name: Build Electron app
         shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           if [ "$RUNNER_OS" = "Windows" ]; then
             npm run electron:build -- --win
           elif [ "$RUNNER_OS" = "macOS" ]; then
+            export CSC_IDENTITY_AUTO_DISCOVERY=false
             npm run electron:build -- --mac
           else
             npm run electron:build -- --linux
