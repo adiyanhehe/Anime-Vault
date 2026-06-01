@@ -13,20 +13,33 @@
 }
 
 /* Hero Section */
-.hero-download {
+  .hero-download {
+  position: relative;
   text-align: center;
-  padding: 4rem 2rem 2rem;
   color: var(--foreground);
 }
-.hero-banner {
+  .hero-banner-wrapper {
+  position: relative;
   width: 100%;
-  max-height: 350px;
-  object-fit: cover;
-  border-radius: 1rem;
-  margin-top: 1rem;
 }
 
-.gradient-text {
+    width: 100%;
+    max-height: 350px;
+    object-fit: cover;
+    border-radius: 1rem;
+    margin-top: 0;
+  }
+
+  .hero-overlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    color: var(--foreground);
+  }
+
+  .gradient-text {
   background: linear-gradient(90deg, #8a2be2, #4cd7f6);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;

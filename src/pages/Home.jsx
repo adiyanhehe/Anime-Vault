@@ -172,33 +172,10 @@ function Home() {
                   zIndex: isActive ? 2 : 1,
                 }}
               >
-                <div
-                  className="hero-img-wrapper"
-                  style={{ width: "100%", height: "100%" }}
-                >
+                <div className="hero-img-wrapper" style={{ width: "100%", height: "100%" }}>
                   <img
                     src={getBanner(anime)}
                     alt={getTitle(anime)}
-                    style={{
-                      width: "100%",
-                      height: "100%",
-                      objectFit: "cover",
-                    }}
-                  />
-                  <div className="hero-overlay-v2" />
-                </div>
-                <div className="hero-content-v2" style={{ zIndex: 5 }}>
-                  <div
-                    className="hero-info-v2"
-                    style={{
-                      transform: isActive
-                        ? "translateY(0)"
-                        : "translateY(20px)",
-                      opacity: isActive ? 1 : 0,
-                      transition: "all 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.2s",
-                    }}
-                  >
-                    <span
                       className="hero-rank"
                       style={{
                         color: "var(--brand-color)",
@@ -247,6 +224,8 @@ function Home() {
                       >
                         <Info size={20} /> Details
                       </button>
+                    </div>
+                  </div>
                     </div>
                   </div>
                 </div>

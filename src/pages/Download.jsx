@@ -1,6 +1,6 @@
 import React from 'react';
 import '../styles/download.css';
-import windowsIcon from "../electron/.icon-ico/icon.png";
+import windowsIcon from "../../windows icon.png";
 import FocusableLink from '../components/FocusableLink';
 import { Sparkles, Tv, Bookmark, Laptop } from 'lucide-react';
 // -------------------------------
@@ -19,13 +19,15 @@ const Download = () => {
     <div className="app-shell download-page">
       {/* Hero Section */}
       <section className="hero-section hero-download">
-        <div className="hero-content hero-download-content">
-          <h1 className="hero-heading gradient-text" id="hero-title">Anime Vault</h1>
-          <p className="hero-subtitle" id="hero-subtitle">
-            Download Anime Vault for Windows, macOS, and Linux.
-          </p>
-          <img className="hero-banner" src="https://occ-0-8407-2219.1.nflxso.net/dnm/api/v6/MgXQGyNr1xbI8tJSYiMWv5kXg5g/AAAABbu2mrfgMEMATRppz3WvutNHbUSBM3rWWq3nIBWGk3n1DgG9GVI1yX5gkfdDK73a0_L0SVQnfKp2HEIMdC9KeAXdmZB7VjTqO8EI0Pyv3C8DvfJtXEYE1mXA9g.jpg?r=6ae" alt="Download banner" id="download-banner" />
-        </div>
+          <div className="hero-banner-wrapper">
+            <img className="hero-banner" src="https://occ-0-8407-2219.1.nflxso.net/dnm/api/v6/MgXQGyNr1xbI8tJSYiMWv5kXg5g/AAAABbu2mrfgMEMATRppz3WvutNHbUSBM3rWWq3nIBWGk3n1DgG9GVI1yX5gkfdDK73a0_L0SVQnfKp2HEIMdC9KeAXdmZB7VjTqO8EI0Pyv3C8DvfJtXEYE1mXA9g.jpg?r=6ae" alt="Download banner" id="download-banner" />
+            <div className="hero-overlay">
+              <h1 className="hero-heading gradient-text" id="hero-title">Anime Vault</h1>
+              <p className="hero-subtitle" id="hero-subtitle">
+                Download Anime Vault for Windows, macOS, and Linux.
+              </p>
+            </div>
+          </div>
       </section>
 
       {/* Downloads Section */}
