@@ -48,7 +48,7 @@ const Download = () => {
               className="button-primary download-btn-gradient"
               aria-label="Download Anime Vault for Windows"
             >
-              Download .exe
+              {`AnimeVault Setup ${VERSION}.exe`}
             </FocusableLink>
           </div>
 
@@ -67,7 +67,7 @@ const Download = () => {
               className="button-primary download-btn-gradient"
               aria-label="Download Anime Vault for macOS"
             >
-              Download .dmg
+              {`AnimeVault-${VERSION}.dmg`}
             </FocusableLink>
           </div>
 
@@ -86,7 +86,7 @@ const Download = () => {
               className="button-primary download-btn-gradient"
               aria-label="Download Anime Vault for Linux"
             >
-              Download
+              {`AnimeVault-${VERSION}.AppImage`}
             </FocusableLink>
           </div>
         </div>

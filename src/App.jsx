@@ -16,6 +16,7 @@ import UserProfile from './pages/UserProfile';
 import AdminDashboard from './pages/AdminDashboard';
 import { Contact, FAQ, Terms, Privacy, DMCA, RequestAnime } from './pages/StaticPages';
 import Download from './pages/Download';
+import NotFound from './pages/NotFound';
 
 import Footer from './components/Footer';
 import AuthModal from './components/AuthModal';
@@ -197,7 +198,8 @@ function App() {
           <Route path="/profile" element={<Profile />} />
           <Route path="/user/:username" element={<UserProfile />} />
           <Route path="/admin" element={<AdminDashboard />} />
-<Route path="/download" element={<Download />} />
+          <Route path="/download" element={<Download />} />
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </main>
 
