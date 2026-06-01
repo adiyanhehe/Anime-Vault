@@ -44,19 +44,22 @@ jobs:
       
       # Optional: still keep the artifacts for debugging if it's not a tag
       - name: Upload artifacts
-        if: "!startsWith(github.ref, 'refs/tags/')"
+        if: ${{ !startsWith(github.ref, 'refs/tags/') }}
         uses: actions/upload-artifact@v4
         with:
           name: ${{ runner.os }}-installer
           path: release/*
 
       # Automatically publish to GitHub Releases on tag (e.g. v0.1.0)
-      - name: Release to GitHub
-        if: startsWith(github.ref, 'refs/tags/')
-        uses: softprops/action-gh-release@v2
-        with:
-          files: |
-            release/*.exe
-            release/*.dmg
-            release/*.AppImage
-            release/*.deb
+- name: Release to GitHub
+  if: startsWith(github.ref, 'refs/tags/')
+  uses: softprops/action-gh-release@v2
+  with:
+    tag_name: ${{ github.ref_name }}
+    name: Release ${{ github.ref_name }}
+    generate_release_notes: true
+    files: |
+      release/*.exe
+      release/*.dmg
+      release/*.AppImage
+      release/*.deb

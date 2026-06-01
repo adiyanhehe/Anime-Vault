@@ -16,6 +16,14 @@
 .hero-download {
   text-align: center;
   padding: 4rem 2rem 2rem;
+  color: var(--foreground);
+}
+.hero-banner {
+  width: 100%;
+  max-height: 350px;
+  object-fit: cover;
+  border-radius: 1rem;
+  margin-top: 1rem;
 }
 
 .gradient-text {
@@ -174,6 +182,14 @@
 .feature-icon {
   color: #4cd7f6;
   margin-bottom: 0.25rem;
+}
+.video-player-wrapper-v2 {
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+}
+@media (min-width: 1600px) {
+  .video-player-wrapper-v2 { max-width: 1200px; }
 }
 
 .feature-title {
