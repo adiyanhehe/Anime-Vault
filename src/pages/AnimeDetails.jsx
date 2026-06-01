@@ -1,11 +1,20 @@
-import { useEffect, useRef, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { fetchAnimeById, stripHtml } from '../api/anilist';
-import { findBestStreamingMatch, fetchStreamingEpisodes, fetchStreamingSources, probeMirrors } from '../api/streaming';
-import VideoPlayer from '../components/VideoPlayer';
-import CommentsSection from '../components/CommentsSection';
-import { useUser } from '../api/UserContext';
-import { buildDlhubSearchUrl } from '../utils/downloadLinks';
+import { useEffect, useRef, useState } from "react";
+import { useParams, Link } from "react-router-dom";
+import { fetchAnimeById, stripHtml } from "../api/anilist";
+import {
+  findBestStreamingMatch,
+  fetchStreamingEpisodes,
+  fetchStreamingSources,
+  probeMirrors,
+} from "../api/streaming";
+import VideoPlayer from "../components/VideoPlayer";
+import CommentsSection from "../components/CommentsSection";
+import { useUser } from "../api/UserContext";
+import { buildDlhubSearchUrl } from "../utils/downloadLinks";
+import {
+  buildAnikotoSearchUrl,
+  fetchAnikotoEmbedByTitle,
+} from "../api/anikoto";
 import {
   Play,
   Calendar,
@@ -23,14 +32,14 @@ import {
   Zap,
   Sparkles,
   Heart,
-} from 'lucide-react';
+} from "lucide-react";
 
-const PROGRESS_KEY = 'animevault_progress';
-const RECENTS_KEY = 'animevault_recently_viewed';
+const PROGRESS_KEY = "animevault_progress";
+const RECENTS_KEY = "animevault_recently_viewed";
 
 function safeTitle(title) {
-  if (!title) return 'Unknown Title';
-  return title.english || title.romaji || title.native || 'Unknown Title';
+  if (!title) return "Unknown Title";
+  return title.english || title.romaji || title.native || "Unknown Title";
 }
 
 /** Build an instant episode list from AniList metadata — no scraper needed */
@@ -40,7 +49,7 @@ function buildEpisodeList(media) {
   if (media.nextAiringEpisode?.episode) {
     count = media.nextAiringEpisode.episode - 1;
   }
-  if (!count || count <= 0) count = media.format === 'MOVIE' ? 1 : 12;
+  if (!count || count <= 0) count = media.format === "MOVIE" ? 1 : 12;
 
   return Array.from({ length: count }, (_, i) => ({
     id: `ep-${media.id}-${i + 1}`,
@@ -53,21 +62,23 @@ function buildEpisodeList(media) {
 /** Extract external IDs from AniList externalLinks */
 function findExternalId(links, siteName) {
   if (!links) return null;
-  const link = links.find(l => l.site.toLowerCase().includes(siteName.toLowerCase()));
+  const link = links.find((l) =>
+    l.site.toLowerCase().includes(siteName.toLowerCase()),
+  );
   if (!link) return null;
 
   // Extract ID from URL
   const url = link.url;
-  if (siteName.toLowerCase().includes('themoviedb')) {
+  if (siteName.toLowerCase().includes("themoviedb")) {
     const match = url.match(/\/(tv|movie)\/(\d+)/);
     return match ? match[2] : null;
   }
-  if (siteName.toLowerCase().includes('imdb')) {
+  if (siteName.toLowerCase().includes("imdb")) {
     const match = url.match(/\/title\/(tt\d+)/);
     return match ? match[1] : null;
   }
 
-  return url.split('/').filter(Boolean).pop();
+  return url.split("/").filter(Boolean).pop();
 }
 
 // ─────────────────────────────────────────────────────────
@@ -76,36 +87,48 @@ function findExternalId(links, siteName) {
 // ─────────────────────────────────────────────────────────
 const SERVERS = [
   {
-    key: 'VidLink',
-    label: 'VidLink • Sub (Recommended)',
+    key: "Anikoto",
+    label: "Anikoto • Sub (Default)",
+    build: ({ anikotoEmbedUrl, anikotoSearchUrl }) =>
+      anikotoEmbedUrl || anikotoSearchUrl,
+  },
+  {
+    key: "VidLink",
+    label: "VidLink • Sub (Recommended)",
     build: ({ malId, tmdbId, ep }) => {
-      if (malId) return `https://vidlink.pro/anime/${malId}/${ep}/sub?primaryColor=ff1a75&nextbutton=true`;
-      if (tmdbId) return `https://vidlink.pro/tv/${tmdbId}/1/${ep}?primaryColor=ff1a75&nextbutton=true`;
+      if (malId)
+        return `https://vidlink.pro/anime/${malId}/${ep}/sub?primaryColor=ff1a75&nextbutton=true`;
+      if (tmdbId)
+        return `https://vidlink.pro/tv/${tmdbId}/1/${ep}?primaryColor=ff1a75&nextbutton=true`;
       return null;
     },
   },
   {
-    key: 'VidLinkDub',
-    label: 'VidLink • Dub',
+    key: "VidLinkDub",
+    label: "VidLink • Dub",
     build: ({ malId, tmdbId, ep }) => {
-      if (malId) return `https://vidlink.pro/anime/${malId}/${ep}/dub?primaryColor=ff1a75&nextbutton=true`;
-      if (tmdbId) return `https://vidlink.pro/tv/${tmdbId}/1/${ep}?primaryColor=ff1a75&nextbutton=true`;
+      if (malId)
+        return `https://vidlink.pro/anime/${malId}/${ep}/dub?primaryColor=ff1a75&nextbutton=true`;
+      if (tmdbId)
+        return `https://vidlink.pro/tv/${tmdbId}/1/${ep}?primaryColor=ff1a75&nextbutton=true`;
       return null;
     },
   },
   {
-    key: 'VidsrcICU',
-    label: 'Vidsrc ICU • Sub (Default)',
-    build: ({ anilistId, ep }) => `https://vidsrc.icu/embed/anime/${anilistId}/${ep}/0`,
+    key: "VidsrcICU",
+    label: "Vidsrc ICU • Sub (Default)",
+    build: ({ anilistId, ep }) =>
+      `https://vidsrc.icu/embed/anime/${anilistId}/${ep}/0`,
   },
   {
-    key: 'VidsrcICUDub',
-    label: 'Vidsrc ICU • Dub',
-    build: ({ anilistId, ep }) => `https://vidsrc.icu/embed/anime/${anilistId}/${ep}/1`,
+    key: "VidsrcICUDub",
+    label: "Vidsrc ICU • Dub",
+    build: ({ anilistId, ep }) =>
+      `https://vidsrc.icu/embed/anime/${anilistId}/${ep}/1`,
   },
   {
-    key: 'VidsrcCC',
-    label: 'Vidsrc CC',
+    key: "VidsrcCC",
+    label: "Vidsrc CC",
     build: ({ malId, tmdbId, ep }) =>
       tmdbId
         ? `https://vidsrc.cc/v2/embed/tv/${tmdbId}/1/${ep}`
@@ -114,32 +137,37 @@ const SERVERS = [
           : null,
   },
   {
-    key: 'VidsrcNL',
-    label: 'Vidsrc NL',
-    build: ({ malId, ep }) => malId ? `https://vidsrc.nl/embed/anime/${malId}/${ep}` : null,
+    key: "VidsrcNL",
+    label: "Vidsrc NL",
+    build: ({ malId, ep }) =>
+      malId ? `https://vidsrc.nl/embed/anime/${malId}/${ep}` : null,
   },
   {
-    key: 'VidsrcDev',
-    label: 'Vidsrc Dev (TMDB)',
-    build: ({ tmdbId, ep }) => tmdbId ? `https://vidsrc.dev/embed/tv/${tmdbId}/1/${ep}` : null,
+    key: "VidsrcDev",
+    label: "Vidsrc Dev (TMDB)",
+    build: ({ tmdbId, ep }) =>
+      tmdbId ? `https://vidsrc.dev/embed/tv/${tmdbId}/1/${ep}` : null,
   },
   {
-    key: 'MultiEmbed',
-    label: 'MultiEmbed',
+    key: "MultiEmbed",
+    label: "MultiEmbed",
     build: ({ tmdbId, imdbId, malId, ep }) => {
-      if (tmdbId) return `https://multiembed.mov/?video_id=${tmdbId}&tmdb=1&s=1&e=${ep}`;
-      if (imdbId) return `https://multiembed.mov/?video_id=${imdbId}&tmdb=1&s=1&e=${ep}`;
+      if (tmdbId)
+        return `https://multiembed.mov/?video_id=${tmdbId}&tmdb=1&s=1&e=${ep}`;
+      if (imdbId)
+        return `https://multiembed.mov/?video_id=${imdbId}&tmdb=1&s=1&e=${ep}`;
       return `https://multiembed.mov/?video_id=${malId}&tmdb=0&s=1&e=${ep}`;
     },
   },
   {
-    key: 'VidsrcIN',
-    label: 'Vidsrc IN',
-    build: ({ malId, ep }) => malId ? `https://vidsrc.in/embed/anime/${malId}/${ep}` : null,
+    key: "VidsrcIN",
+    label: "Vidsrc IN",
+    build: ({ malId, ep }) =>
+      malId ? `https://vidsrc.in/embed/anime/${malId}/${ep}` : null,
   },
   {
-    key: 'Smashy',
-    label: 'SmashyStream',
+    key: "Smashy",
+    label: "SmashyStream",
     build: ({ tmdbId, imdbId, ep }) =>
       tmdbId
         ? `https://embed.smashystream.com/playere.php?tmdb=${tmdbId}&season=1&episode=${ep}`
@@ -148,41 +176,36 @@ const SERVERS = [
           : null,
   },
   {
-    key: 'VidsrcSU',
-    label: 'Vidsrc SU',
-    build: ({ malId, ep }) => malId ? `https://vidsrc.su/embed/anime/${malId}/${ep}` : null,
+    key: "VidsrcSU",
+    label: "Vidsrc SU",
+    build: ({ malId, ep }) =>
+      malId ? `https://vidsrc.su/embed/anime/${malId}/${ep}` : null,
   },
   {
-    key: 'VidsrcPM',
-    label: 'Vidsrc PM',
-    build: ({ malId, ep }) => malId ? `https://vidsrc.pm/embed/anime/${malId}/${ep}` : null,
+    key: "VidsrcPM",
+    label: "Vidsrc PM",
+    build: ({ malId, ep }) =>
+      malId ? `https://vidsrc.pm/embed/anime/${malId}/${ep}` : null,
   },
   {
-    key: 'Miruro',
-    label: 'Miruro • Embed (Recommended)',
+    key: "Miruro",
+    label: "Miruro • Full Title Search",
     build: ({ titleForSlug }) => {
-      let clean = titleForSlug;
-      // Translate common Romaji titles to English equivalents for better WordPress search matching
-      clean = clean.replace(/Boku no Hero/gi, 'My Hero');
-      clean = clean.replace(/Shingeki no Kyojin/gi, 'Attack on Titan');
-
-      const words = clean.split(' ');
-      let query = words.slice(0, 3).join(' ');
-      const prepositions = ['to', 'no', 'in', 'at', 'the', 'a', 'of', 'and', 'with', 'for', 'by'];
-      if (words.length > 3 && prepositions.includes(words[2].toLowerCase())) {
-        query = words.slice(0, 4).join(' ');
-      }
+      let query = titleForSlug;
+      // Translate common Romaji titles to English equivalents for better WordPress search matching.
+      query = query.replace(/Boku no Hero/gi, "My Hero");
+      query = query.replace(/Shingeki no Kyojin/gi, "Attack on Titan");
       return `https://miruro.ro/?s=${encodeURIComponent(query)}`;
     },
   },
   {
-    key: 'Native',
-    label: 'Native Scraper (Slow)',
+    key: "Native",
+    label: "Native Scraper (Slow)",
     build: () => null, // handled via videoSources
   },
 ];
 
-const DEFAULT_SERVER = 'Miruro';
+const DEFAULT_SERVER = "Anikoto";
 
 function AnimeDetails() {
   const { id } = useParams();
@@ -190,22 +213,27 @@ function AnimeDetails() {
 
   const [anime, setAnime] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [episodes, setEpisodes] = useState([]);
   const [currentEpisode, setCurrentEpisode] = useState(null);
   const [zenMode, setZenMode] = useState(false);
   const [progress, setProgress] = useState(() =>
-    JSON.parse(localStorage.getItem(PROGRESS_KEY) || '{}')
+    JSON.parse(localStorage.getItem(PROGRESS_KEY) || "{}"),
   );
 
   // Player state
   const [activeServer, setActiveServer] = useState(DEFAULT_SERVER);
   const [videoSources, setVideoSources] = useState([]);
   const [playerLoading, setPlayerLoading] = useState(false);
-  const [playerStatus, setPlayerStatus] = useState(''); // info/warning messages
+  const [playerStatus, setPlayerStatus] = useState(""); // info/warning messages
+  const [anikotoEmbedUrl, setAnikotoEmbedUrl] = useState(null);
+  const [anikotoLoading, setAnikotoLoading] = useState(false);
 
   // Consumet enrichment (background)
-  const [streamingInfo, setStreamingInfo] = useState({ id: null, provider: 'gogoanime' });
+  const [streamingInfo, setStreamingInfo] = useState({
+    id: null,
+    provider: "gogoanime",
+  });
   const consumetLoadedRef = useRef(false); // prevent double-fetch
 
   // Episode page/chunk for large episode lists
@@ -214,7 +242,7 @@ function AnimeDetails() {
 
   // ───── Probe mirrors once per session (fire-and-forget) ─────
   useEffect(() => {
-    probeMirrors().catch(() => { });
+    probeMirrors().catch(() => {});
   }, []);
 
   // ───── Main data load ─────
@@ -224,7 +252,8 @@ function AnimeDetails() {
     setEpisodes([]);
     setCurrentEpisode(null);
     setVideoSources([]);
-    setPlayerStatus('');
+    setAnikotoEmbedUrl(null);
+    setPlayerStatus("");
     setActiveServer(DEFAULT_SERVER);
     setEpPage(0);
 
@@ -232,11 +261,11 @@ function AnimeDetails() {
       const safetyTimer = setTimeout(() => setLoading(false), 12000);
       try {
         setLoading(true);
-        setError('');
+        setError("");
 
         const media = await fetchAnimeById(id);
         if (!media) {
-          setError('Anime not found.');
+          setError("Anime not found.");
           return;
         }
 
@@ -247,8 +276,11 @@ function AnimeDetails() {
         setEpisodes(epList);
 
         // Resume from last watched episode, else start at 1
-        const lastWatched = JSON.parse(localStorage.getItem(PROGRESS_KEY) || '{}')[media.id];
-        const startEp = epList.find(e => e.number === lastWatched) || epList[0];
+        const lastWatched = JSON.parse(
+          localStorage.getItem(PROGRESS_KEY) || "{}",
+        )[media.id];
+        const startEp =
+          epList.find((e) => e.number === lastWatched) || epList[0];
         setCurrentEpisode(startEp || null);
 
         // Done — page is interactive immediately
@@ -256,17 +288,21 @@ function AnimeDetails() {
         clearTimeout(safetyTimer);
 
         // ── Recently viewed ──
-        const recents = JSON.parse(localStorage.getItem(RECENTS_KEY) || '[]');
+        const recents = JSON.parse(localStorage.getItem(RECENTS_KEY) || "[]");
         const updated = [
-          { id: media.id, title: safeTitle(media.title), image: media.coverImage?.large },
-          ...recents.filter(r => r.id !== media.id),
+          {
+            id: media.id,
+            title: safeTitle(media.title),
+            image: media.coverImage?.large,
+          },
+          ...recents.filter((r) => r.id !== media.id),
         ].slice(0, 10);
         localStorage.setItem(RECENTS_KEY, JSON.stringify(updated));
 
         // ── Background: Consumet enrichment ──
-        enrichWithConsumer(media, epList).catch(() => { });
+        enrichWithConsumer(media, epList).catch(() => {});
       } catch (err) {
-        setError(err.message || 'Failed to load anime details.');
+        setError(err.message || "Failed to load anime details.");
       } finally {
         setLoading(false);
       }
@@ -279,7 +315,12 @@ function AnimeDetails() {
   // Sync watch history to Neon Postgres when user logs in or anime loads
   useEffect(() => {
     if (user && anime) {
-      addToHistory(anime.id, 'anime', safeTitle(anime.title), anime.coverImage?.large);
+      addToHistory(
+        anime.id,
+        "anime",
+        safeTitle(anime.title),
+        anime.coverImage?.large,
+      );
     }
   }, [user, anime]);
 
@@ -290,7 +331,11 @@ function AnimeDetails() {
 
     const titleStr = safeTitle(media.title);
     try {
-      const match = await findBestStreamingMatch(titleStr, media.seasonYear, media.title?.english);
+      const match = await findBestStreamingMatch(
+        titleStr,
+        media.seasonYear,
+        media.title?.english,
+      );
       if (!match) return;
 
       setStreamingInfo(match);
@@ -298,10 +343,12 @@ function AnimeDetails() {
       if (!richEps || richEps.length === 0) return;
 
       // Merge titles/thumbnails from scraper into our episode list
-      setEpisodes(prev => {
+      setEpisodes((prev) => {
         const byNumber = {};
-        richEps.forEach(e => { byNumber[e.number] = e; });
-        return prev.map(ep => ({
+        richEps.forEach((e) => {
+          byNumber[e.number] = e;
+        });
+        return prev.map((ep) => ({
           ...ep,
           scraperId: byNumber[ep.number]?.id || null,
           title: byNumber[ep.number]?.title || ep.title,
@@ -316,21 +363,26 @@ function AnimeDetails() {
   // ───── Load native stream sources (only for "Native" server) ─────
   async function loadNativeSources(ep) {
     if (!ep?.scraperId) {
-      setPlayerStatus('Native sources not available. Switch to another server.');
+      setPlayerStatus(
+        "Native sources not available. Switch to another server.",
+      );
       setVideoSources([]);
       return;
     }
     setPlayerLoading(true);
-    setPlayerStatus('');
+    setPlayerStatus("");
     try {
-      const sources = await fetchStreamingSources(ep.scraperId, streamingInfo.provider);
+      const sources = await fetchStreamingSources(
+        ep.scraperId,
+        streamingInfo.provider,
+      );
       if (sources?.length) {
         setVideoSources(sources);
       } else {
-        setPlayerStatus('No native sources. Try another server.');
+        setPlayerStatus("No native sources. Try another server.");
       }
     } catch {
-      setPlayerStatus('Native source fetch failed. Try another server.');
+      setPlayerStatus("Native source fetch failed. Try another server.");
     } finally {
       setPlayerLoading(false);
     }
@@ -340,38 +392,73 @@ function AnimeDetails() {
   function selectEpisode(ep) {
     setCurrentEpisode(ep);
     setVideoSources([]);
-    setPlayerStatus('');
+    setAnikotoEmbedUrl(null);
+    setPlayerStatus("");
 
     const updated = { ...progress, [anime.id]: ep.number };
     setProgress(updated);
     localStorage.setItem(PROGRESS_KEY, JSON.stringify(updated));
 
-    if (activeServer === 'Native') {
+    if (activeServer === "Native") {
       loadNativeSources(ep);
     }
 
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   // When server changes to Native, try to load sources
   useEffect(() => {
-    if (activeServer === 'Native' && currentEpisode) {
+    if (activeServer === "Native" && currentEpisode) {
       loadNativeSources(currentEpisode);
     }
   }, [activeServer]);
 
+  useEffect(() => {
+    if (!anime || !currentEpisode || activeServer !== "Anikoto") return;
+
+    let cancelled = false;
+    const fullTitle = safeTitle(anime.title);
+    setAnikotoLoading(true);
+    setPlayerStatus("Loading Anikoto stream with full title search...");
+
+    fetchAnikotoEmbedByTitle(fullTitle, currentEpisode.number, "sub")
+      .then((url) => {
+        if (cancelled) return;
+        setAnikotoEmbedUrl(url);
+        setPlayerStatus(
+          url
+            ? ""
+            : "Anikoto did not return an embed yet. Opening full-title Anikoto search instead.",
+        );
+      })
+      .catch(() => {
+        if (!cancelled)
+          setPlayerStatus(
+            "Anikoto lookup failed. Use VidLink or another server if the search page does not auto-play.",
+          );
+      })
+      .finally(() => {
+        if (!cancelled) setAnikotoLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [anime, currentEpisode, activeServer]);
+
   // ───── Compute embed URL for current episode + server ─────
   function getEmbedUrl() {
     if (!anime || !currentEpisode) return null;
-    if (activeServer === 'Native') return null;
+    if (activeServer === "Native") return null;
 
-    const server = SERVERS.find(s => s.key === activeServer);
+    const server = SERVERS.find((s) => s.key === activeServer);
     if (!server) return null;
 
-    const tmdbId = findExternalId(anime.externalLinks, 'themoviedb');
-    const imdbId = findExternalId(anime.externalLinks, 'imdb');
+    const tmdbId = findExternalId(anime.externalLinks, "themoviedb");
+    const imdbId = findExternalId(anime.externalLinks, "imdb");
     const englishTitle = anime.title?.english || null;
     const titleForSlug = englishTitle || anime.title?.romaji || animeTitle;
+    const fullTitle = safeTitle(anime.title);
 
     return server.build({
       anilistId: id,
@@ -380,6 +467,8 @@ function AnimeDetails() {
       imdbId,
       englishTitle,
       titleForSlug,
+      anikotoEmbedUrl,
+      anikotoSearchUrl: buildAnikotoSearchUrl(fullTitle),
       ep: currentEpisode.number,
       season: 1,
     });
@@ -387,23 +476,30 @@ function AnimeDetails() {
 
   // ───── Episode pagination ─────
   const totalPages = Math.ceil(episodes.length / EP_PAGE_SIZE);
-  const visibleEpisodes = episodes.slice(epPage * EP_PAGE_SIZE, (epPage + 1) * EP_PAGE_SIZE);
+  const visibleEpisodes = episodes.slice(
+    epPage * EP_PAGE_SIZE,
+    (epPage + 1) * EP_PAGE_SIZE,
+  );
 
   // ───── Render ─────
-  if (loading) return (
-    <div className="status-container">
-      <div className="spinner" />
-      <p>Loading anime details...</p>
-    </div>
-  );
+  if (loading)
+    return (
+      <div className="status-container">
+        <div className="spinner" />
+        <p>Loading anime details...</p>
+      </div>
+    );
 
-  if (error) return (
-    <div className="status-container">
-      <AlertCircle size={48} color="var(--brand-color)" />
-      <p className="error">{error}</p>
-      <Link to="/" className="btn-play-v2">Back to Home</Link>
-    </div>
-  );
+  if (error)
+    return (
+      <div className="status-container">
+        <AlertCircle size={48} color="var(--brand-color)" />
+        <p className="error">{error}</p>
+        <Link to="/" className="btn-play-v2">
+          Back to Home
+        </Link>
+      </div>
+    );
 
   const animeTitle = safeTitle(anime.title);
   const embedUrl = getEmbedUrl();
@@ -411,7 +507,7 @@ function AnimeDetails() {
     ? {
         dlhub: buildDlhubSearchUrl({
           title: animeTitle,
-          type: 'anime',
+          type: "anime",
           episode: currentEpisode.number,
           year: anime.seasonYear,
         }),
@@ -423,12 +519,11 @@ function AnimeDetails() {
 
   return (
     <div className="details-page-v2">
-
       {/* ── Video Player ── */}
       <div className="player-section-v2">
         {currentEpisode ? (
           <VideoPlayer
-            sources={activeServer === 'Native' ? videoSources : []}
+            sources={activeServer === "Native" ? videoSources : []}
             poster={anime.bannerImage || anime.coverImage?.extraLarge}
             title={`${animeTitle} · EP ${currentEpisode.number}`}
             embedUrl={embedUrl}
@@ -438,6 +533,13 @@ function AnimeDetails() {
           <div className="video-player-error">
             <PlayCircle size={48} className="spin" />
             <p>No episodes available yet.</p>
+          </div>
+        )}
+
+        {anikotoLoading && activeServer === "Anikoto" && (
+          <div className="player-status-bar">
+            <RefreshCw size={14} className="spin" />
+            <span>Finding Anikoto embed for the full title...</span>
           </div>
         )}
 
@@ -451,15 +553,32 @@ function AnimeDetails() {
 
         {/* Fallback External Link for broken iframes */}
         {embedUrl && (
-          <div style={{ display: 'flex', justifyContent: 'center', margin: '1rem 0' }}>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "center",
+              margin: "1rem 0",
+            }}
+          >
             <a
               href={embedUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="btn-info-v2"
-              style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '0.6rem 1.5rem', background: 'var(--brand-color)', color: '#fff', textDecoration: 'none', borderRadius: '8px', fontWeight: 600 }}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                padding: "0.6rem 1.5rem",
+                background: "var(--brand-color)",
+                color: "#fff",
+                textDecoration: "none",
+                borderRadius: "8px",
+                fontWeight: 600,
+              }}
             >
-              <ExternalLink size={16} /> Open Player in New Tab (Bypasses Blocks)
+              <ExternalLink size={16} /> Open Player in New Tab (Bypasses
+              Blocks)
             </a>
           </div>
         )}
@@ -467,11 +586,21 @@ function AnimeDetails() {
         {animeDownloadUrls && (
           <div className="anime-download-row">
             <span>DOWNLOAD:</span>
-            <a href={animeDownloadUrls.dlhub} target="_blank" rel="noopener noreferrer" className="download-chip dlhub">
+            <a
+              href={animeDownloadUrls.dlhub}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="download-chip dlhub"
+            >
               <Download size={14} /> DLHub
             </a>
             {animeDownloadUrls.vidlink && (
-              <a href={animeDownloadUrls.vidlink} target="_blank" rel="noopener noreferrer" className="download-chip vidlink">
+              <a
+                href={animeDownloadUrls.vidlink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="download-chip vidlink"
+              >
                 <Download size={14} /> VidLink
               </a>
             )}
@@ -484,18 +613,27 @@ function AnimeDetails() {
             <div className="server-info">
               <Tv size={20} />
               <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div
+                  style={{ display: "flex", alignItems: "center", gap: "8px" }}
+                >
                   <h4 style={{ margin: 0 }}>Streaming Server</h4>
                   <button
-                    className={`zen-toggle-v2 ${zenMode ? 'active' : ''}`}
+                    className={`zen-toggle-v2 ${zenMode ? "active" : ""}`}
                     onClick={() => setZenMode(!zenMode)}
-                    title={zenMode ? 'Turn off Ad-Blocker' : 'Turn on Ad-Blocker (Zen Mode)'}
+                    title={
+                      zenMode
+                        ? "Turn off Ad-Blocker"
+                        : "Turn on Ad-Blocker (Zen Mode)"
+                    }
                   >
-                    <Zap size={14} fill={zenMode ? 'currentColor' : 'none'} />
-                    {zenMode ? 'Zen Mode ON' : 'Zen Mode OFF'}
+                    <Zap size={14} fill={zenMode ? "currentColor" : "none"} />
+                    {zenMode ? "Zen Mode ON" : "Zen Mode OFF"}
                   </button>
                 </div>
-                <p>Switch servers if one is not working. AniWave and VidLink are recommended.</p>
+                <p>
+                  Anikoto is the default player and uses the full anime title.
+                  Switch servers if one is not working.
+                </p>
               </div>
             </div>
 
@@ -503,10 +641,12 @@ function AnimeDetails() {
               <select
                 className="server-dropdown-v2"
                 value={activeServer}
-                onChange={e => setActiveServer(e.target.value)}
+                onChange={(e) => setActiveServer(e.target.value)}
               >
-                {SERVERS.map(s => (
-                  <option key={s.key} value={s.key}>{s.label}</option>
+                {SERVERS.map((s) => (
+                  <option key={s.key} value={s.key}>
+                    {s.label}
+                  </option>
                 ))}
               </select>
             </div>
@@ -531,12 +671,22 @@ function AnimeDetails() {
           />
           <div className="detail-info-v2">
             <div className="detail-meta-v2">
-              <span className="score"><Star size={16} fill="currentColor" /> {anime.averageScore}%</span>
-              <span><Tv size={16} /> {anime.format}</span>
-              <span><Users size={16} /> {anime.status}</span>
-              {anime.seasonYear && <span><Calendar size={16} /> {anime.seasonYear}</span>}
+              <span className="score">
+                <Star size={16} fill="currentColor" /> {anime.averageScore}%
+              </span>
+              <span>
+                <Tv size={16} /> {anime.format}
+              </span>
+              <span>
+                <Users size={16} /> {anime.status}
+              </span>
+              {anime.seasonYear && (
+                <span>
+                  <Calendar size={16} /> {anime.seasonYear}
+                </span>
+              )}
               {anime.nextAiringEpisode && (
-                <span style={{ color: 'var(--brand-color)' }}>
+                <span style={{ color: "var(--brand-color)" }}>
                   EP {anime.nextAiringEpisode.episode} airing soon
                 </span>
               )}
@@ -551,20 +701,41 @@ function AnimeDetails() {
               >
                 <Play size={20} fill="currentColor" /> Watch Now
               </button>
-              <button 
+              <button
                 className="btn-info-v2"
                 style={{
-                  display: 'inline-flex', alignItems: 'center', gap: '8px',
-                  color: isLiked(anime.id, 'anime') ? '#ff1a75' : 'var(--text-secondary)',
-                  borderColor: isLiked(anime.id, 'anime') ? '#ff1a75' : 'var(--glass-border)',
-                  background: isLiked(anime.id, 'anime') ? 'rgba(255, 26, 117, 0.1)' : 'var(--glass)',
-                  boxShadow: isLiked(anime.id, 'anime') ? '0 0 10px rgba(255, 26, 117, 0.2)' : 'none',
-                  transition: 'all 0.2s ease', cursor: 'pointer'
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  color: isLiked(anime.id, "anime")
+                    ? "#ff1a75"
+                    : "var(--text-secondary)",
+                  borderColor: isLiked(anime.id, "anime")
+                    ? "#ff1a75"
+                    : "var(--glass-border)",
+                  background: isLiked(anime.id, "anime")
+                    ? "rgba(255, 26, 117, 0.1)"
+                    : "var(--glass)",
+                  boxShadow: isLiked(anime.id, "anime")
+                    ? "0 0 10px rgba(255, 26, 117, 0.2)"
+                    : "none",
+                  transition: "all 0.2s ease",
+                  cursor: "pointer",
                 }}
-                onClick={() => toggleLike(anime.id, 'anime', safeTitle(anime.title), anime.coverImage?.large)}
+                onClick={() =>
+                  toggleLike(
+                    anime.id,
+                    "anime",
+                    safeTitle(anime.title),
+                    anime.coverImage?.large,
+                  )
+                }
               >
-                <Heart size={20} fill={isLiked(anime.id, 'anime') ? '#ff1a75' : 'none'} /> 
-                {isLiked(anime.id, 'anime') ? 'Liked' : 'Like'}
+                <Heart
+                  size={20}
+                  fill={isLiked(anime.id, "anime") ? "#ff1a75" : "none"}
+                />
+                {isLiked(anime.id, "anime") ? "Liked" : "Like"}
               </button>
             </div>
           </div>
@@ -572,10 +743,9 @@ function AnimeDetails() {
       </div>
 
       {/* ── Main Grid ── */}
-      <div className={`detail-layout-v2 ${zenMode ? 'zen-layout' : ''}`}>
+      <div className={`detail-layout-v2 ${zenMode ? "zen-layout" : ""}`}>
         {/* ── Main Content ── */}
         <div className="main-content-v2">
-
           {/* Synopsis */}
           {!zenMode && (
             <div className="details-section-v2">
@@ -585,40 +755,76 @@ function AnimeDetails() {
           )}
 
           {/* Seasons & Relations */}
-          {!zenMode && anime.relations?.nodes?.length > 0 && (() => {
-            const SHOW_TYPES = ['PREQUEL', 'SEQUEL', 'PARENT', 'SIDE_STORY', 'SUMMARY'];
-            const filtered = anime.relations.nodes
-              .map((rel, i) => ({ rel, type: anime.relations.edges[i]?.relationType }))
-              .filter(({ type }) => SHOW_TYPES.includes(type));
-            if (!filtered.length) return null;
-            return (
-              <div className="details-section-v2">
-                <h2>Seasons & Related</h2>
-                <div className="relations-grid-v2">
-                  {filtered.map(({ rel, type }) => (
-                    <Link key={rel.id} to={`/anime/${rel.id}`} className="relation-card-v2">
-                      <div className="relation-image">
-                        <img src={rel.coverImage?.large} alt={safeTitle(rel.title)} />
-                        <span className="relation-type">{type.replace('_', ' ')}</span>
-                      </div>
-                      <div className="relation-info">
-                        <h4>{safeTitle(rel.title)}</h4>
-                        <span>{rel.format} · {rel.status}</span>
-                      </div>
-                    </Link>
-                  ))}
+          {!zenMode &&
+            anime.relations?.nodes?.length > 0 &&
+            (() => {
+              const SHOW_TYPES = [
+                "PREQUEL",
+                "SEQUEL",
+                "PARENT",
+                "SIDE_STORY",
+                "SUMMARY",
+              ];
+              const filtered = anime.relations.nodes
+                .map((rel, i) => ({
+                  rel,
+                  type: anime.relations.edges[i]?.relationType,
+                }))
+                .filter(({ type }) => SHOW_TYPES.includes(type));
+              if (!filtered.length) return null;
+              return (
+                <div className="details-section-v2">
+                  <h2>Seasons & Related</h2>
+                  <div className="relations-grid-v2">
+                    {filtered.map(({ rel, type }) => (
+                      <Link
+                        key={rel.id}
+                        to={`/anime/${rel.id}`}
+                        className="relation-card-v2"
+                      >
+                        <div className="relation-image">
+                          <img
+                            src={rel.coverImage?.large}
+                            alt={safeTitle(rel.title)}
+                          />
+                          <span className="relation-type">
+                            {type.replace("_", " ")}
+                          </span>
+                        </div>
+                        <div className="relation-info">
+                          <h4>{safeTitle(rel.title)}</h4>
+                          <span>
+                            {rel.format} · {rel.status}
+                          </span>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            );
-          })()}
+              );
+            })()}
 
           {/* Episodes */}
           {!zenMode && (
             <div className="details-section-v2">
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  marginBottom: "1rem",
+                }}
+              >
                 <h2 style={{ margin: 0 }}>
                   Episodes
-                  <span style={{ fontSize: '0.85rem', fontWeight: 400, color: 'var(--text-muted)', marginLeft: '0.5rem' }}>
+                  <span
+                    style={{
+                      fontSize: "0.85rem",
+                      fontWeight: 400,
+                      color: "var(--text-muted)",
+                      marginLeft: "0.5rem",
+                    }}
+                  >
                     ({episodes.length})
                   </span>
                 </h2>
@@ -629,10 +835,11 @@ function AnimeDetails() {
                     {Array.from({ length: totalPages }, (_, i) => (
                       <button
                         key={i}
-                        className={`ep-page-btn ${epPage === i ? 'active' : ''}`}
+                        className={`ep-page-btn ${epPage === i ? "active" : ""}`}
                         onClick={() => setEpPage(i)}
                       >
-                        {i * EP_PAGE_SIZE + 1}–{Math.min((i + 1) * EP_PAGE_SIZE, episodes.length)}
+                        {i * EP_PAGE_SIZE + 1}–
+                        {Math.min((i + 1) * EP_PAGE_SIZE, episodes.length)}
                       </button>
                     ))}
                   </div>
@@ -642,15 +849,17 @@ function AnimeDetails() {
               <div className="episodes-container-v2">
                 {visibleEpisodes.length > 0 ? (
                   <div className="episodes-grid-v2">
-                    {visibleEpisodes.map(ep => (
+                    {visibleEpisodes.map((ep) => (
                       <button
                         key={ep.id}
-                        className={`episode-btn-v2 ${currentEpisode?.id === ep.id ? 'active' : ''} ${progress[anime.id] >= ep.number ? 'watched' : ''}`}
+                        className={`episode-btn-v2 ${currentEpisode?.id === ep.id ? "active" : ""} ${progress[anime.id] >= ep.number ? "watched" : ""}`}
                         onClick={() => selectEpisode(ep)}
                       >
                         <span className="episode-label">EP</span>
                         <span className="episode-number">{ep.number}</span>
-                        {progress[anime.id] >= ep.number && <CheckCircle2 size={12} className="check" />}
+                        {progress[anime.id] >= ep.number && (
+                          <CheckCircle2 size={12} className="check" />
+                        )}
                       </button>
                     ))}
                   </div>
@@ -660,7 +869,7 @@ function AnimeDetails() {
               </div>
             </div>
           )}
-          
+
           <CommentsSection mediaId={anime.id} />
         </div>
 
@@ -676,14 +885,16 @@ function AnimeDetails() {
                 </div>
                 <div className="info-row-v2">
                   <span className="info-label-v2">Studios</span>
-                  <span className="info-value-v2">{anime.studios?.nodes?.map(n => n.name).join(', ')}</span>
+                  <span className="info-value-v2">
+                    {anime.studios?.nodes?.map((n) => n.name).join(", ")}
+                  </span>
                 </div>
                 <div className="info-row-v2">
                   <span className="info-label-v2">Episodes</span>
                   <span className="info-value-v2">
                     {anime.nextAiringEpisode
-                      ? `${anime.nextAiringEpisode.episode - 1} aired / ${anime.episodes || '?'} total`
-                      : anime.episodes || 'Unknown'}
+                      ? `${anime.nextAiringEpisode.episode - 1} aired / ${anime.episodes || "?"} total`
+                      : anime.episodes || "Unknown"}
                   </span>
                 </div>
                 <div className="info-row-v2">
@@ -693,8 +904,14 @@ function AnimeDetails() {
                 <div className="info-row-v2">
                   <span className="info-label-v2">Genres</span>
                   <div className="genre-tags-v2">
-                    {anime.genres?.map(g => (
-                      <Link key={g} to={`/search?genre=${g}`} className="genre-tag-v2">{g}</Link>
+                    {anime.genres?.map((g) => (
+                      <Link
+                        key={g}
+                        to={`/search?genre=${g}`}
+                        className="genre-tag-v2"
+                      >
+                        {g}
+                      </Link>
                     ))}
                   </div>
                 </div>
@@ -706,15 +923,21 @@ function AnimeDetails() {
               <div className="sidebar-block-v2">
                 <h3>Recommendations</h3>
                 <div className="related-grid-v2">
-                  {anime.recommendations.nodes.slice(0, 5).map(rec => {
+                  {anime.recommendations.nodes.slice(0, 5).map((rec) => {
                     const m = rec.mediaRecommendation;
                     if (!m) return null;
                     return (
-                      <Link key={m.id} to={`/anime/${m.id}`} className="related-card-v2">
+                      <Link
+                        key={m.id}
+                        to={`/anime/${m.id}`}
+                        className="related-card-v2"
+                      >
                         <img src={m.coverImage?.medium} alt="" />
                         <div className="related-info-v2">
                           <h4>{safeTitle(m.title)}</h4>
-                          <span>{m.format} · {m.averageScore}%</span>
+                          <span>
+                            {m.format} · {m.averageScore}%
+                          </span>
                         </div>
                       </Link>
                     );
