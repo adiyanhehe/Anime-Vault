@@ -23,6 +23,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
       - name: Build Electron app
+        shell: bash
         run: |
           if [ "$RUNNER_OS" = "Windows" ]; then
             npm run electron:build -- --win
