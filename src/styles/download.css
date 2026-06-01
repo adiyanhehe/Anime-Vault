@@ -26,21 +26,20 @@
 
 .hero-banner {
   width: 100%;
-  max-height: 350px;
+  height: 350px;
   object-fit: cover;
   border-radius: 1rem;
   margin-top: 0;
 }
-
-
-  .hero-overlay {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    text-align: center;
-    color: var(--foreground);
-  }
+.hero-overlay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  color: var(--foreground);
+  z-index: 1;
+}
 
   .gradient-text {
   background: linear-gradient(90deg, #8a2be2, #4cd7f6);

@@ -20,7 +20,7 @@ const Download = () => {
       {/* Hero Section */}
       <section className="hero-section hero-download">
           <div className="hero-banner-wrapper">
-
+            <img className="hero-banner" src="https://occ-0-8407-2219.1.nflxso.net/dnm/api/v6/MgXQGyNr1xbI8tJSYiMWv5kXg5g/AAAABdWbeTi-T2LkIx0QRm1vN4Tx6ryR63A4af9LAXNaDo7ATekkicJGbdueUc8jFmSGcuNKi-lOG07qCLLyaijox6H_I0rSvOUJ2vbd-ECLw48WxW97AFHPf9wV5g.jpg?r=5af" alt="Download banner" id="download-banner" />
             <div className="hero-overlay">
               <h1 className="hero-heading gradient-text" id="hero-title">Anime Vault</h1>
               <p className="hero-subtitle" id="hero-subtitle">
