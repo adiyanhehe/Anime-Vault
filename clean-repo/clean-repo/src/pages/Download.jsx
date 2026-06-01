@@ -1,16 +1,16 @@
 import React from 'react';
-import '../styles/download.css';
+import { FocusableLink } from '../components/FocusableWrapper';
 import { Sparkles, Tv, Bookmark, Laptop } from 'lucide-react';
-import FocusableLink from '../components/FocusableLink';
+// Official OS icons generated
 // OS icons will be loaded from CDN URLs directly in the JSX
 
 // -------------------------------
 // Version – keep in sync with your release assets
 // -------------------------------
 const VERSION = '0.1.0';
-const basePath = `${import.meta.env.BASE_URL}release/`;
+const basePath = process.env.NODE_ENV === 'development' ? '/' : 'release/';
 const urls = {
-  windows: `${basePath}AnimeVault%20Setup%20${VERSION}.exe`,
+  windows: `${basePath}AnimeVault Setup ${VERSION}.exe`,
   mac: `${basePath}AnimeVault-${VERSION}.dmg`,
   linux: `${basePath}AnimeVault-${VERSION}.AppImage`,
 };

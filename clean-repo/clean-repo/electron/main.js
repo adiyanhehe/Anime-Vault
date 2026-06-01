@@ -9,15 +9,9 @@ const __dirname = path.dirname(__filename);
 let rpc;
 
 function initDiscord() {
-  try {
-    const clientId = '1510920317143613470';
-    rpc = new RPC.Client({ transport: 'ipc' });
-    rpc.login({ clientId }).catch((err) => {
-      console.warn('Discord RPC login failed:', err.message);
-    });
-  } catch (e) {
-    console.warn('Discord RPC unavailable:', e.message);
-  }
+  const clientId = '1510920317143613470';
+  rpc = new RPC.Client({ transport: 'ipc' });
+  rpc.login({ clientId }).catch(console.error);
 }
 
 function createWindow() {
@@ -31,20 +25,22 @@ function createWindow() {
     },
   });
 
-  if (app.isPackaged) {
-    // ── Production (packaged .exe / .dmg) ──
-    // electron-builder puts our files at <app>/resources/app/
-    // so dist/ is at <app>/resources/app/dist/index.html
-    // which is the same as path.join(__dirname, '..', 'dist', 'index.html')
-    const indexPath = path.join(__dirname, '..', 'dist', 'index.html');
-    console.log('[Electron] Loading production UI from:', indexPath);
-    win.loadFile(indexPath);
+  win.webContents.on('did-fail-load', (event, errorCode, errorDescription, validatedURL) => {
+    console.error('Failed to load:', validatedURL, errorDescription, errorCode);
+    win.loadURL('data:text/html;charset=utf-8,<h2 style="color:red;">Failed to load UI. Please reinstall.</h2>');
+  });
+
+  const isPackaged = app.isPackaged;
+  if (isPackaged) {
+    win.loadFile(path.join(process.resourcesPath, 'app', 'dist', 'index.html'));
   } else {
-    // ── Development ──
-    const devUrl = 'http://localhost:5173/';
-    console.log('[Electron] Loading dev server:', devUrl);
-    win.loadURL(devUrl);
-    win.webContents.openDevTools();
+    const isDev = process.env.NODE_ENV === 'development';
+    if (isDev) {
+      win.loadURL('http://localhost:5173/');
+      win.webContents.openDevTools();
+    } else {
+      win.loadFile(path.join(__dirname, '..', 'dist', 'index.html'));
+    }
   }
 }
 

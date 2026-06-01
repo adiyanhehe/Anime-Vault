@@ -2,22 +2,33 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
 
-export default defineConfig({
-  plugins: [react()],
-  base: process.env.NODE_ENV === 'development' ? '/' : '/Anime-Vault/',
-  resolve: {
-    alias: {
-      '@': path.resolve(__dirname, 'src'),
-    },
-  },
-  server: {
-    proxy: {
-      // Proxy /api to the local AnFire Node server during development to avoid CORS.
-      '/api': {
-        target: 'http://localhost:3000',
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, '/api'),
+export default defineConfig(({ command }) => {
+  // For the Electron build we MUST use relative paths ('./') so that
+  // file:///…/dist/index.html can find its assets.
+  // For the GitHub Pages deploy we use '/Anime-Vault/'.
+  const isElectron = !!process.env.ELECTRON;
+  const base = command === 'serve'
+    ? '/'                       // dev server
+    : isElectron
+      ? './'                    // electron production build
+      : '/Anime-Vault/';       // GitHub Pages
+
+  return {
+    plugins: [react()],
+    base,
+    resolve: {
+      alias: {
+        '@': path.resolve(__dirname, 'src'),
       },
     },
-  },
+    server: {
+      proxy: {
+        '/api': {
+          target: 'http://localhost:3000',
+          changeOrigin: true,
+          rewrite: (p) => p.replace(/^\/api/, '/api'),
+        },
+      },
+    },
+  };
 });

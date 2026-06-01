@@ -1,0 +1,93 @@
+/* src/styles/download.css */
+/* -------------------------------------------------
+   Download page – premium glass‑morphism design
+   Uses CSS variables defined in src/styles.css
+   (‑‑brand-color, ‑‑background, etc.).
+   ------------------------------------------------- */
+
+.download-page {
+  min-height: 100vh;
+  background: var(--background);
+  color: var(--foreground);
+  font-family: "Inter", system-ui, sans-serif;
+}
+
+.hero-download {
+  position: relative;
+  padding: 4rem 2rem;
+  text-align: center;
+  overflow: hidden;
+  background: linear-gradient(135deg, hsl(210, 30%, 12%), hsl(210, 20%, 8%));
+}
+.hero-download::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: url("https://images.unsplash.com/photo-1586281380349-5d2c8c7c7c4a") center/cover;
+  opacity: 0.15;
+  mix-blend-mode: overlay;
+}
+.hero-download-content {
+  position: relative;
+  z-index: 1;
+}
+.hero-heading {
+  font-size: clamp(2.5rem, 8vw, 4rem);
+  margin: 0 0 0.5rem;
+  color: var(--brand-color);
+}
+.hero-subtitle,
+.hero-description {
+  font-size: clamp(1rem, 2.5vw, 1.25rem);
+  margin: 0.5rem 0;
+}
+
+/* Animated overlay */
+.hero-overlay-animated {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at var(--x, 50%) var(--y, 50%),
+    hsla(210, 70%, 35%, 0.2) 0%,
+    transparent 60%);
+  animation: move 12s infinite linear;
+}
+@keyframes move {
+  0%   { --x: 0%;   --y: 0%; }
+  33%  { --x: 100%; --y: 0%; }
+  66%  { --x: 100%; --y: 100%; }
+  100% { --x: 0%;   --y: 100%; }
+}
+
+/* Card styles – reuse the glass‑morphism you already have */
+.download-card {
+  backdrop-filter: blur(12px) brightness(1.1);
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.09);
+  transition: transform 0.25s, box-shadow 0.25s;
+}
+.download-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+}
+.download-btn {
+  display: inline-block;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  background: var(--brand-color);
+  color: #fff;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 0.2s, transform 0.1s;
+}
+.download-btn:hover { background: hsl(210, 70%, 55%); }
+.download-btn:active { transform: scale(0.98); }
+
+.file-size { font-size: 0.85rem; opacity: 0.8; margin-top: 0.25rem; }
+.version-badge {
+  background: rgba(255,255,255,0.15);
+  color: var(--foreground);
+  padding: 0.2rem 0.5rem;
+  border-radius: 0.3rem;
+  font-size: 0.75rem;
+  margin-left: 0.5rem;
+}
