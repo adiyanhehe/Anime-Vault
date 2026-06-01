@@ -176,56 +176,41 @@ function Home() {
                   <img
                     src={getBanner(anime)}
                     alt={getTitle(anime)}
-                      className="hero-rank"
-                      style={{
-                        color: "var(--brand-color)",
-                        background: "rgba(0,0,0,0.6)",
-                        border: "1px solid var(--brand-color)",
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: "6px",
-                        width: "fit-content",
-                        padding: "4px 12px",
-                        borderRadius: "20px",
-                        fontSize: "0.75rem",
-                        fontWeight: "bold",
-                        textTransform: "uppercase",
-                        letterSpacing: "0.05em",
-                      }}
-                    >
+                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                  />
+                  <div className="hero-overlay">
+                    <span className="hero-rank" style={{
+                      color: "var(--brand-color)",
+                      background: "rgba(0,0,0,0.6)",
+                      border: "1px solid var(--brand-color)",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "6px",
+                      padding: "4px 12px",
+                      borderRadius: "20px",
+                      fontSize: "0.75rem",
+                      fontWeight: "bold",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.05em",
+                    }}>
                       <Sparkles size={14} /> #{index + 1} Trending
                     </span>
                     <h1 className="hero-title-v2">{getTitle(anime)}</h1>
                     <div className="hero-meta-v2">
-                      <span>
-                        <Calendar size={16} /> {anime?.seasonYear}
-                      </span>
-                      <span>
-                        <Star size={16} /> {anime?.averageScore}%
-                      </span>
+                      <span><Calendar size={16} /> {anime?.seasonYear}</span>
+                      <span><Star size={16} /> {anime?.averageScore}%</span>
                       <span>{anime?.format}</span>
                     </div>
                     <p className="hero-desc-v2">
-                      {anime?.description
-                        ?.replace(/<[^>]+>/g, "")
-                        .slice(0, 220)}
-                      ...
+                      {anime?.description?.replace(/<[^>]+>/g, "").slice(0, 220)}...
                     </p>
                     <div className="hero-btns-v2">
-                      <button
-                        className="btn-play-v2"
-                        onClick={() => navigate(`/anime/${anime.id}`)}
-                      >
+                      <button className="btn-play-v2" onClick={() => navigate(`/anime/${anime.id}`)}>
                         <Play size={20} fill="black" /> Watch Now
                       </button>
-                      <button
-                        className="btn-info-v2"
-                        onClick={() => navigate(`/anime/${anime.id}`)}
-                      >
+                      <button className="btn-info-v2" onClick={() => navigate(`/anime/${anime.id}`)}>
                         <Info size={20} /> Details
                       </button>
-                    </div>
-                  </div>
                     </div>
                   </div>
                 </div>
