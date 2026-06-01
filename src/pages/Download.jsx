@@ -9,9 +9,9 @@ import FocusableLink from '../components/FocusableLink';
 const VERSION = '0.1.0';
 const basePath = `${import.meta.env.BASE_URL}release/`;
 const urls = {
-  windows: '#',
-  mac: '#',
-  linux: '#',
+  windows: `https://github.com/adiyanhehe/Anime-Vault/releases/download/v${VERSION}/AnimeVault%20Setup%20${VERSION}.exe`,
+  mac: `https://github.com/adiyanhehe/Anime-Vault/releases/download/v${VERSION}/AnimeVault-${VERSION}.dmg`,
+  linux: `https://github.com/adiyanhehe/Anime-Vault/releases/download/v${VERSION}/AnimeVault-${VERSION}.AppImage`,
 };
 
 const Download = () => {
