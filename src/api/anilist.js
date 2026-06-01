@@ -1,5 +1,7 @@
-const API_URL = 'https://graphql.anilist.co';
-const KITSU_BASE = 'https://kitsu.io/api/edge';
+const API_URL = "https://graphql.anilist.co";
+const KITSU_BASE = "https://kitsu.io/api/edge";
+const JIKAN_BASE = "https://api.jikan.moe/v4";
+const API_TIMEOUT_MS = 4500;
 const CACHE_TTL = 1000 * 60 * 30; // 30 minutes cache
 
 let globalFallbackActive = false;
@@ -13,7 +15,10 @@ export function isFallbackActive() {
   try {
     for (let i = localStorage.length - 1; i >= 0; i--) {
       const key = localStorage.key(i);
-      if (key && (key.includes('animevault_kitsu_') || key.includes('animevault_jikan_'))) {
+      if (
+        key &&
+        (key.includes("animevault_kitsu_") || key.includes("animevault_jikan_"))
+      ) {
         localStorage.removeItem(key);
       }
     }
@@ -26,7 +31,7 @@ const ANILIST_TO_KITSU = {
   140960: 46174, // Jujutsu Kaisen Season 2
   142838: 46487, // Frieren: Beyond Journey's End
   166873: 48270, // Demon Slayer: Hashira Training Arc
-  16498: 41370,  // Demon Slayer Season 1
+  16498: 41370, // Demon Slayer Season 1
 };
 
 const KITSU_TO_ANILIST = {
@@ -47,24 +52,30 @@ const KITSU_TO_MAL = {
 
 // Custom banner overrides for premium visual display
 const BANNER_OVERRIDES = {
-  46853: 'https://occ-0-8407-2218.1.nflxso.net/dnm/api/v6/6AYY37jfdO6hpXcMjf9Yu5cnmO0/AAAABVsYZUxoW6EqHCyHECMe2UKD_flr8J8YbE0OPZ8gc3tXEuq4RZQumrmxSHiF9SGErHCz3brEgIdZV4UJJ3oqDrzVLOQiDE7DRQ6Y.jpg?r=6ae',
+  46853:
+    "https://occ-0-8407-2218.1.nflxso.net/dnm/api/v6/6AYY37jfdO6hpXcMjf9Yu5cnmO0/AAAABVsYZUxoW6EqHCyHECMe2UKD_flr8J8YbE0OPZ8gc3tXEuq4RZQumrmxSHiF9SGErHCz3brEgIdZV4UJJ3oqDrzVLOQiDE7DRQ6Y.jpg?r=6ae",
 };
 
 // Custom poster overrides for high-fidelity Amazon/IMDb card images
 const POSTER_OVERRIDES = {
-  46853: 'https://m.media-amazon.com/images/M/MV5BMDg3MGVhNWUtYTQ2NS00ZDdiLTg5MTMtZmM5MjUzN2IxN2I4XkEyXkFqcGc@._V1_.jpg',
+  46853:
+    "https://m.media-amazon.com/images/M/MV5BMDg3MGVhNWUtYTQ2NS00ZDdiLTg5MTMtZmM5MjUzN2IxN2I4XkEyXkFqcGc@._V1_.jpg",
 };
 
 // ── Caching & Fetching for Kitsu API ──────────────────────────────────────────
 async function getKitsu(endpoint) {
-  const cacheKey = `animevault_kitsu_${endpoint.replace(/[^a-zA-Z0-9]/g, '_')}`;
+  const cacheKey = `animevault_kitsu_${endpoint.replace(/[^a-zA-Z0-9]/g, "_")}`;
   try {
     const cached = localStorage.getItem(cacheKey);
     if (cached) {
       const { data, ts } = JSON.parse(cached);
       const cachedStr = JSON.stringify(data);
       // Invalidate if cache contains Gabrielle, is using old trending endpoints, or is expired
-      if (!cachedStr.includes('Gabrielle') && !endpoint.includes('trending') && (Date.now() - ts < CACHE_TTL)) {
+      if (
+        !cachedStr.includes("Gabrielle") &&
+        !endpoint.includes("trending") &&
+        Date.now() - ts < CACHE_TTL
+      ) {
         return data;
       }
     }
@@ -72,9 +83,9 @@ async function getKitsu(endpoint) {
 
   const response = await fetch(`${KITSU_BASE}${endpoint}`, {
     headers: {
-      'Accept': 'application/vnd.api+json',
-      'Content-Type': 'application/vnd.api+json'
-    }
+      Accept: "application/vnd.api+json",
+      "Content-Type": "application/vnd.api+json",
+    },
   });
 
   if (!response.ok) {
@@ -91,106 +102,255 @@ async function getKitsu(endpoint) {
   return data;
 }
 
+function getCache(key) {
+  try {
+    const cached = localStorage.getItem(key);
+    if (!cached) return null;
+    const { data, ts } = JSON.parse(cached);
+    if (Date.now() - ts < CACHE_TTL) return data;
+  } catch (_) {}
+  return null;
+}
+
+function setCache(key, data) {
+  try {
+    localStorage.setItem(key, JSON.stringify({ data, ts: Date.now() }));
+  } catch (_) {}
+}
+
+async function fetchJsonWithTimeout(url, timeoutMs = API_TIMEOUT_MS) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await fetch(url, {
+      headers: { Accept: "application/json" },
+      signal: controller.signal,
+    });
+    if (!response.ok) throw new Error(`Request failed: ${response.status}`);
+    return await response.json();
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+async function getJikan(endpoint) {
+  const cacheKey = `animevault_jikan_v2_${endpoint.replace(/[^a-zA-Z0-9]/g, "_")}`;
+  const cached = getCache(cacheKey);
+  if (cached) return cached;
+
+  const json = await fetchJsonWithTimeout(`${JIKAN_BASE}${endpoint}`);
+  const data = json.data || [];
+  setCache(cacheKey, data);
+  return data;
+}
+
+function mapJikanToAniList(item, type = "ANIME") {
+  if (!item?.mal_id || !item.title) return null;
+  const isManga = type === "MANGA";
+  const image =
+    item.images?.webp?.large_image_url ||
+    item.images?.jpg?.large_image_url ||
+    item.images?.webp?.image_url ||
+    item.images?.jpg?.image_url ||
+    "";
+  const title = {
+    romaji:
+      item.title ||
+      item.title_english ||
+      item.title_japanese ||
+      "Unknown Title",
+    english:
+      item.title_english ||
+      item.title ||
+      item.title_japanese ||
+      "Unknown Title",
+    native:
+      item.title_japanese ||
+      item.title ||
+      item.title_english ||
+      "Unknown Title",
+  };
+  const score = item.score ? Math.round(Number(item.score) * 10) : null;
+  const year =
+    item.year ||
+    item.aired?.prop?.from?.year ||
+    item.published?.prop?.from?.year ||
+    null;
+
+  return {
+    id: `mal-${item.mal_id}`,
+    idMal: item.mal_id,
+    title,
+    description:
+      item.synopsis || item.background || "No description available.",
+    episodes: isManga ? null : item.episodes || null,
+    chapters: isManga ? item.chapters || null : null,
+    volumes: isManga ? item.volumes || null : null,
+    status:
+      item.airing || item.status === "Currently Publishing"
+        ? "RELEASING"
+        : item.status === "Not yet aired"
+          ? "NOT_YET_RELEASED"
+          : "FINISHED",
+    season: item.season?.toUpperCase?.() || null,
+    seasonYear: year,
+    genres: (item.genres || []).map((g) => g.name).filter(Boolean),
+    averageScore: score,
+    meanScore: score,
+    coverImage: {
+      extraLarge: image,
+      large: image,
+      medium: image,
+      color: "#ff1a75",
+    },
+    bannerImage: item.trailer?.images?.maximum_image_url || image,
+    format: item.type?.toUpperCase?.() || (isManga ? "MANGA" : "TV"),
+    duration: item.duration,
+    source: item.source,
+    studios: {
+      nodes: (item.studios || []).map((studio) => ({ name: studio.name })),
+    },
+    relations: { nodes: [], edges: [] },
+    recommendations: { nodes: [] },
+    externalLinks: [
+      item.url
+        ? { site: "MyAnimeList", url: item.url, id: String(item.mal_id) }
+        : null,
+    ].filter(Boolean),
+  };
+}
+
+function cleanMediaList(list, type = "ANIME") {
+  return (list || [])
+    .map((item) =>
+      item?.attributes
+        ? mapKitsuToAniList(item, type)
+        : mapJikanToAniList(item, type),
+    )
+    .filter(
+      (item) =>
+        item?.id &&
+        item?.title &&
+        item.title.romaji !== "Unknown Title" &&
+        (item.coverImage?.large || item.coverImage?.extraLarge),
+    );
+}
+
 // ── Kitsu Response Mapper to AniList Schema ────────────────────────────────────
-function mapKitsuToAniList(item, type = 'ANIME') {
+function mapKitsuToAniList(item, type = "ANIME") {
   if (!item) return null;
 
   // Detect and forcibly convert any "Gabrielle" item to "Classroom of the Elite III"
-  const canonicalTitle = item.attributes?.canonicalTitle || '';
-  const romajiTitle = item.attributes?.titles?.en_jp || '';
-  const englishTitle = item.attributes?.titles?.en || '';
+  const canonicalTitle = item.attributes?.canonicalTitle || "";
+  const romajiTitle = item.attributes?.titles?.en_jp || "";
+  const englishTitle = item.attributes?.titles?.en || "";
   if (
-    canonicalTitle.toLowerCase().includes('gabrielle') || 
-    romajiTitle.toLowerCase().includes('gabrielle') ||
-    englishTitle.toLowerCase().includes('gabrielle')
+    canonicalTitle.toLowerCase().includes("gabrielle") ||
+    romajiTitle.toLowerCase().includes("gabrielle") ||
+    englishTitle.toLowerCase().includes("gabrielle")
   ) {
     item.id = "46853";
     item.attributes = {
-      canonicalTitle: 'Classroom of the Elite III',
+      canonicalTitle: "Classroom of the Elite III",
       titles: {
-        en: 'Classroom of the Elite Season 3',
-        en_jp: 'Classroom of the Elite Season 3',
-        ja_jp: 'ようこそ実力至上主義の教室へ 3rd Season'
+        en: "Classroom of the Elite Season 3",
+        en_jp: "Classroom of the Elite Season 3",
+        ja_jp: "ようこそ実力至上主義の教室へ 3rd Season",
       },
-      synopsis: 'Third season of Classroom of the Elite. Students of the prestigious Tokyo Metropolitan Advanced Nurturing High School face new trials under the school\'s unique meritocratic point system.',
-      startDate: '2024-01-03',
-      status: 'finished',
-      subtype: 'TV',
+      synopsis:
+        "Third season of Classroom of the Elite. Students of the prestigious Tokyo Metropolitan Advanced Nurturing High School face new trials under the school's unique meritocratic point system.",
+      startDate: "2024-01-03",
+      status: "finished",
+      subtype: "TV",
       episodeCount: 13,
-      averageRating: '82',
+      averageRating: "82",
       posterImage: {
-        large: 'https://m.media-amazon.com/images/M/MV5BMDg3MGVhNWUtYTQ2NS00ZDdiLTg5MTMtZmM5MjUzN2IxN2I4XkEyXkFqcGc@._V1_.jpg'
+        large:
+          "https://m.media-amazon.com/images/M/MV5BMDg3MGVhNWUtYTQ2NS00ZDdiLTg5MTMtZmM5MjUzN2IxN2I4XkEyXkFqcGc@._V1_.jpg",
       },
       coverImage: {
-        large: 'https://occ-0-8407-2218.1.nflxso.net/dnm/api/v6/6AYY37jfdO6hpXcMjf9Yu5cnmO0/AAAABVsYZUxoW6EqHCyHECMe2UKD_flr8J8YbE0OPZ8gc3tXEuq4RZQumrmxSHiF9SGErHCz3brEgIdZV4UJJ3oqDrzVLOQiDE7DRQ6Y.jpg?r=6ae'
-      }
+        large:
+          "https://occ-0-8407-2218.1.nflxso.net/dnm/api/v6/6AYY37jfdO6hpXcMjf9Yu5cnmO0/AAAABVsYZUxoW6EqHCyHECMe2UKD_flr8J8YbE0OPZ8gc3tXEuq4RZQumrmxSHiF9SGErHCz3brEgIdZV4UJJ3oqDrzVLOQiDE7DRQ6Y.jpg?r=6ae",
+      },
     };
   }
 
   const attrs = item.attributes || {};
-  const isManga = type === 'MANGA';
+  const isManga = type === "MANGA";
 
   // Title Mapping
   const title = {
-    romaji: attrs.titles?.en_jp || attrs.canonicalTitle || 'Unknown Title',
-    english: attrs.titles?.en || attrs.canonicalTitle || 'Unknown Title',
-    native: attrs.titles?.ja_jp || attrs.canonicalTitle || 'Unknown Title'
+    romaji: attrs.titles?.en_jp || attrs.canonicalTitle || "Unknown Title",
+    english: attrs.titles?.en || attrs.canonicalTitle || "Unknown Title",
+    native: attrs.titles?.ja_jp || attrs.canonicalTitle || "Unknown Title",
   };
 
   const kitsuId = Number(item.id);
 
   // Cover Image Mapping with POSTER_OVERRIDES
-  const overriddenPoster = POSTER_OVERRIDES[kitsuId] || attrs.posterImage?.large || attrs.posterImage?.medium || '';
+  const overriddenPoster =
+    POSTER_OVERRIDES[kitsuId] ||
+    attrs.posterImage?.large ||
+    attrs.posterImage?.medium ||
+    "";
   const coverImage = {
-    extraLarge: overriddenPoster || attrs.posterImage?.original || '',
+    extraLarge: overriddenPoster || attrs.posterImage?.original || "",
     large: overriddenPoster,
-    medium: overriddenPoster || attrs.posterImage?.medium || '',
-    color: '#ff1a75'
+    medium: overriddenPoster || attrs.posterImage?.medium || "",
+    color: "#ff1a75",
   };
 
   const aniListId = KITSU_TO_ANILIST[kitsuId] || kitsuId;
   const malId = KITSU_TO_MAL[kitsuId] || kitsuId;
 
   // Banner image
-  const bannerImage = BANNER_OVERRIDES[kitsuId] || attrs.coverImage?.large || attrs.coverImage?.original || coverImage.extraLarge;
+  const bannerImage =
+    BANNER_OVERRIDES[kitsuId] ||
+    attrs.coverImage?.large ||
+    attrs.coverImage?.original ||
+    coverImage.extraLarge;
 
   // Format mapping
-  let format = attrs.subtype?.toUpperCase() || (isManga ? 'MANGA' : 'TV');
-  if (format === 'MOVIE') format = 'MOVIE';
+  let format = attrs.subtype?.toUpperCase() || (isManga ? "MANGA" : "TV");
+  if (format === "MOVIE") format = "MOVIE";
 
   // Status mapping
-  let status = 'FINISHED';
-  if (attrs.status === 'current' || attrs.status === 'publishing') {
-    status = 'RELEASING';
-  } else if (attrs.status === 'upcoming') {
-    status = 'NOT_YET_RELEASED';
+  let status = "FINISHED";
+  if (attrs.status === "current" || attrs.status === "publishing") {
+    status = "RELEASING";
+  } else if (attrs.status === "upcoming") {
+    status = "NOT_YET_RELEASED";
   }
 
   // Score mapping (Kitsu 100 scale -> AniList 100 scale)
-  const averageScore = attrs.averageRating ? Math.round(parseFloat(attrs.averageRating)) : 75;
+  const averageScore = attrs.averageRating
+    ? Math.round(parseFloat(attrs.averageRating))
+    : 75;
 
   // Season / Year mapping
-  const seasonYear = attrs.startDate ? new Date(attrs.startDate).getFullYear() : null;
+  const seasonYear = attrs.startDate
+    ? new Date(attrs.startDate).getFullYear()
+    : null;
 
   return {
     id: aniListId,
     idMal: malId,
     title,
-    description: attrs.synopsis || 'No description available.',
+    description: attrs.synopsis || "No description available.",
     episodes: attrs.episodeCount || null,
     chapters: attrs.chapterCount || null,
     volumes: attrs.volumeCount || null,
     status,
-    season: 'SPRING',
+    season: "SPRING",
     seasonYear,
-    genres: ['Action', 'Adventure', 'Fantasy'],
+    genres: ["Action", "Adventure", "Fantasy"],
     averageScore,
     meanScore: averageScore,
     coverImage,
     bannerImage,
     studios: { nodes: [] },
     relations: { nodes: [], edges: [] },
-    externalLinks: []
+    externalLinks: [],
   };
 }
 
@@ -199,180 +359,242 @@ const MOCK_FALLBACK_DATA = [
   {
     id: "46853",
     attributes: {
-      canonicalTitle: 'Classroom of the Elite III',
-      titles: { en: 'Classroom of the Elite Season 3', ja_jp: 'ようこそ実力至上主義の教室へ 3rd Season' },
-      synopsis: 'Third season of Classroom of the Elite. Students of the prestigious Tokyo Metropolitan Advanced Nurturing High School face new trials under the school\'s unique meritocratic point system.',
-      startDate: '2024-01-03',
-      status: 'finished',
-      subtype: 'TV',
+      canonicalTitle: "Classroom of the Elite III",
+      titles: {
+        en: "Classroom of the Elite Season 3",
+        ja_jp: "ようこそ実力至上主義の教室へ 3rd Season",
+      },
+      synopsis:
+        "Third season of Classroom of the Elite. Students of the prestigious Tokyo Metropolitan Advanced Nurturing High School face new trials under the school's unique meritocratic point system.",
+      startDate: "2024-01-03",
+      status: "finished",
+      subtype: "TV",
       episodeCount: 13,
-      averageRating: '82',
-      posterImage: { large: 'https://media.kitsu.io/anime/poster_images/46853/large.jpg' }
-    }
+      averageRating: "82",
+      posterImage: {
+        large: "https://media.kitsu.io/anime/poster_images/46853/large.jpg",
+      },
+    },
   },
   {
     id: "3914",
     attributes: {
-      canonicalTitle: 'Fullmetal Alchemist: Brotherhood',
-      titles: { en: 'Fullmetal Alchemist: Brotherhood', ja_jp: '鋼の錬金術師 FULLMETAL ALCHEMIST' },
-      synopsis: 'Two brothers lose their mother and attempt to bring her back with forbidden alchemy, losing parts of their bodies in the process.',
-      startDate: '2009-04-05',
-      status: 'finished',
-      subtype: 'TV',
+      canonicalTitle: "Fullmetal Alchemist: Brotherhood",
+      titles: {
+        en: "Fullmetal Alchemist: Brotherhood",
+        ja_jp: "鋼の錬金術師 FULLMETAL ALCHEMIST",
+      },
+      synopsis:
+        "Two brothers lose their mother and attempt to bring her back with forbidden alchemy, losing parts of their bodies in the process.",
+      startDate: "2009-04-05",
+      status: "finished",
+      subtype: "TV",
       episodeCount: 64,
-      averageRating: '91',
-      posterImage: { large: 'https://media.kitsu.io/anime/poster_images/3914/large.jpg' }
-    }
+      averageRating: "91",
+      posterImage: {
+        large: "https://media.kitsu.io/anime/poster_images/3914/large.jpg",
+      },
+    },
   },
   {
     id: "41370",
     attributes: {
-      canonicalTitle: 'Kimetsu no Yaiba',
-      titles: { en: 'Demon Slayer: Kimetsu no Yaiba', ja_jp: '鬼滅の刃' },
-      synopsis: 'A family is attacked by demons and only two members survive - Tanjiro and his sister Nezuko, who is turning into a demon. Tanjiro sets out to become a demon slayer.',
-      startDate: '2019-04-06',
-      status: 'finished',
-      subtype: 'TV',
+      canonicalTitle: "Kimetsu no Yaiba",
+      titles: { en: "Demon Slayer: Kimetsu no Yaiba", ja_jp: "鬼滅の刃" },
+      synopsis:
+        "A family is attacked by demons and only two members survive - Tanjiro and his sister Nezuko, who is turning into a demon. Tanjiro sets out to become a demon slayer.",
+      startDate: "2019-04-06",
+      status: "finished",
+      subtype: "TV",
       episodeCount: 26,
-      averageRating: '85',
-      posterImage: { large: 'https://media.kitsu.io/anime/poster_images/41370/large.jpg' }
-    }
+      averageRating: "85",
+      posterImage: {
+        large: "https://media.kitsu.io/anime/poster_images/41370/large.jpg",
+      },
+    },
   },
   {
     id: "45217",
     attributes: {
-      canonicalTitle: 'Spy x Family',
-      titles: { en: 'SPY x FAMILY', ja_jp: 'SPY×FAMILY' },
-      synopsis: 'A spy on an undercover mission gets married and adopts a child as part of his cover. However, his wife is a deadly assassin and his daughter is a telepath.',
-      startDate: '2022-04-09',
-      status: 'finished',
-      subtype: 'TV',
+      canonicalTitle: "Spy x Family",
+      titles: { en: "SPY x FAMILY", ja_jp: "SPY×FAMILY" },
+      synopsis:
+        "A spy on an undercover mission gets married and adopts a child as part of his cover. However, his wife is a deadly assassin and his daughter is a telepath.",
+      startDate: "2022-04-09",
+      status: "finished",
+      subtype: "TV",
       episodeCount: 12,
-      averageRating: '86',
-      posterImage: { large: 'https://media.kitsu.io/anime/poster_images/45217/large.jpg' }
-    }
+      averageRating: "86",
+      posterImage: {
+        large: "https://media.kitsu.io/anime/poster_images/45217/large.jpg",
+      },
+    },
   },
   {
     id: "46487",
     attributes: {
-      canonicalTitle: 'Sousou no Frieren',
-      titles: { en: 'Frieren: Beyond Journey\'s End', ja_jp: '葬送のフリーレン' },
-      synopsis: 'An elf mage and her former party members\' journey has ended. Now, she begins a new adventure to learn more about humans.',
-      startDate: '2023-09-29',
-      status: 'finished',
-      subtype: 'TV',
+      canonicalTitle: "Sousou no Frieren",
+      titles: {
+        en: "Frieren: Beyond Journey's End",
+        ja_jp: "葬送のフリーレン",
+      },
+      synopsis:
+        "An elf mage and her former party members' journey has ended. Now, she begins a new adventure to learn more about humans.",
+      startDate: "2023-09-29",
+      status: "finished",
+      subtype: "TV",
       episodeCount: 28,
-      averageRating: '93',
-      posterImage: { large: 'https://media.kitsu.io/anime/poster_images/46487/large.jpg' }
-    }
-  }
+      averageRating: "93",
+      posterImage: {
+        large: "https://media.kitsu.io/anime/poster_images/46487/large.jpg",
+      },
+    },
+  },
 ];
 
 // ── Kitsu API Fallback Endpoints ──────────────────────────────────────────────
-async function fetchTrendingMediaJikan(type = 'ANIME', page = 1, perPage = 18) {
-  const isManga = type === 'MANGA';
-  const path = isManga ? '/manga' : '/anime';
-  const endpoint = `${path}?sort=popularityRank&page[limit]=${perPage}`;
+async function fetchTrendingMediaJikan(type = "ANIME", page = 1, perPage = 18) {
+  const path = type === "MANGA" ? "/top/manga" : "/top/anime";
+  const filter = type === "MANGA" ? "bypopularity" : "airing";
   try {
-    const data = await getKitsu(endpoint);
-    return (data || []).map(item => mapKitsuToAniList(item, type));
-  } catch (err) {
-    console.error('Kitsu trending failed, returning mock data:', err.message);
-    return MOCK_FALLBACK_DATA.map(item => mapKitsuToAniList(item, type));
+    const data = await getJikan(
+      `${path}?filter=${filter}&page=${page}&limit=${perPage}`,
+    );
+    const mapped = cleanMediaList(data, type);
+    if (mapped.length) return mapped;
+    throw new Error("Jikan returned no usable trending items");
+  } catch (jikanErr) {
+    console.warn(
+      "Jikan trending failed, returning local fallback:",
+      jikanErr.message,
+    );
+    return MOCK_FALLBACK_DATA.map((item) => mapKitsuToAniList(item, type));
   }
 }
 
-async function searchAnimeJikan(search, type = 'ANIME', page = 1, perPage = 18) {
-  const isManga = type === 'MANGA';
-  const path = isManga ? '/manga' : '/anime';
-  const endpoint = `${path}?filter[text]=${encodeURIComponent(search)}&page[limit]=${perPage}`;
+async function searchAnimeJikan(
+  search,
+  type = "ANIME",
+  page = 1,
+  perPage = 18,
+) {
+  const path = type === "MANGA" ? "/manga" : "/anime";
+  const q = encodeURIComponent(search || "popular");
   try {
-    const data = await getKitsu(endpoint);
-    return (data || []).map(item => mapKitsuToAniList(item, type));
-  } catch (err) {
-    console.error('Kitsu search failed, returning mock data:', err.message);
-    const filtered = MOCK_FALLBACK_DATA.filter(item => {
-      const canonicalTitle = item.attributes?.canonicalTitle || '';
-      const englishTitle = item.attributes?.titles?.en || '';
-      return canonicalTitle.toLowerCase().includes(search.toLowerCase()) || 
-             englishTitle.toLowerCase().includes(search.toLowerCase());
+    const data = await getJikan(
+      `${path}?q=${q}&order_by=popularity&sort=asc&page=${page}&limit=${perPage}`,
+    );
+    const mapped = cleanMediaList(data, type);
+    if (mapped.length) return mapped;
+    throw new Error("Jikan returned no usable search items");
+  } catch (jikanErr) {
+    console.warn(
+      "Jikan search failed, returning local fallback:",
+      jikanErr.message,
+    );
+    const filtered = MOCK_FALLBACK_DATA.filter((item) => {
+      const canonicalTitle = item.attributes?.canonicalTitle || "";
+      const englishTitle = item.attributes?.titles?.en || "";
+      return (
+        canonicalTitle.toLowerCase().includes((search || "").toLowerCase()) ||
+        englishTitle.toLowerCase().includes((search || "").toLowerCase())
+      );
     });
     const results = filtered.length > 0 ? filtered : MOCK_FALLBACK_DATA;
-    return results.map(item => mapKitsuToAniList(item, type));
+    return results.map((item) => mapKitsuToAniList(item, type));
   }
 }
 
 async function fetchAnimeByIdJikan(id) {
-  const kitsuId = ANILIST_TO_KITSU[Number(id)] || Number(id);
+  const rawId = String(id || "").replace(/^mal-/, "");
+  const numericId = Number(rawId);
+  const mappedKitsuId = ANILIST_TO_KITSU[numericId];
+  const jikanId = mappedKitsuId ? KITSU_TO_MAL[mappedKitsuId] : numericId;
+  const kitsuId = mappedKitsuId || numericId;
+  if (!Number.isFinite(jikanId) || !Number.isFinite(kitsuId)) return null;
+
+  try {
+    const data = await getJikan(`/anime/${jikanId}/full`);
+    const mapped = mapJikanToAniList(data, "ANIME");
+    if (mapped) return mapped;
+  } catch (_) {
+    try {
+      const data = await getJikan(`/manga/${jikanId}/full`);
+      const mapped = mapJikanToAniList(data, "MANGA");
+      if (mapped) return mapped;
+    } catch (jikanErr) {
+      console.warn(
+        "Jikan details failed, trying legacy Kitsu fallback:",
+        jikanErr.message,
+      );
+    }
+  }
+
   try {
     const data = await getKitsu(`/anime/${kitsuId}`);
-    return mapKitsuToAniList(data, 'ANIME');
+    return mapKitsuToAniList(data, "ANIME");
   } catch (_) {
     try {
       const data = await getKitsu(`/manga/${kitsuId}`);
-      return mapKitsuToAniList(data, 'MANGA');
+      return mapKitsuToAniList(data, "MANGA");
     } catch (err) {
-      console.error('Kitsu details failed, searching local cache for ID:', kitsuId);
-      const matched = MOCK_FALLBACK_DATA.find(item => item.id === String(kitsuId));
-      if (matched) {
-        return mapKitsuToAniList(matched, 'ANIME');
-      }
-      return mapKitsuToAniList({
-        id: kitsuId,
-        attributes: {
-          canonicalTitle: `Kitsu Item #${kitsuId}`,
-          synopsis: 'Dynamic fallback metadata generated because all APIs are currently down.',
-          startDate: '2024-01-01',
-          status: 'finished',
-          subtype: 'TV',
-          episodeCount: 12,
-          posterImage: { large: 'https://media.kitsu.io/anime/poster_images/41370/large.jpg' }
-        }
-      }, 'ANIME');
+      console.error(
+        "Kitsu details failed, searching local cache for ID:",
+        kitsuId,
+      );
+      const matched = MOCK_FALLBACK_DATA.find(
+        (item) => item.id === String(kitsuId),
+      );
+      return matched ? mapKitsuToAniList(matched, "ANIME") : null;
     }
   }
 }
 
 async function fetchAiringAnimeJikan(page = 1, perPage = 18) {
   try {
-    const data = await getKitsu(`/anime?filter[status]=current&sort=popularityRank&page[limit]=${perPage}`);
-    return (data || []).map(item => mapKitsuToAniList(item, 'ANIME'));
+    const data = await getJikan(`/seasons/now?page=${page}&limit=${perPage}`);
+    const mapped = cleanMediaList(data, "ANIME");
+    if (mapped.length) return mapped;
   } catch (err) {
-    return MOCK_FALLBACK_DATA.map(item => mapKitsuToAniList(item, 'ANIME'));
+    console.warn("Jikan airing failed:", err.message);
   }
+  return MOCK_FALLBACK_DATA.map((item) => mapKitsuToAniList(item, "ANIME"));
 }
 
 async function fetchAnimeBySeasonJikan(season, year, page = 1, perPage = 12) {
   try {
-    const data = await getKitsu(`/anime?filter[season]=${season.toLowerCase()}&filter[seasonYear]=${year}&sort=popularityRank&page[limit]=${perPage}`);
-    return (data || []).map(item => mapKitsuToAniList(item, 'ANIME'));
+    const data = await getJikan(
+      `/seasons/${year}/${String(season).toLowerCase()}?page=${page}&limit=${perPage}`,
+    );
+    const mapped = cleanMediaList(data, "ANIME");
+    if (mapped.length) return mapped;
   } catch (err) {
-    return MOCK_FALLBACK_DATA.map(item => mapKitsuToAniList(item, 'ANIME'));
+    console.warn("Jikan seasonal failed:", err.message);
   }
+  return MOCK_FALLBACK_DATA.map((item) => mapKitsuToAniList(item, "ANIME"));
 }
 
-
 // ── Original AniList POST Query ──────────────────────────────────────────────
-async function postQuery(query, variables = {}, retries = 2) {
+async function postQuery(query, variables = {}, retries = 0) {
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 10000);
+  const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT_MS);
 
   try {
     const response = await fetch(API_URL, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
-        Accept: 'application/json'
+        "Content-Type": "application/json",
+        Accept: "application/json",
       },
       body: JSON.stringify({ query, variables }),
-      signal: controller.signal
+      signal: controller.signal,
     });
 
     clearTimeout(timeoutId);
 
     if (!response.ok) {
       if (response.status === 403) {
-        throw new Error('AniList API disabled (403 Forbidden)');
+        throw new Error("AniList API disabled (403 Forbidden)");
       }
       if (response.status >= 500 && retries > 0) {
         console.warn(`AniList 500 error, retrying... (${retries} left)`);
@@ -383,14 +605,16 @@ async function postQuery(query, variables = {}, retries = 2) {
 
     const data = await response.json();
     if (data.errors?.length) {
-      throw new Error(data.errors[0].message || 'AniList GraphQL error');
+      throw new Error(data.errors[0].message || "AniList GraphQL error");
     }
 
     return data.data;
   } catch (err) {
     clearTimeout(timeoutId);
-    if (err.name === 'AbortError') {
-      throw new Error('AniList request timed out. Please check your connection.');
+    if (err.name === "AbortError") {
+      throw new Error(
+        "AniList request timed out. Please check your connection.",
+      );
     }
     if (retries > 0) {
       return postQuery(query, variables, retries - 1);
@@ -399,82 +623,38 @@ async function postQuery(query, variables = {}, retries = 2) {
   }
 }
 
-export function stripHtml(htmlText = '') {
-  return htmlText.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
+export function stripHtml(htmlText = "") {
+  return htmlText
+    .replace(/<[^>]+>/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 // ── Exported API Methods with Transparent Jikan Fallback ────────────────────
 
-export async function fetchTrendingMedia(type = 'ANIME', page = 1, perPage = 18) {
-  if (globalFallbackActive) {
-    return fetchTrendingMediaJikan(type, page, perPage);
-  }
-  const query = `
-    query ($type: MediaType, $page: Int, $perPage: Int) {
-      Page(page: $page, perPage: $perPage) {
-        media(sort: TRENDING_DESC, type: $type) {
-          id
-          idMal
-          title { romaji english }
-          description
-          episodes
-          coverImage { extraLarge large medium }
-          bannerImage
-          genres
-          format
-          averageScore
-          seasonYear
-        }
-      }
-    }
-  `;
-
-  try {
-    const data = await postQuery(query, { type, page, perPage });
-    return data.Page.media;
-  } catch (err) {
-    console.warn('AniList failed to fetch trending media, falling back to Jikan:', err.message);
-    globalFallbackActive = true;
-    return fetchTrendingMediaJikan(type, page, perPage);
-  }
+export async function fetchTrendingMedia(
+  type = "ANIME",
+  page = 1,
+  perPage = 18,
+) {
+  // Use Jikan first for list pages. It is faster in this app and avoids stale Kitsu
+  // placeholder cards such as "Kitsu Item #NaN".
+  return fetchTrendingMediaJikan(type, page, perPage);
 }
 
-export async function searchAnime(search, type = 'ANIME', page = 1, perPage = 18) {
-  if (globalFallbackActive) {
-    return searchAnimeJikan(search, type, page, perPage);
-  }
-  const query = `
-    query ($search: String, $type: MediaType, $page: Int, $perPage: Int) {
-      Page(page: $page, perPage: $perPage) {
-        media(search: $search, type: $type, sort: POPULARITY_DESC) {
-          id
-          idMal
-          title { romaji english native }
-          episodes
-          chapters
-          volumes
-          coverImage { extraLarge large medium }
-          bannerImage
-          genres
-          format
-          averageScore
-          seasonYear
-        }
-      }
-    }
-  `;
-
-  try {
-    const data = await postQuery(query, { search, type, page, perPage });
-    return data.Page.media;
-  } catch (err) {
-    console.warn('AniList failed to search anime, falling back to Jikan:', err.message);
-    globalFallbackActive = true;
-    return searchAnimeJikan(search, type, page, perPage);
-  }
+export async function searchAnime(
+  search,
+  type = "ANIME",
+  page = 1,
+  perPage = 18,
+) {
+  return searchAnimeJikan(search, type, page, perPage);
 }
 
 export async function fetchAnimeById(id) {
+  if (String(id || "").startsWith("mal-")) {
+    return fetchAnimeByIdJikan(id);
+  }
   if (globalFallbackActive) {
     return fetchAnimeByIdJikan(id);
   }
@@ -537,63 +717,19 @@ export async function fetchAnimeById(id) {
     const data = await postQuery(query, { id: Number(id) });
     return data.Media;
   } catch (err) {
-    console.warn(`AniList failed to fetch anime ID ${id}, falling back to Jikan:`, err.message);
+    console.warn(
+      `AniList failed to fetch anime ID ${id}, falling back to Jikan:`,
+      err.message,
+    );
     globalFallbackActive = true;
     return fetchAnimeByIdJikan(id);
   }
 }
 
 export async function fetchAiringAnime(page = 1, perPage = 18) {
-  if (globalFallbackActive) {
-    return fetchAiringAnimeJikan(page, perPage);
-  }
-  const query = `
-    query ($page: Int, $perPage: Int) {
-      Page(page: $page, perPage: $perPage) {
-        media(status: RELEASING, type: ANIME, sort: POPULARITY_DESC) {
-          id
-          title { romaji english }
-          coverImage { large }
-          nextAiringEpisode { episode }
-        }
-      }
-    }
-  `;
-  try {
-    const data = await postQuery(query, { page, perPage });
-    return data.Page.media;
-  } catch (err) {
-    console.warn('AniList failed to fetch airing anime, falling back to Jikan:', err.message);
-    globalFallbackActive = true;
-    return fetchAiringAnimeJikan(page, perPage);
-  }
+  return fetchAiringAnimeJikan(page, perPage);
 }
 
 export async function fetchAnimeBySeason(season, year, page = 1, perPage = 12) {
-  if (globalFallbackActive) {
-    return fetchAnimeBySeasonJikan(season, year, page, perPage);
-  }
-  const query = `
-    query ($season: MediaSeason, $year: Int, $page: Int, $perPage: Int) {
-      Page(page: $page, perPage: $perPage) {
-        media(season: $season, seasonYear: $year, type: ANIME, sort: POPULARITY_DESC) {
-          id
-          title { romaji english }
-          coverImage { extraLarge large }
-          episodes
-          format
-          averageScore
-        }
-      }
-    }
-  `;
-  try {
-    const data = await postQuery(query, { season, year, page, perPage });
-    return data.Page.media;
-  } catch (err) {
-    console.warn('AniList failed to fetch seasonal anime, falling back to Jikan:', err.message);
-    globalFallbackActive = true;
-    return fetchAnimeBySeasonJikan(season, year, page, perPage);
-  }
+  return fetchAnimeBySeasonJikan(season, year, page, perPage);
 }
-

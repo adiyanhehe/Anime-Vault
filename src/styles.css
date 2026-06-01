@@ -9,7 +9,7 @@
   --white-10: rgba(255, 255, 255, 0.1);
   --white-20: rgba(255, 255, 255, 0.2);
   --pink-variant-2: #ff4d94;
-  --font-main: 'Outfit', 'Inter', system-ui, -apple-system, sans-serif;
+  --font-main: "Outfit", "Inter", system-ui, -apple-system, sans-serif;
   --glass: rgba(255, 255, 255, 0.03);
   --glass-border: rgba(255, 255, 255, 0.08);
   --accent-glow: 0 0 20px rgba(255, 26, 117, 0.3);
@@ -101,7 +101,7 @@ select {
   color: var(--brand-color);
 }
 .nav-link.active::after {
-  content: '';
+  content: "";
   position: absolute;
   bottom: -0.25rem;
   left: 0;
@@ -166,11 +166,22 @@ select {
 }
 .hero-overlay {
   background:
-    linear-gradient(90deg, rgba(10, 12, 18, 0.96) 0%, rgba(10, 12, 18, 0.72) 43%, rgba(10, 12, 18, 0.18) 100%),
+    linear-gradient(
+      90deg,
+      rgba(10, 12, 18, 0.96) 0%,
+      rgba(10, 12, 18, 0.72) 43%,
+      rgba(10, 12, 18, 0.18) 100%
+    ),
     linear-gradient(180deg, rgba(10, 12, 18, 0.05), rgba(10, 12, 18, 0.86));
 }
 .hero-overlay-dark {
-  background: radial-gradient(circle at top left, rgba(255, 255, 255, 0.06), transparent 28%), radial-gradient(circle at right, rgba(221, 183, 255, 0.1), transparent 25%);
+  background:
+    radial-gradient(
+      circle at top left,
+      rgba(255, 255, 255, 0.06),
+      transparent 28%
+    ),
+    radial-gradient(circle at right, rgba(221, 183, 255, 0.1), transparent 25%);
 }
 .hero-content {
   position: relative;
@@ -206,7 +217,7 @@ select {
 }
 .hero-content h1 {
   margin: 0;
-  font-family: 'Sora', sans-serif;
+  font-family: "Sora", sans-serif;
   font-size: clamp(3rem, 4vw, 5rem);
   line-height: 1;
   letter-spacing: 0;
@@ -234,7 +245,10 @@ select {
   display: inline-flex;
   align-items: center;
   gap: 0.75rem;
-  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease;
 }
 .button:hover {
   transform: translateY(-1px);
@@ -362,7 +376,9 @@ select {
   text-decoration: none;
   background: rgba(21, 25, 35, 0.86);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  transition: transform 0.2s ease, border-color 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    border-color 0.2s ease;
 }
 .poster-card:hover {
   transform: translateY(-3px);
@@ -484,7 +500,9 @@ select {
   grid-template-rows: auto 1fr;
   overflow: hidden;
   border-radius: 8px;
-  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  transition:
+    transform 0.25s ease,
+    box-shadow 0.25s ease;
   background: rgba(21, 25, 35, 0.84);
   text-decoration: none;
   color: inherit;
@@ -705,7 +723,11 @@ select {
 .detail-hero-overlay {
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, rgba(16, 18, 33, 0.05), rgba(16, 18, 33, 0.92));
+  background: linear-gradient(
+    180deg,
+    rgba(16, 18, 33, 0.05),
+    rgba(16, 18, 33, 0.92)
+  );
 }
 .detail-hero-copy {
   position: absolute;
@@ -792,7 +814,9 @@ select {
   background: rgba(255, 255, 255, 0.03);
   color: #cfc2d6;
   cursor: pointer;
-  transition: transform 0.2s ease, border-color 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    border-color 0.2s ease;
 }
 .episode-card:hover:not(:disabled) {
   transform: translateY(-2px);
@@ -897,7 +921,9 @@ select {
   padding: 1rem;
   color: inherit;
   text-decoration: none;
-  transition: transform 0.2s ease, border-color 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    border-color 0.2s ease;
 }
 .continue-item:hover,
 .spotlight-item:hover {
@@ -927,7 +953,9 @@ select {
   padding: 0.85rem;
   color: inherit;
   text-decoration: none;
-  transition: transform 0.2s ease, border-color 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    border-color 0.2s ease;
 }
 .spotlight-item img {
   width: 5rem;
@@ -1548,7 +1576,8 @@ select {
   gap: 0.5rem;
 }
 
-.badge-score, .badge-ep {
+.badge-score,
+.badge-ep {
   background: rgba(0, 0, 0, 0.6);
   backdrop-filter: blur(8px);
   padding: 4px 8px;
@@ -1769,9 +1798,15 @@ select {
 }
 
 @keyframes pulse {
-  0% { opacity: 0.6; }
-  50% { opacity: 0.3; }
-  100% { opacity: 0.6; }
+  0% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 0.3;
+  }
+  100% {
+    opacity: 0.6;
+  }
 }
 
 @media (max-width: 1024px) {
@@ -1786,8 +1821,6 @@ select {
 /* ========================
    HOME PAGE V2 STYLES
    ======================== */
-
-
 
 .hero-v2 {
   position: relative;
@@ -1817,8 +1850,14 @@ select {
 .hero-overlay-v2 {
   position: absolute;
   inset: 0;
-  background: linear-gradient(90deg, #030f16 0%, rgba(3, 15, 22, 0.7) 40%, transparent 100%),
-              linear-gradient(0deg, #030f16 0%, transparent 60%);
+  background:
+    linear-gradient(
+      90deg,
+      #030f16 0%,
+      rgba(3, 15, 22, 0.7) 40%,
+      transparent 100%
+    ),
+    linear-gradient(0deg, #030f16 0%, transparent 60%);
 }
 
 .hero-content-v2 {
@@ -2234,7 +2273,12 @@ select {
 .detail-hero-overlay-v2 {
   position: absolute;
   inset: 0;
-  background: linear-gradient(to top, var(--dark-bg) 0%, rgba(3, 15, 22, 0.4) 60%, transparent 100%);
+  background: linear-gradient(
+    to top,
+    var(--dark-bg) 0%,
+    rgba(3, 15, 22, 0.4) 60%,
+    transparent 100%
+  );
 }
 
 .detail-hero-content-v2 {
@@ -2511,22 +2555,22 @@ select {
   .details-grid-v2 {
     grid-template-columns: 1fr;
   }
-  
+
   .detail-hero-content-v2 {
     flex-direction: column;
     align-items: center;
     text-align: center;
     padding: 2rem;
   }
-  
+
   .detail-poster-v2 {
     width: 180px;
   }
-  
+
   .detail-meta-v2 {
     justify-content: center;
   }
-  
+
   .detail-actions-v2 {
     justify-content: center;
   }
@@ -2536,13 +2580,15 @@ select {
 .video-player-wrapper-v2.zen-active {
   position: relative;
   z-index: 100;
-  box-shadow: 0 0 100px rgba(0, 0, 0, 0.8), 0 0 30px rgba(255, 26, 117, 0.1);
+  box-shadow:
+    0 0 100px rgba(0, 0, 0, 0.8),
+    0 0 30px rgba(255, 26, 117, 0.1);
   border-radius: 12px;
   overflow: hidden;
 }
 
 .video-player-wrapper-v2.zen-active::before {
-  content: 'ZEN MODE ACTIVE · ADS BLOCKED';
+  content: "ZEN MODE ACTIVE · ADS BLOCKED";
   position: absolute;
   top: 1rem;
   left: 1rem;
@@ -2628,7 +2674,9 @@ select {
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* Relations Section */
@@ -2896,8 +2944,18 @@ select {
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(180deg, rgba(3, 15, 22, 0) 0%, rgba(3, 15, 22, 0.6) 50%, rgba(3, 15, 22, 0.97) 100%),
-    linear-gradient(90deg, rgba(3, 15, 22, 0.9) 0%, rgba(3, 15, 22, 0.3) 60%, transparent 100%);
+    linear-gradient(
+      180deg,
+      rgba(3, 15, 22, 0) 0%,
+      rgba(3, 15, 22, 0.6) 50%,
+      rgba(3, 15, 22, 0.97) 100%
+    ),
+    linear-gradient(
+      90deg,
+      rgba(3, 15, 22, 0.9) 0%,
+      rgba(3, 15, 22, 0.3) 60%,
+      transparent 100%
+    );
 }
 
 .detail-hero-content-v2 {
@@ -3093,9 +3151,17 @@ select {
   overflow-y: auto;
 }
 
-.episodes-container-v2::-webkit-scrollbar { width: 5px; }
-.episodes-container-v2::-webkit-scrollbar-track { background: rgba(255,255,255,0.03); border-radius: 3px; }
-.episodes-container-v2::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 3px; }
+.episodes-container-v2::-webkit-scrollbar {
+  width: 5px;
+}
+.episodes-container-v2::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 3px;
+}
+.episodes-container-v2::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 3px;
+}
 
 .episodes-grid-v2 {
   display: grid;
@@ -3130,8 +3196,12 @@ select {
   box-shadow: 0 4px 16px rgba(255, 26, 117, 0.25);
 }
 
-.episode-btn-v2.watched { opacity: 0.55; }
-.episode-btn-v2.watched.active { opacity: 1; }
+.episode-btn-v2.watched {
+  opacity: 0.55;
+}
+.episode-btn-v2.watched.active {
+  opacity: 1;
+}
 
 .episode-label {
   font-size: 0.58rem;
@@ -3148,9 +3218,14 @@ select {
   line-height: 1;
 }
 
-.episode-btn-v2.active .episode-number { color: var(--brand-color); }
+.episode-btn-v2.active .episode-number {
+  color: var(--brand-color);
+}
 
-.check { color: #4ade80; margin-top: 0.1rem; }
+.check {
+  color: #4ade80;
+  margin-top: 0.1rem;
+}
 
 /* ── Sidebar ── */
 .sidebar-v2 {
@@ -3180,7 +3255,11 @@ select {
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 
-.info-list-v2 { display: flex; flex-direction: column; gap: 0.6rem; }
+.info-list-v2 {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
 
 .info-row-v2 {
   display: flex;
@@ -3191,7 +3270,9 @@ select {
   border-bottom: 1px solid rgba(255, 255, 255, 0.04);
 }
 
-.info-row-v2:last-child { border-bottom: none; }
+.info-row-v2:last-child {
+  border-bottom: none;
+}
 
 .info-label-v2 {
   font-size: 0.75rem;
@@ -3230,10 +3311,16 @@ select {
   transition: background 0.2s;
 }
 
-.genre-tag-v2:hover { background: rgba(255, 26, 117, 0.22); }
+.genre-tag-v2:hover {
+  background: rgba(255, 26, 117, 0.22);
+}
 
 /* ── Recommendations Sidebar ── */
-.related-grid-v2 { display: flex; flex-direction: column; gap: 0.75rem; }
+.related-grid-v2 {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
 
 .related-card-v2 {
   display: flex;
@@ -3246,7 +3333,9 @@ select {
   transition: background 0.2s;
 }
 
-.related-card-v2:hover { background: rgba(255, 255, 255, 0.04); }
+.related-card-v2:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
 
 .related-card-v2 img {
   width: 44px;
@@ -3256,7 +3345,13 @@ select {
   flex-shrink: 0;
 }
 
-.related-info-v2 { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 0.25rem; }
+.related-info-v2 {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
 
 .related-info-v2 h4 {
   margin: 0;
@@ -3268,17 +3363,30 @@ select {
   text-overflow: ellipsis;
 }
 
-.related-info-v2 span { font-size: 0.72rem; color: var(--text-muted); }
+.related-info-v2 span {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
 
 /* ── Utilities ── */
-.spin { animation: spin 2s linear infinite; }
-.score { color: #ffc107 !important; }
-.section-loading { padding: 1rem; color: var(--text-muted); font-size: 0.9rem; }
+.spin {
+  animation: spin 2s linear infinite;
+}
+.score {
+  color: #ffc107 !important;
+}
+.section-loading {
+  padding: 1rem;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
 
 /* ── LatestSection v2 ── */
-.section-v2 { display: flex; flex-direction: column; gap: 1.25rem; }
-
-
+.section-v2 {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
 
 .badge-v2 {
   font-size: 0.7rem;
@@ -3329,7 +3437,9 @@ select {
   transition: background 0.3s;
 }
 
-.anime-card-v2:hover .card-overlay-v2 { background: rgba(3, 15, 22, 0.5); }
+.anime-card-v2:hover .card-overlay-v2 {
+  background: rgba(3, 15, 22, 0.5);
+}
 
 .btn-play-card {
   background: var(--brand-color);
@@ -3347,7 +3457,10 @@ select {
   transition: all 0.25s ease;
 }
 
-.anime-card-v2:hover .btn-play-card { opacity: 1; transform: scale(1); }
+.anime-card-v2:hover .btn-play-card {
+  opacity: 1;
+  transform: scale(1);
+}
 
 .card-info-v2 {
   padding: 0.6rem 0.25rem 0;
@@ -3377,19 +3490,44 @@ select {
 
 /* ── Responsive ── */
 @media (max-width: 1100px) {
-  .details-grid-v2 { grid-template-columns: 1fr; }
-  .sidebar-v2 { position: static; }
+  .details-grid-v2 {
+    grid-template-columns: 1fr;
+  }
+  .sidebar-v2 {
+    position: static;
+  }
 }
 
 @media (max-width: 768px) {
-  .detail-hero-content-v2 { flex-direction: column; align-items: flex-start; gap: 1rem; }
-  .detail-poster-v2 { width: 100px; min-width: 100px; }
-  .server-selector-v2 { flex-direction: column; align-items: flex-start; }
-  .server-dropdown-v2 { width: 100%; min-width: unset; }
-  .details-grid-v2 { padding: 1.25rem; }
-  .episodes-grid-v2 { grid-template-columns: repeat(auto-fill, minmax(58px, 1fr)); }
-  .detail-hero-v2 { min-height: 280px; }
-  .player-section-v2 { position: relative; }
+  .detail-hero-content-v2 {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  .detail-poster-v2 {
+    width: 100px;
+    min-width: 100px;
+  }
+  .server-selector-v2 {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .server-dropdown-v2 {
+    width: 100%;
+    min-width: unset;
+  }
+  .details-grid-v2 {
+    padding: 1.25rem;
+  }
+  .episodes-grid-v2 {
+    grid-template-columns: repeat(auto-fill, minmax(58px, 1fr));
+  }
+  .detail-hero-v2 {
+    min-height: 280px;
+  }
+  .player-section-v2 {
+    position: relative;
+  }
 }
 
 .card-image-v2 {
@@ -3421,7 +3559,6 @@ select {
   border-radius: 6px;
   box-shadow: 0 4px 12px rgba(255, 26, 117, 0.4);
 }
-
 
 .genre-tag-v2 {
   padding: 0.6rem 1.25rem;
@@ -3464,9 +3601,18 @@ select {
 }
 
 @keyframes pulse {
-  0% { opacity: 0.8; transform: scale(1); }
-  50% { opacity: 1; transform: scale(1.1); }
-  100% { opacity: 0.8; transform: scale(1); }
+  0% {
+    opacity: 0.8;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+  100% {
+    opacity: 0.8;
+    transform: scale(1);
+  }
 }
 
 .anime-card-v2 {
@@ -3480,7 +3626,9 @@ select {
 .anime-card-v2:hover {
   transform: translateY(-10px);
   border-color: var(--brand-color);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4), 0 0 20px rgba(255, 26, 117, 0.15);
+  box-shadow:
+    0 20px 40px rgba(0, 0, 0, 0.4),
+    0 0 20px rgba(255, 26, 117, 0.15);
 }
 
 .zen-toggle-v2 {
@@ -3510,7 +3658,6 @@ select {
   border-color: var(--brand-color);
 }
 
-
 .zen-layout {
   grid-template-columns: 1fr !important;
 }
@@ -3519,7 +3666,6 @@ select {
   max-width: 1200px;
   margin: 0 auto;
 }
-
 
 .home-main-v2 {
   padding: 0 2rem;
@@ -3534,11 +3680,13 @@ select {
   gap: 1rem;
 }
 
-
 /* -- Manga Reader v2 -- */
 .manga-reader-overlay {
   position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   background: var(--bg-dark);
   z-index: 9999;
   display: flex;
@@ -3557,7 +3705,8 @@ select {
   z-index: 10000;
 }
 
-.toolbar-left, .toolbar-right {
+.toolbar-left,
+.toolbar-right {
   display: flex;
   align-items: center;
   gap: 1rem;
@@ -3623,14 +3772,13 @@ select {
   gap: 1rem;
 }
 
-
-
-
-
 /* ── Manga Reader Styles ── */
 .manga-reader-overlay {
   position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   background: var(--bg);
   z-index: 9999;
   display: flex;
@@ -3649,7 +3797,8 @@ select {
   flex-shrink: 0;
 }
 
-.toolbar-left, .toolbar-right {
+.toolbar-left,
+.toolbar-right {
   display: flex;
   align-items: center;
   gap: 1rem;
@@ -3747,7 +3896,8 @@ select {
     flex-direction: column;
     gap: 1rem;
   }
-  .toolbar-left, .toolbar-right {
+  .toolbar-left,
+  .toolbar-right {
     width: 100%;
     justify-content: space-between;
   }
@@ -3788,7 +3938,13 @@ select {
 
 /* ── Hero Banner ── */
 .movies-hero-banner {
-  background: linear-gradient(135deg, rgba(255, 26, 117, 0.15) 0%, rgba(14, 165, 233, 0.15) 100%), rgba(255, 255, 255, 0.02);
+  background:
+    linear-gradient(
+      135deg,
+      rgba(255, 26, 117, 0.15) 0%,
+      rgba(14, 165, 233, 0.15) 100%
+    ),
+    rgba(255, 255, 255, 0.02);
   border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 24px;
   padding: 4rem 2rem;
@@ -3800,7 +3956,7 @@ select {
 }
 
 .movies-hero-banner::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 0;
@@ -3848,7 +4004,9 @@ select {
 
 .movies-search-bar:focus-within {
   border-color: rgba(255, 26, 117, 0.5);
-  box-shadow: 0 0 15px rgba(255, 26, 117, 0.25), 0 4px 20px rgba(0, 0, 0, 0.3);
+  box-shadow:
+    0 0 15px rgba(255, 26, 117, 0.25),
+    0 4px 20px rgba(0, 0, 0, 0.3);
 }
 
 .movies-search-bar .search-icon {
@@ -3983,7 +4141,9 @@ select {
 .movie-card:hover {
   transform: translateY(-6px);
   border-color: rgba(255, 26, 117, 0.3);
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.4), 0 0 15px rgba(255, 26, 117, 0.1);
+  box-shadow:
+    0 10px 24px rgba(0, 0, 0, 0.4),
+    0 0 15px rgba(255, 26, 117, 0.1);
 }
 
 .movie-card-poster {
@@ -4072,7 +4232,7 @@ select {
   flex-direction: column;
   justify-content: space-between;
   gap: 0.4rem;
-  background: linear-gradient(to top, rgba(0,0,0,0.4), transparent);
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.4), transparent);
 }
 
 .movie-card-info h3 {
@@ -4311,13 +4471,15 @@ select {
   margin: 0 0 1.8rem 0;
 }
 
-.showcase-cast, .showcase-director {
+.showcase-cast,
+.showcase-director {
   font-size: 0.95rem;
   margin-bottom: 0.5rem;
   color: var(--text-secondary);
 }
 
-.showcase-cast strong, .showcase-director strong {
+.showcase-cast strong,
+.showcase-director strong {
   color: var(--text-primary);
 }
 
@@ -4550,7 +4712,8 @@ select {
   .showcase-poster {
     width: 200px;
   }
-  .showcase-badges, .showcase-genres {
+  .showcase-badges,
+  .showcase-genres {
     justify-content: center;
   }
   .showcase-details h1 {
@@ -4759,7 +4922,7 @@ select {
     grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)) !important;
     gap: 1rem !important;
   }
-  
+
   /* Details Hero banner on 375px viewports */
   .detail-hero-v2 {
     height: auto !important;
@@ -4767,14 +4930,14 @@ select {
     border-radius: 16px !important;
     margin-bottom: 2rem !important;
   }
-  
+
   .detail-hero-content-v2 {
     padding: 1.5rem 1rem !important;
     flex-direction: column !important;
     align-items: center !important;
     text-align: center !important;
   }
-  
+
   .detail-poster-v2 {
     width: 130px !important;
     min-width: 130px !important;
@@ -4788,8 +4951,12 @@ select {
 }
 
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @keyframes fadeInUp {
@@ -4818,4 +4985,247 @@ select {
   }
 }
 
+/* ── TV-first watch page controls and resilient player states ── */
+.tv-card-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
 
+.selector-label {
+  font-size: 0.78rem;
+  color: var(--text-tertiary);
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.server-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(128px, 1fr));
+  gap: 0.5rem;
+  min-width: min(100%, 420px);
+  flex: 1;
+}
+
+.server-card-select {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15rem;
+  padding: 0.65rem 0.8rem;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.035);
+  color: var(--text-secondary);
+  cursor: pointer;
+  text-align: left;
+  transition:
+    transform 0.18s ease,
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    background 0.18s ease;
+}
+
+.server-card-select span {
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.server-card-select small {
+  color: var(--text-tertiary);
+  font-size: 0.66rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.server-card-select:hover,
+.server-card-select:focus-visible,
+.tv-focus-card:focus-visible,
+.season-tab-btn:focus-visible,
+.next-server-btn:focus-visible {
+  outline: none;
+  transform: translateY(-2px) scale(1.02);
+  border-color: rgba(255, 26, 117, 0.85);
+  box-shadow:
+    0 0 0 3px rgba(255, 26, 117, 0.18),
+    0 12px 28px rgba(255, 26, 117, 0.16);
+}
+
+.server-card-select.active {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 26, 117, 0.96),
+    rgba(255, 111, 174, 0.84)
+  );
+  border-color: rgba(255, 255, 255, 0.28);
+  color: #08080a;
+  box-shadow: 0 0 20px rgba(255, 26, 117, 0.38);
+}
+
+.server-card-select.active small {
+  color: rgba(0, 0, 0, 0.72);
+}
+
+.player-loading-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  background: radial-gradient(
+    circle at center,
+    rgba(255, 26, 117, 0.08),
+    rgba(0, 0, 0, 0.94)
+  );
+  color: var(--text-secondary);
+  pointer-events: none;
+}
+
+.player-help-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: 12px;
+  padding: 1rem;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.035);
+  color: var(--text-secondary);
+}
+
+.player-help-banner.needs-attention {
+  border-color: rgba(255, 26, 117, 0.45);
+  background: linear-gradient(
+    135deg,
+    rgba(255, 26, 117, 0.14),
+    rgba(255, 26, 117, 0.04)
+  );
+  box-shadow:
+    inset 0 0 32px rgba(255, 26, 117, 0.05),
+    0 0 24px rgba(255, 26, 117, 0.13);
+}
+
+.player-help-banner strong {
+  color: var(--text-primary);
+  display: block;
+  margin-bottom: 0.25rem;
+}
+
+.player-help-banner p {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+.next-server-btn {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  min-height: 44px;
+  padding: 0.7rem 1rem;
+  border: 1px solid rgba(255, 26, 117, 0.45);
+  border-radius: 12px;
+  background: rgba(255, 26, 117, 0.12);
+  color: #ff8fbd;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.tv-selector-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: -0.75rem 0 1.25rem;
+  color: var(--text-tertiary);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+@media (max-width: 900px) {
+  .watch-player-header,
+  .player-help-banner {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .server-card-grid {
+    width: 100%;
+  }
+
+  .next-server-btn {
+    width: 100%;
+  }
+}
+
+/* ── Shared download chips for movies and anime ── */
+.download-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.35rem 0.7rem;
+  border-radius: 8px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-decoration: none;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  transition:
+    background 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
+}
+
+.download-chip:hover,
+.download-chip:focus-visible {
+  outline: none;
+  transform: translateY(-1px);
+}
+
+.download-chip.dlhub {
+  color: #facc15;
+  border-color: rgba(250, 204, 21, 0.42);
+  background: rgba(250, 204, 21, 0.1);
+  box-shadow: 0 0 8px rgba(250, 204, 21, 0.12);
+}
+
+.download-chip.dlhub:hover,
+.download-chip.dlhub:focus-visible {
+  background: rgba(250, 204, 21, 0.18);
+  box-shadow: 0 0 14px rgba(250, 204, 21, 0.24);
+}
+
+.download-chip.vidlink {
+  color: #06b6d4;
+  border-color: rgba(6, 182, 212, 0.4);
+  background: rgba(6, 182, 212, 0.08);
+  box-shadow: 0 0 8px rgba(6, 182, 212, 0.1);
+}
+
+.download-chip.vidlink:hover,
+.download-chip.vidlink:focus-visible {
+  background: rgba(6, 182, 212, 0.18);
+  box-shadow: 0 0 12px rgba(6, 182, 212, 0.25);
+}
+
+.anime-download-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  flex-wrap: wrap;
+  margin: -0.25rem 0 1rem;
+}
+
+.anime-download-row span {
+  color: var(--text-tertiary);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
