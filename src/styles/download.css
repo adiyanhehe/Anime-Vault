@@ -40,6 +40,26 @@
   max-width: 1100px;
   margin: 0 auto;
   padding: 2rem;
+  background-image: url('https://occ-0-8407-2219.1.nflxso.net/dnm/api/v6/MgXQGyNr1xbI8tJSYiMWv5kXg5g/AAAABbu2mrfgMEMATRppz3WvutNHbUSBM3rWWq3nIBWGk3n1DgG9GVI1yX5gkfdDK73a0_L0SVQnfKp2HEIMdC9KeAXdmZB7VjTqO8EI0Pyv3C8DvfJtXEYE1mXA9g.jpg?r=6ae');
+  background-size: cover;
+  background-position: center;
+  border-radius: 1.5rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.downloads-section::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 0;
+}
+
+/* Ensure inner content sits above overlay */
+.downloads-section > * {
+  position: relative;
+  z-index: 1;
 }
 
 .platform-cards {
@@ -53,12 +73,13 @@
   flex-direction: column;
   align-items: center;
   text-align: center;
-  padding: 3rem 2rem;
+  padding: 4rem 2rem;
   background: rgba(21, 25, 35, 0.7);
   backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 1.5rem;
   transition: transform 0.25s ease, box-shadow 0.25s ease;
+  min-height: 380px;
 }
 
 .platform-card:hover {
@@ -75,8 +96,8 @@
 }
 
 .platform-icon {
-  width: 72px;
-  height: 72px;
+  width: 96px;
+  height: 96px;
   object-fit: contain;
 }
 
