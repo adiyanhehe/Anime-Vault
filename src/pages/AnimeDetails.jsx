@@ -1,20 +1,19 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { fetchAnimeById, stripHtml } from "../api/anilist";
+import {
+  fetchAniListIdByMalId,
+  fetchAnimeById,
+  stripHtml,
+} from "../api/anilist";
 import {
   findBestStreamingMatch,
   fetchStreamingEpisodes,
-  fetchStreamingSources,
   probeMirrors,
 } from "../api/streaming";
 import VideoPlayer from "../components/VideoPlayer";
 import CommentsSection from "../components/CommentsSection";
 import { useUser } from "../api/UserContext";
 import { buildDlhubSearchUrl } from "../utils/downloadLinks";
-import {
-  buildAnikotoSearchUrl,
-  fetchAnikotoEmbedByTitle,
-} from "../api/anikoto";
 import {
   Play,
   Calendar,
@@ -27,7 +26,6 @@ import {
   AlertCircle,
   PlayCircle,
   Plus,
-  RefreshCw,
   ChevronDown,
   Zap,
   Sparkles,
@@ -59,153 +57,41 @@ function buildEpisodeList(media) {
   }));
 }
 
-/** Extract external IDs from AniList externalLinks */
-function findExternalId(links, siteName) {
-  if (!links) return null;
-  const link = links.find((l) =>
-    l.site.toLowerCase().includes(siteName.toLowerCase()),
-  );
-  if (!link) return null;
-
-  // Extract ID from URL
-  const url = link.url;
-  if (siteName.toLowerCase().includes("themoviedb")) {
-    const match = url.match(/\/(tv|movie)\/(\d+)/);
-    return match ? match[2] : null;
-  }
-  if (siteName.toLowerCase().includes("imdb")) {
-    const match = url.match(/\/title\/(tt\d+)/);
-    return match ? match[1] : null;
-  }
-
-  return url.split("/").filter(Boolean).pop();
-}
-
 // ─────────────────────────────────────────────────────────
 // Server definitions — each entry: { key, label, build }
 // build(params) returns the embed URL string
 // ─────────────────────────────────────────────────────────
 const SERVERS = [
   {
-    key: "Anikoto",
-    label: "Anikoto • Sub (Default)",
-    build: ({ anikotoEmbedUrl, anikotoSearchUrl }) =>
-      anikotoEmbedUrl || anikotoSearchUrl,
+    key: "VidNestSub",
+    label: "VidNest • Sub",
+    language: "sub",
+    build: ({ anilistId, ep, language }) =>
+      anilistId
+        ? `https://vidnest.fun/anime/${anilistId}/${ep}/${language}`
+        : null,
   },
   {
-    key: "VidLink",
-    label: "VidLink • Sub (Recommended)",
-    build: ({ malId, tmdbId, ep }) => {
-      if (malId)
-        return `https://vidlink.pro/anime/${malId}/${ep}/sub?primaryColor=ff1a75&nextbutton=true`;
-      if (tmdbId)
-        return `https://vidlink.pro/tv/${tmdbId}/1/${ep}?primaryColor=ff1a75&nextbutton=true`;
-      return null;
-    },
+    key: "VidNestDub",
+    label: "VidNest • Dub",
+    language: "dub",
+    build: ({ anilistId, ep, language }) =>
+      anilistId
+        ? `https://vidnest.fun/anime/${anilistId}/${ep}/${language}`
+        : null,
   },
   {
-    key: "VidLinkDub",
-    label: "VidLink • Dub",
-    build: ({ malId, tmdbId, ep }) => {
-      if (malId)
-        return `https://vidlink.pro/anime/${malId}/${ep}/dub?primaryColor=ff1a75&nextbutton=true`;
-      if (tmdbId)
-        return `https://vidlink.pro/tv/${tmdbId}/1/${ep}?primaryColor=ff1a75&nextbutton=true`;
-      return null;
-    },
-  },
-  {
-    key: "VidsrcICU",
-    label: "Vidsrc ICU • Sub (Default)",
-    build: ({ anilistId, ep }) =>
-      `https://vidsrc.icu/embed/anime/${anilistId}/${ep}/0`,
-  },
-  {
-    key: "VidsrcICUDub",
-    label: "Vidsrc ICU • Dub",
-    build: ({ anilistId, ep }) =>
-      `https://vidsrc.icu/embed/anime/${anilistId}/${ep}/1`,
-  },
-  {
-    key: "VidsrcCC",
-    label: "Vidsrc CC",
-    build: ({ malId, tmdbId, ep }) =>
-      tmdbId
-        ? `https://vidsrc.cc/v2/embed/tv/${tmdbId}/1/${ep}`
-        : malId
-          ? `https://vidsrc.cc/v2/embed/anime/${malId}/${ep}`
-          : null,
-  },
-  {
-    key: "VidsrcNL",
-    label: "Vidsrc NL",
-    build: ({ malId, ep }) =>
-      malId ? `https://vidsrc.nl/embed/anime/${malId}/${ep}` : null,
-  },
-  {
-    key: "VidsrcDev",
-    label: "Vidsrc Dev (TMDB)",
-    build: ({ tmdbId, ep }) =>
-      tmdbId ? `https://vidsrc.dev/embed/tv/${tmdbId}/1/${ep}` : null,
-  },
-  {
-    key: "MultiEmbed",
-    label: "MultiEmbed",
-    build: ({ tmdbId, imdbId, malId, ep }) => {
-      if (tmdbId)
-        return `https://multiembed.mov/?video_id=${tmdbId}&tmdb=1&s=1&e=${ep}`;
-      if (imdbId)
-        return `https://multiembed.mov/?video_id=${imdbId}&tmdb=1&s=1&e=${ep}`;
-      return `https://multiembed.mov/?video_id=${malId}&tmdb=0&s=1&e=${ep}`;
-    },
-  },
-  {
-    key: "VidsrcIN",
-    label: "Vidsrc IN",
-    build: ({ malId, ep }) =>
-      malId ? `https://vidsrc.in/embed/anime/${malId}/${ep}` : null,
-  },
-  {
-    key: "Smashy",
-    label: "SmashyStream",
-    build: ({ tmdbId, imdbId, ep }) =>
-      tmdbId
-        ? `https://embed.smashystream.com/playere.php?tmdb=${tmdbId}&season=1&episode=${ep}`
-        : imdbId
-          ? `https://embed.smashystream.com/playere.php?imdb=${imdbId}&season=1&episode=${ep}`
-          : null,
-  },
-  {
-    key: "VidsrcSU",
-    label: "Vidsrc SU",
-    build: ({ malId, ep }) =>
-      malId ? `https://vidsrc.su/embed/anime/${malId}/${ep}` : null,
-  },
-  {
-    key: "VidsrcPM",
-    label: "Vidsrc PM",
-    build: ({ malId, ep }) =>
-      malId ? `https://vidsrc.pm/embed/anime/${malId}/${ep}` : null,
-  },
-  {
-    key: "Miruro",
-    label: "Miruro • Full Title Search",
-    build: ({ titleForSlug }) => {
-      let query = titleForSlug;
-      // Translate common Romaji titles to English equivalents for better WordPress search matching.
-      query = query.replace(/Boku no Hero/gi, "My Hero");
-      query = query.replace(/Shingeki no Kyojin/gi, "Attack on Titan");
-      return `https://miruro.ro/?s=${encodeURIComponent(query)}`;
-    },
-  },
-  {
-    key: "Native",
-    label: "Native Scraper (Slow)",
-    build: () => null, // handled via videoSources
+    key: "VidNestHindi",
+    label: "VidNest • Hindi",
+    language: "hindi",
+    build: ({ anilistId, ep, language }) =>
+      anilistId
+        ? `https://vidnest.fun/anime/${anilistId}/${ep}/${language}`
+        : null,
   },
 ];
 
-const DEFAULT_SERVER = "Anikoto";
+const DEFAULT_SERVER = "VidNestSub";
 
 function AnimeDetails() {
   const { id } = useParams();
@@ -224,10 +110,8 @@ function AnimeDetails() {
   // Player state
   const [activeServer, setActiveServer] = useState(DEFAULT_SERVER);
   const [videoSources, setVideoSources] = useState([]);
-  const [playerLoading, setPlayerLoading] = useState(false);
   const [playerStatus, setPlayerStatus] = useState(""); // info/warning messages
-  const [anikotoEmbedUrl, setAnikotoEmbedUrl] = useState(null);
-  const [anikotoLoading, setAnikotoLoading] = useState(false);
+  const [resolvedAniListId, setResolvedAniListId] = useState(null);
 
   // Consumet enrichment (background)
   const [streamingInfo, setStreamingInfo] = useState({
@@ -252,7 +136,7 @@ function AnimeDetails() {
     setEpisodes([]);
     setCurrentEpisode(null);
     setVideoSources([]);
-    setAnikotoEmbedUrl(null);
+    setResolvedAniListId(null);
     setPlayerStatus("");
     setActiveServer(DEFAULT_SERVER);
     setEpPage(0);
@@ -360,117 +244,63 @@ function AnimeDetails() {
     }
   }
 
-  // ───── Load native stream sources (only for "Native" server) ─────
-  async function loadNativeSources(ep) {
-    if (!ep?.scraperId) {
-      setPlayerStatus(
-        "Native sources not available. Switch to another server.",
-      );
-      setVideoSources([]);
-      return;
-    }
-    setPlayerLoading(true);
-    setPlayerStatus("");
-    try {
-      const sources = await fetchStreamingSources(
-        ep.scraperId,
-        streamingInfo.provider,
-      );
-      if (sources?.length) {
-        setVideoSources(sources);
-      } else {
-        setPlayerStatus("No native sources. Try another server.");
-      }
-    } catch {
-      setPlayerStatus("Native source fetch failed. Try another server.");
-    } finally {
-      setPlayerLoading(false);
-    }
-  }
-
   // ───── Episode selection ─────
   function selectEpisode(ep) {
     setCurrentEpisode(ep);
     setVideoSources([]);
-    setAnikotoEmbedUrl(null);
     setPlayerStatus("");
 
     const updated = { ...progress, [anime.id]: ep.number };
     setProgress(updated);
     localStorage.setItem(PROGRESS_KEY, JSON.stringify(updated));
 
-    if (activeServer === "Native") {
-      loadNativeSources(ep);
-    }
-
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
-  // When server changes to Native, try to load sources
   useEffect(() => {
-    if (activeServer === "Native" && currentEpisode) {
-      loadNativeSources(currentEpisode);
-    }
-  }, [activeServer]);
+    if (!anime) return;
 
-  useEffect(() => {
-    if (!anime || !currentEpisode || activeServer !== "Anikoto") return;
+    const animeId = String(anime.id || id || "");
+    if (!animeId.startsWith("mal-")) {
+      setResolvedAniListId(animeId);
+      return;
+    }
 
     let cancelled = false;
-    const fullTitle = safeTitle(anime.title);
-    setAnikotoLoading(true);
-    setPlayerStatus("Loading Anikoto stream with full title search...");
+    setResolvedAniListId(null);
+    setPlayerStatus("Preparing VidNest player...");
 
-    fetchAnikotoEmbedByTitle(fullTitle, currentEpisode.number, "sub")
-      .then((url) => {
+    fetchAniListIdByMalId(anime.idMal)
+      .then((aniListId) => {
         if (cancelled) return;
-        setAnikotoEmbedUrl(url);
+        setResolvedAniListId(aniListId ? String(aniListId) : null);
         setPlayerStatus(
-          url
+          aniListId
             ? ""
-            : "Anikoto did not return an embed yet. Opening full-title Anikoto search instead.",
+            : "VidNest needs an AniList ID for this title. Try opening this title from search again if it does not load.",
         );
       })
       .catch(() => {
-        if (!cancelled)
-          setPlayerStatus(
-            "Anikoto lookup failed. Use VidLink or another server if the search page does not auto-play.",
-          );
-      })
-      .finally(() => {
-        if (!cancelled) setAnikotoLoading(false);
+        if (!cancelled) {
+          setPlayerStatus("Unable to prepare VidNest for this title yet.");
+        }
       });
 
     return () => {
       cancelled = true;
     };
-  }, [anime, currentEpisode, activeServer]);
+  }, [anime, id]);
 
   // ───── Compute embed URL for current episode + server ─────
   function getEmbedUrl() {
     if (!anime || !currentEpisode) return null;
-    if (activeServer === "Native") return null;
-
     const server = SERVERS.find((s) => s.key === activeServer);
     if (!server) return null;
 
-    const tmdbId = findExternalId(anime.externalLinks, "themoviedb");
-    const imdbId = findExternalId(anime.externalLinks, "imdb");
-    const englishTitle = anime.title?.english || null;
-    const titleForSlug = englishTitle || anime.title?.romaji || animeTitle;
-    const fullTitle = safeTitle(anime.title);
-
     return server.build({
-      anilistId: id,
-      malId: anime.idMal,
-      tmdbId,
-      imdbId,
-      englishTitle,
-      titleForSlug,
-      anikotoEmbedUrl,
-      anikotoSearchUrl: buildAnikotoSearchUrl(fullTitle),
+      anilistId: resolvedAniListId,
       ep: currentEpisode.number,
-      season: 1,
+      language: server.language,
     });
   }
 
@@ -523,7 +353,7 @@ function AnimeDetails() {
       <div className="player-section-v2">
         {currentEpisode ? (
           <VideoPlayer
-            sources={activeServer === "Native" ? videoSources : []}
+            sources={[]}
             poster={anime.bannerImage || anime.coverImage?.extraLarge}
             title={`${animeTitle} · EP ${currentEpisode.number}`}
             embedUrl={embedUrl}
@@ -533,13 +363,6 @@ function AnimeDetails() {
           <div className="video-player-error">
             <PlayCircle size={48} className="spin" />
             <p>No episodes available yet.</p>
-          </div>
-        )}
-
-        {anikotoLoading && activeServer === "Anikoto" && (
-          <div className="player-status-bar">
-            <RefreshCw size={14} className="spin" />
-            <span>Finding Anikoto embed for the full title...</span>
           </div>
         )}
 
@@ -631,8 +454,8 @@ function AnimeDetails() {
                   </button>
                 </div>
                 <p>
-                  Anikoto is the default player and uses the full anime title.
-                  Switch servers if one is not working.
+                  VidNest is the only anime player now. Pick Sub, Dub, or Hindi
+                  depending on what the title supports.
                 </p>
               </div>
             </div>

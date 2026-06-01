@@ -726,6 +726,26 @@ export async function fetchAnimeById(id) {
   }
 }
 
+export async function fetchAniListIdByMalId(malId) {
+  if (!malId) return null;
+
+  const query = `
+    query ($idMal: Int) {
+      Media(idMal: $idMal, type: ANIME) {
+        id
+      }
+    }
+  `;
+
+  try {
+    const data = await postQuery(query, { idMal: Number(malId) });
+    return data?.Media?.id || null;
+  } catch (err) {
+    console.warn(`AniList ID lookup failed for MAL ${malId}:`, err.message);
+    return null;
+  }
+}
+
 export async function fetchAiringAnime(page = 1, perPage = 18) {
   return fetchAiringAnimeJikan(page, perPage);
 }
