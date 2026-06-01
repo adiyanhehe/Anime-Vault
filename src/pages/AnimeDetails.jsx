@@ -5,11 +5,13 @@ import { findBestStreamingMatch, fetchStreamingEpisodes, fetchStreamingSources, 
 import VideoPlayer from '../components/VideoPlayer';
 import CommentsSection from '../components/CommentsSection';
 import { useUser } from '../api/UserContext';
+import { buildDlhubSearchUrl } from '../utils/downloadLinks';
 import {
   Play,
   Calendar,
   Star,
   ExternalLink,
+  Download,
   Tv,
   Users,
   CheckCircle2,
@@ -405,6 +407,19 @@ function AnimeDetails() {
 
   const animeTitle = safeTitle(anime.title);
   const embedUrl = getEmbedUrl();
+  const animeDownloadUrls = currentEpisode
+    ? {
+        dlhub: buildDlhubSearchUrl({
+          title: animeTitle,
+          type: 'anime',
+          episode: currentEpisode.number,
+          year: anime.seasonYear,
+        }),
+        vidlink: anime.idMal
+          ? `https://vidlink.pro/download/anime/${anime.idMal}/${currentEpisode.number}/sub?primaryColor=ff1a75`
+          : null,
+      }
+    : null;
 
   return (
     <div className="details-page-v2">
@@ -446,6 +461,20 @@ function AnimeDetails() {
             >
               <ExternalLink size={16} /> Open Player in New Tab (Bypasses Blocks)
             </a>
+          </div>
+        )}
+
+        {animeDownloadUrls && (
+          <div className="anime-download-row">
+            <span>DOWNLOAD:</span>
+            <a href={animeDownloadUrls.dlhub} target="_blank" rel="noopener noreferrer" className="download-chip dlhub">
+              <Download size={14} /> DLHub
+            </a>
+            {animeDownloadUrls.vidlink && (
+              <a href={animeDownloadUrls.vidlink} target="_blank" rel="noopener noreferrer" className="download-chip vidlink">
+                <Download size={14} /> VidLink
+              </a>
+            )}
           </div>
         )}
 

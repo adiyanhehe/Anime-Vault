@@ -16,12 +16,45 @@ import {
 import { fetchMediaMeta } from "../api/movies";
 import CommentsSection from "../components/CommentsSection";
 import { useUser } from "../api/UserContext";
+import { buildDlhubSearchUrl } from "../utils/downloadLinks";
 
 const STREAM_SERVERS = [
   {
+    id: "vixsrc",
+    name: "Server 1 • VixSrc",
+    badge: "Recommended",
+    description: "Primary non-VidSrc player for movies and TV episodes.",
+    buildUrl: ({ id, isSeries, season, episode }) =>
+      isSeries
+        ? `https://vixsrc.to/tv/${id}/${season}/${episode}?primaryColor=ff1a75&secondaryColor=1a0711&autoplay=true`
+        : `https://vixsrc.to/movie/${id}?primaryColor=ff1a75&secondaryColor=1a0711&autoplay=true`,
+  },
+  {
+    id: "2embed-viking",
+    name: "Server 2 • Viking",
+    badge: "2Embed Fix",
+    description:
+      "Direct Viking player fallback so users do not need to pick it inside another embed.",
+    buildUrl: ({ id, isSeries, season, episode }) =>
+      isSeries
+        ? `https://vembed.stream/play/${id}_s${season}?episode=${episode}&autoPlay=true&poster=true&controls=true`
+        : `https://vembed.stream/play/${id}?autoPlay=true&poster=true&controls=true`,
+  },
+  {
+    id: "vidsrc-ru",
+    name: "VidSrc RU",
+    badge: "VidSrc Alt",
+    description:
+      "Current VidSrc route using direct movie/tv paths instead of the older embed query URL.",
+    buildUrl: ({ id, isSeries, season, episode }) =>
+      isSeries
+        ? `https://vidsrc.ru/tv/${id}/${season}/${episode}`
+        : `https://vidsrc.ru/movie/${id}`,
+  },
+  {
     id: "vidsrc-fyi",
     name: "VidSrc FYI",
-    badge: "Fast",
+    badge: "Backup",
     description: "IMDb/TMDB movie and TV embeds with multi-server failover.",
     buildUrl: ({ id, isSeries, season, episode }) =>
       isSeries
@@ -29,36 +62,14 @@ const STREAM_SERVERS = [
         : `https://vidsrc.fyi/embed/movie/${id}`,
   },
   {
-    id: "vixsrc",
-    name: "VixSrc",
-    badge: "TV Ready",
-    description: "Accepts IMDb or TMDB IDs for movies and episodes.",
-    buildUrl: ({ id, isSeries, season, episode }) =>
-      isSeries
-        ? `https://vixsrc.to/tv/${id}/${season}/${episode}?primaryColor=ff1a75&secondaryColor=1a0711&autoplay=true`
-        : `https://vixsrc.to/movie/${id}?primaryColor=ff1a75&secondaryColor=1a0711&autoplay=true`,
-  },
-  {
     id: "vidsrc-cc",
     name: "VidSrc CC",
-    badge: "Backup",
-    description: "Alternate VidSrc endpoint for stubborn loading screens.",
+    badge: "Extra",
+    description: "Alternate VidSrc endpoint for titles missing elsewhere.",
     buildUrl: ({ id, isSeries, season, episode }) =>
       isSeries
         ? `https://vidsrc.cc/v2/embed/tv/${id}/${season}/${episode}?autoPlay=true`
         : `https://vidsrc.cc/v2/embed/movie/${id}?autoPlay=true`,
-  },
-  {
-    id: "vidsrc-ru",
-    name: "VidSrc RU",
-    badge: "Legacy",
-    description: "Legacy embed route kept as a last-resort fallback.",
-    buildUrl: ({ id, isSeries, season, episode, isImdb }) => {
-      const param = isImdb ? `imdb=${id}` : `tmdb=${id}`;
-      return isSeries
-        ? `https://vidsrc-embed.ru/embed/tv?${param}&season=${season}&episode=${episode}&autoplay=1&autonext=1`
-        : `https://vidsrc-embed.ru/embed/movie?${param}&autoplay=1`;
-    },
   },
   {
     id: "multiembed",
@@ -75,8 +86,8 @@ const STREAM_SERVERS = [
   {
     id: "2embed",
     name: "2Embed",
-    badge: "Fallback",
-    description: "Final fallback mirror when newer embeds are blocked.",
+    badge: "Last Resort",
+    description: "Original 2Embed mirror kept as a final fallback.",
     buildUrl: ({ id, isSeries, season, episode }) =>
       isSeries
         ? `https://www.2embed.cc/embedtv/${id}?s=${season}&e=${episode}`
@@ -149,6 +160,7 @@ function MovieWatch() {
     setPlayerSrc(url);
 
     const fallbackTimer = window.setTimeout(() => {
+      setIframeLoaded(true);
       setShowFallbackHint(true);
     }, 9000);
 
@@ -321,6 +333,13 @@ function MovieWatch() {
   const sNum = activeSeason || 1;
   const eNum = getEpisodeNumber(activeEpisode);
   const downloadUrls = {
+    dlhub: buildDlhubSearchUrl({
+      title: meta.name || meta.title,
+      type: isSeries ? "series" : "movie",
+      season: sNum,
+      episode: eNum,
+      year: meta.releaseInfo,
+    }),
     twoembed: isSeries
       ? `https://www.2embed.cc/download/tv/${id}/${sNum}/${eNum}`
       : `https://www.2embed.cc/download/movie/${id}`,
@@ -503,6 +522,14 @@ function MovieWatch() {
                   DOWNLOAD:
                 </span>
                 <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+                  <a
+                    href={downloadUrls.dlhub}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="download-chip dlhub"
+                  >
+                    <Download size={12} /> DLHub
+                  </a>
                   <a
                     href={downloadUrls.twoembed}
                     target="_blank"

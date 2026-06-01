@@ -5164,3 +5164,68 @@ select {
     width: 100%;
   }
 }
+
+/* ── Shared download chips for movies and anime ── */
+.download-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.35rem 0.7rem;
+  border-radius: 8px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-decoration: none;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  transition:
+    background 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
+}
+
+.download-chip:hover,
+.download-chip:focus-visible {
+  outline: none;
+  transform: translateY(-1px);
+}
+
+.download-chip.dlhub {
+  color: #facc15;
+  border-color: rgba(250, 204, 21, 0.42);
+  background: rgba(250, 204, 21, 0.1);
+  box-shadow: 0 0 8px rgba(250, 204, 21, 0.12);
+}
+
+.download-chip.dlhub:hover,
+.download-chip.dlhub:focus-visible {
+  background: rgba(250, 204, 21, 0.18);
+  box-shadow: 0 0 14px rgba(250, 204, 21, 0.24);
+}
+
+.download-chip.vidlink {
+  color: #06b6d4;
+  border-color: rgba(6, 182, 212, 0.4);
+  background: rgba(6, 182, 212, 0.08);
+  box-shadow: 0 0 8px rgba(6, 182, 212, 0.1);
+}
+
+.download-chip.vidlink:hover,
+.download-chip.vidlink:focus-visible {
+  background: rgba(6, 182, 212, 0.18);
+  box-shadow: 0 0 12px rgba(6, 182, 212, 0.25);
+}
+
+.anime-download-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  flex-wrap: wrap;
+  margin: -0.25rem 0 1rem;
+}
+
+.anime-download-row span {
+  color: var(--text-tertiary);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
