@@ -2,7 +2,7 @@ import React from 'react';
 import '../styles/download.css';
 import windowsIcon from "../electron/.icon-ico/icon.png";
 import FocusableLink from '../components/FocusableLink';
-
+import { Sparkles, Tv, Bookmark, Laptop } from 'lucide-react';
 // -------------------------------
 // Version – keep in sync with your release assets
 // -------------------------------
