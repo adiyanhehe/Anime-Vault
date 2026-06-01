@@ -9,9 +9,9 @@ import FocusableLink from '../components/FocusableLink';
 const VERSION = '0.1.0';
 const basePath = `${import.meta.env.BASE_URL}release/`;
 const urls = {
-  windows: `${basePath}AnimeVault%20Setup%20${VERSION}.exe`,
-  mac: `${basePath}AnimeVault-${VERSION}.dmg`,
-  linux: `${basePath}AnimeVault-${VERSION}.AppImage`,
+  windows: '#',
+  mac: '#',
+  linux: '#',
 };
 
 const Download = () => {
@@ -33,7 +33,7 @@ const Download = () => {
           {/* Windows Card */}
           <div className="card glass-card platform-card">
             <div className="platform-icon-container">
-              <img src="https://cdn.simpleicons.org/windows/00bcf2" alt="Windows" className="platform-icon" />
+              <img src="https://img.favpng.com/18/3/8/windows-10-logo-png-favpng-nxMCNtEprYMfWs3ruUM6Q3asU.jpg" alt="Windows" className="platform-icon" style={{ borderRadius: '8px' }} />
             </div>
             <span className="platform-badge">Windows 10 / 11</span>
             <h3 className="platform-title">Windows</h3>
