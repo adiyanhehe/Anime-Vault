@@ -33,7 +33,7 @@ const Download = () => {
           {/* Windows Card */}
           <div className="card glass-card platform-card">
             <div className="platform-icon-container">
-              <img src="https://img.favpng.com/18/3/8/windows-10-logo-png-favpng-nxMCNtEprYMfWs3ruUM6Q3asU.jpg" alt="Windows" className="platform-icon" style={{ borderRadius: '8px' }} />
+              <img src="https://upload.wikimedia.org/wikipedia/commons/4/48/Windows_logo_-_2021.svg" alt="Windows" className="platform-icon" />
             </div>
             <span className="platform-badge">Windows 10 / 11</span>
             <h3 className="platform-title">Windows</h3>
