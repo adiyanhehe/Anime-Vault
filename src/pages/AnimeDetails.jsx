@@ -76,24 +76,74 @@ function findExternalId(links, siteName) {
 // ─────────────────────────────────────────────────────────
 const DEFAULT_LANGUAGE = 'sub';
 const DEFAULT_EMBED_SERVER = 'vidnest';
+const EMBED_LANGUAGE_OPTIONS = [
+  { id: 'sub', label: 'SUB' },
+  { id: 'dub', label: 'DUB' },
+  { id: 'hindi', label: 'HINDI' },
+];
+const toSupportedLanguage = (lang, supported = ['sub', 'dub']) => (
+  supported.includes(lang) ? lang : supported[0]
+);
+const withParams = (url, params) => {
+  const next = new URL(url);
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== '') {
+      next.searchParams.set(key, value);
+    }
+  });
+  return next.toString();
+};
 const EMBED_SERVERS = [
   {
     id: 'vidnest',
     label: 'VidNest',
-    description: 'Primary source',
-    buildUrl: (animeId, episode, lang) => `https://vidnest.fun/anime/${animeId}/${episode}/${lang}`,
+    description: 'Large AniList library with sub, dub, Hindi, and internal mirror switching.',
+    languages: ['sub', 'dub', 'hindi'],
+    buildUrl: ({ animeId, episode, lang }) => withParams(
+      `https://vidnest.fun/anime/${animeId}/${episode}/${toSupportedLanguage(lang, ['sub', 'dub', 'hindi'])}`,
+      { server: 'gama' }
+    ),
   },
   {
-    id: 'animepahe',
-    label: 'AnimePahe',
-    description: 'Fallback for 404 episodes',
-    buildUrl: (animeId, episode, lang) => `https://vidnest.fun/animepahe/${animeId}/${episode}/${lang}`,
+    id: 'vidnest-pahe',
+    label: 'VidNest Pahe',
+    description: 'AnimePahe-backed VidNest route for a second large sub/dub library.',
+    languages: ['sub', 'dub', 'hindi'],
+    buildUrl: ({ animeId, episode, lang }) => `https://vidnest.fun/animepahe/${animeId}/${episode}/${toSupportedLanguage(lang, ['sub', 'dub', 'hindi'])}`,
+  },
+  {
+    id: 'megaplay',
+    label: 'MegaPlay',
+    description: 'AniList embed with dedicated sub and dub routes.',
+    languages: ['sub', 'dub'],
+    buildUrl: ({ animeId, episode, lang }) => `https://animeplay.cfd/stream/ani/${animeId}/${episode}/${toSupportedLanguage(lang)}`,
   },
   {
     id: 'ninja',
     label: 'NinjaShield',
-    description: 'Backup embed',
-    buildUrl: (animeId, episode, lang) => `https://ninjasheild.stream/map/anime/${animeId}/${episode}/${lang === 'hindi' ? 'sub' : lang}`,
+    description: 'AniList and MAL anime backup with sub/dub support.',
+    languages: ['sub', 'dub'],
+    buildUrl: ({ animeId, episode, lang }) => `https://ninjasheild.stream/map/anime/${animeId}/${episode}/${toSupportedLanguage(lang)}`,
+  },
+  {
+    id: 'cinetaro',
+    label: 'Cinetaro',
+    description: 'Large auto-updated AniList library with sub, dub, and Hindi routes.',
+    languages: ['sub', 'dub', 'hindi'],
+    buildUrl: ({ animeId, episode, lang }) => withParams(
+      `https://api.cinetaro.buzz/anime/${animeId}/1/${episode}/${toSupportedLanguage(lang, ['sub', 'dub', 'hindi'])}`,
+      { autoplay: 'true', color: 'ff1a75' }
+    ),
+  },
+  {
+    id: 'dropfile',
+    label: 'DropFile',
+    description: 'AniList player fallback with sub/dub/raw audio modes and broad provider coverage.',
+    languages: ['sub', 'dub'],
+    buildUrl: ({ animeId, episode, lang }) => withParams(
+      `https://dropfile.cc/player/tv/anilist-${animeId}/1/${episode}`,
+      { audio: toSupportedLanguage(lang), lang: 'en', color: '#ff1a75', autoplay: '1' }
+    ),
   },
 ];
 
@@ -293,10 +343,48 @@ function AnimeDetails() {
     const embedAnimeId = getEmbedAnimeId();
     if (!embedAnimeId) return null;
     const server = EMBED_SERVERS.find((item) => item.id === embedServer) || EMBED_SERVERS[0];
-    return server.buildUrl(embedAnimeId, currentEpisode.number, language);
+    return server.buildUrl({ animeId: embedAnimeId, episode: currentEpisode.number, lang: language });
   }
 
-  // ───── Episode pagination ─────  // ───── Episode pagination ─────
+  function selectEmbedServer(nextServerId) {
+    const nextServer = EMBED_SERVERS.find((server) => server.id === nextServerId) || EMBED_SERVERS[0];
+    setEmbedServer(nextServer.id);
+
+    if (!nextServer.languages.includes(language)) {
+      const fallbackLanguage = nextServer.languages[0] || DEFAULT_LANGUAGE;
+      setLanguage(fallbackLanguage);
+      setPlayerStatus(`${nextServer.label} does not list ${language.toUpperCase()} streams. Switched to ${fallbackLanguage.toUpperCase()}.`);
+    } else {
+      setPlayerStatus('');
+    }
+  }
+
+  function selectLanguage(nextLanguage) {
+    const currentServer = EMBED_SERVERS.find((server) => server.id === embedServer) || EMBED_SERVERS[0];
+    if (currentServer.languages.includes(nextLanguage)) {
+      setLanguage(nextLanguage);
+      setPlayerStatus('');
+      return;
+    }
+
+    const fallbackServer = EMBED_SERVERS.find((server) => server.languages.includes(nextLanguage));
+    if (fallbackServer) {
+      setEmbedServer(fallbackServer.id);
+      setLanguage(nextLanguage);
+      setPlayerStatus(`${currentServer.label} does not list ${nextLanguage.toUpperCase()} streams, so AnimeVault switched to ${fallbackServer.label}.`);
+    }
+  }
+
+  function switchToNextServer() {
+    const currentIndex = EMBED_SERVERS.findIndex((server) => server.id === embedServer);
+    const nextServer = EMBED_SERVERS[(currentIndex + 1) % EMBED_SERVERS.length] || EMBED_SERVERS[0];
+    selectEmbedServer(nextServer.id);
+    setPlayerStatus(`Switched to ${nextServer.label}. If the embed is still blocked, open it in a new tab.`);
+  }
+
+  const activeEmbedServer = EMBED_SERVERS.find((item) => item.id === embedServer) || EMBED_SERVERS[0];
+
+  // ───── Episode pagination ─────
   const totalPages = Math.ceil(episodes.length / EP_PAGE_SIZE);
   const visibleEpisodes = episodes.slice(epPage * EP_PAGE_SIZE, (epPage + 1) * EP_PAGE_SIZE);
 
@@ -392,7 +480,7 @@ function AnimeDetails() {
               <Tv size={20} />
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <h4 style={{ margin: 0 }}>{EMBED_SERVERS.find((item) => item.id === embedServer)?.label || 'Anime Player'}</h4>
+                  <h4 style={{ margin: 0 }}>{activeEmbedServer.label || 'Anime Player'}</h4>
                   <button
                     className={`zen-toggle-v2 ${zenMode ? 'active' : ''}`}
                     onClick={() => setZenMode(!zenMode)}
@@ -402,7 +490,7 @@ function AnimeDetails() {
                     {zenMode ? 'Zen Mode ON' : 'Zen Mode OFF'}
                   </button>
                 </div>
-                <p>If an episode shows 404, switch servers here without leaving the page.</p>
+                <p>Pick a large-library server, then choose SUB/DUB/HINDI. If one host blocks or misses an episode, try the next server.</p>
               </div>
             </div>
 
@@ -422,12 +510,28 @@ function AnimeDetails() {
                     borderRadius: '6px',
                     cursor: 'pointer',
                   }}
-                  onClick={() => setEmbedServer(server.id)}
+                  onClick={() => selectEmbedServer(server.id)}
                 >
                   {server.label}
                 </button>
               ))}
-              {['sub', 'dub', 'hindi'].map((lang) => (
+              <button
+                className="download-chip"
+                style={{
+                  padding: '0.5rem 1rem',
+                  fontSize: '0.85rem',
+                  fontWeight: 'bold',
+                  background: 'var(--glass)',
+                  color: 'var(--text-secondary)',
+                  borderColor: 'var(--glass-border)',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                }}
+                onClick={switchToNextServer}
+              >
+                Try next server
+              </button>
+              {EMBED_LANGUAGE_OPTIONS.map(({ id: lang, label }) => (
                 <button
                   key={lang}
                   className={`download-chip ${language === lang ? 'active' : ''}`}
@@ -444,9 +548,9 @@ function AnimeDetails() {
                     borderRadius: '6px',
                     cursor: 'pointer',
                   }}
-                  onClick={() => setLanguage(lang)}
+                  onClick={() => selectLanguage(lang)}
                 >
-                  {lang}
+                  {label}
                 </button>
               ))}
             </div>

@@ -69,30 +69,18 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Generate icons
-        run: node scripts/generate-icons.js
-        continue-on-error: true
-
       - name: Build installer
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
-
-
-
         run: npm run electron:build -- ${{ matrix.args }}
-
-
-        run: |
-          npm run build
-          npm run electron:build -- ${{ matrix.args }}
 
       - name: Upload installer artifact
         uses: actions/upload-artifact@v4
         with:
           name: animevault-${{ matrix.name }}-installer
-          if-no-files-found: warn
+          if-no-files-found: error
           path: |
             release/*.exe
             release/*.dmg
@@ -129,10 +117,7 @@ jobs:
         run: npm ci
 
       - name: Ensure Android project exists
-        run: |
-          if [ ! -d android ]; then
-            npx cap add android
-          fi
+        run: npm run android:ensure
 
       - name: Build Android release APK
         run: npm run android:build
@@ -147,25 +132,19 @@ jobs:
             echo "No Android release APK was produced." >&2
             exit 1
           fi
-
-
-
           cp "${apks[0]}" "release/AnimeVault-Android.apk"
-
-
 
       - name: Upload Android artifact
         uses: actions/upload-artifact@v4
         with:
           name: animevault-Android-apk
-          if-no-files-found: warn
+          if-no-files-found: error
           path: release/AnimeVault-Android.apk
 
   publish-release:
     name: Upload assets to GitHub Release
     needs: [desktop, android]
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/v')
 
     steps:
       - name: Checkout repository
@@ -178,7 +157,16 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          tag="${GITHUB_REF_NAME}"
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+            tag="${GITHUB_REF_NAME}"
+          else
+            version="$(node -p "require('./package.json').version")"
+            tag="v${version}"
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git tag -f "${tag}" "${GITHUB_SHA}"
+            git push origin "refs/tags/${tag}" --force
+          fi
           echo "tag=${tag}" >> "${GITHUB_OUTPUT}"
           echo "Publishing installer assets to ${tag}"
 
@@ -197,15 +185,16 @@ jobs:
 
           if ! gh release view "${RELEASE_TAG}" >/dev/null 2>&1; then
             gh release create "${RELEASE_TAG}" \
-              --target main \
+              --target "${GITHUB_SHA}" \
               --title "AnimeVault ${RELEASE_TAG}" \
               --notes "Automated AnimeVault installer release for ${RELEASE_TAG}."
           fi
 
           mapfile -d '' files < <(find release-assets -type f -print0)
-          if [ "${#files[@]}" -gt 0 ]; then
-            gh release upload "${RELEASE_TAG}" "${files[@]}" --clobber
-            echo "Successfully uploaded ${#files[@]} files"
-          else
-            echo "Warning: No installer files found to upload"
+          if [ "${#files[@]}" -eq 0 ]; then
+            echo "No installer files found to upload" >&2
+            exit 1
           fi
+
+          gh release upload "${RELEASE_TAG}" "${files[@]}" --clobber
+          echo "Successfully uploaded ${#files[@]} files"
