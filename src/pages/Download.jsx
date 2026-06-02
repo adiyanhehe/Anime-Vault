@@ -1,157 +1,132 @@
 import React from 'react';
-import { Sparkles, Tv, Bookmark, Laptop } from 'lucide-react';
-import androidIcon from "../../android.png";
+import { Bookmark, CheckCircle2, DownloadCloud, Laptop, ShieldCheck, Sparkles, Tv } from 'lucide-react';
+import androidIcon from '../../android.png';
+import windowsIcon from '../../windows icon.png';
 import '../styles/download.css';
-import windowsIcon from "../../windows icon.png";
-import FocusableLink from '../components/FocusableLink';
-// -------------------------------
-// Version – keep in sync with your release assets
-// -------------------------------
+
 const VERSION = '0.1.0';
-const basePath = `${import.meta.env.BASE_URL}release/`;
-const urls = {
-  windows: `https://github.com/adiyanhehe/Anime-Vault/releases/download/v0.1.1/AnimeVault.Setup.0.1.0.exe`,
-  mac: `https://github.com/adiyanhehe/Anime-Vault/releases/download/v0.1.1/AnimeVault-0.1.0-arm64.dmg`,
-  linux: `https://github.com/adiyanhehe/Anime-Vault/releases/download/v0.1.1/AnimeVault-0.1.0.AppImage`,
-  android: `https://github.com/adiyanhehe/Anime-Vault/releases/download/v0.1.1/AnimeVault-0.1.0.apk`,
-};
+const REPOSITORY = 'adiyanhehe/Anime-Vault';
+const releaseAssetUrl = (assetName) => `https://github.com/${REPOSITORY}/releases/latest/download/${assetName}`;
 
+const platforms = [
+  {
+    id: 'windows',
+    name: 'Windows',
+    badge: 'Windows 10 / 11',
+    description: 'Fast native desktop installer with automatic updates and Discord Rich Presence support.',
+    icon: windowsIcon,
+    iconAlt: 'Windows logo',
+    fileName: `AnimeVault Setup ${VERSION}.exe`,
+    url: releaseAssetUrl(`AnimeVault Setup ${VERSION}.exe`),
+    note: 'Recommended for most PCs',
+  },
+  {
+    id: 'mac',
+    name: 'macOS',
+    badge: 'macOS 12+',
+    description: 'Universal desktop downloads for Intel and Apple Silicon Macs with a polished native shell.',
+    icon: 'https://img.icons8.com/color/512/mac-os.png',
+    iconAlt: 'macOS logo',
+    fileName: `AnimeVault-${VERSION}-arm64.dmg`,
+    url: releaseAssetUrl(`AnimeVault-${VERSION}-arm64.dmg`),
+    note: 'Apple Silicon DMG',
+  },
+  {
+    id: 'linux',
+    name: 'Linux',
+    badge: 'Ubuntu / Debian / AppImage',
+    description: 'Portable AppImage build for modern Linux distributions without a complicated install flow.',
+    icon: 'https://cdn.simpleicons.org/linux/f5c300',
+    iconAlt: 'Linux logo',
+    fileName: `AnimeVault-${VERSION}.AppImage`,
+    url: releaseAssetUrl(`AnimeVault-${VERSION}.AppImage`),
+    note: 'Make executable, then run',
+  },
+  {
+    id: 'android',
+    name: 'Android',
+    badge: 'Android 6+',
+    description: 'Take AnimeVault anywhere with a mobile APK built from the same release pipeline.',
+    icon: androidIcon,
+    iconAlt: 'Android logo',
+    fileName: `AnimeVault-${VERSION}.apk`,
+    url: releaseAssetUrl(`AnimeVault-${VERSION}.apk`),
+    note: 'Side-load APK release',
+  },
+];
 
-const Download = () => {
-  return (
-    <div className="app-shell download-page">
-      {/* Hero Section */}
-      <section className="hero-section hero-download">
-          <div className="hero-banner-wrapper">
-            <img className="hero-banner" src="https://occ-0-8407-2219.1.nflxso.net/dnm/api/v6/MgXQGyNr1xbI8tJSYiMWv5kXg5g/AAAABdWbeTi-T2LkIx0QRm1vN4Tx6ryR63A4af9LAXNaDo7ATekkicJGbdueUc8jFmSGcuNKi-lOG07qCLLyaijox6H_I0rSvOUJ2vbd-ECLw48WxW97AFHPf9wV5g.jpg?r=5af" alt="Download banner" id="download-banner" />
-            <div className="hero-overlay">
-              <h1 className="hero-heading gradient-text" id="hero-title">Anime Vault</h1>
-              <p className="hero-subtitle" id="hero-subtitle">
-                Download Anime Vault for Windows, macOS, Linux, and Android.
-              </p>
-            </div>
-          </div>
-      </section>
+const features = [
+  { icon: Sparkles, title: 'Fast Streaming', text: 'Watch anime instantly with ultra-low latency and a modern playback layout.' },
+  { icon: Tv, title: 'Huge Library', text: 'Explore anime, dramas, movies, and manga from one responsive experience.' },
+  { icon: Bookmark, title: 'Track Progress', text: 'Save watch history and continue from where you left off across sessions.' },
+  { icon: Laptop, title: 'Desktop First', text: 'Installers are produced by CI and uploaded to GitHub Releases for every tag.' },
+];
 
-      {/* Downloads Section */}
-      <section className="section downloads-section">
-        <div className="platform-cards">
-          {/* Windows Card */}
-          <div className="card glass-card platform-card">
-            <div className="platform-icon-container">
-              <img src={windowsIcon} alt="Windows" className="platform-icon" id="windows-icon" />
-            </div>
-            <span className="platform-badge">Windows 10 / 11</span>
-            <h3 className="platform-title">Windows</h3>
-            <p className="platform-desc">
-              Fast native desktop experience with full support for anime streaming.
-            </p>
-            <FocusableLink
-              to={urls.windows}
-              className="button-primary download-btn-gradient"
-              aria-label="Download Anime Vault for Windows"
-            >
-              {`AnimeVault Setup ${VERSION}.exe`}
-            </FocusableLink>
-          </div>
-
-          {/* macOS Card */}
-          <div className="card glass-card platform-card">
-            <div className="platform-icon-container">
-              <img src="https://img.icons8.com/color/512/mac-os.png" alt="macOS" className="platform-icon" />
-            </div>
-            <span className="platform-badge">macOS 12+</span>
-            <h3 className="platform-title">macOS</h3>
-            <p className="platform-desc">
-              Optimized for both Intel and Apple Silicon Macs.
-            </p>
-            <FocusableLink
-              to={urls.mac}
-              className="button-primary download-btn-gradient"
-              aria-label="Download Anime Vault for macOS"
-            >
-              {`AnimeVault-${VERSION}.dmg`}
-            </FocusableLink>
-          </div>
-
-          {/* Linux Card */}
-          <div className="card glass-card platform-card">
-            <div className="platform-icon-container">
-              <img src="https://cdn.simpleicons.org/linux/f5c300" alt="Linux" className="platform-icon" />
-            </div>
-            <span className="platform-badge">Ubuntu / Debian / AppImage</span>
-            <h3 className="platform-title">Linux</h3>
-            <p className="platform-desc">
-              Lightweight package for Linux distributions.
-            </p>
-            <FocusableLink
-              to={urls.linux}
-              className="button-primary download-btn-gradient"
-              aria-label="Download Anime Vault for Linux"
-            >
-              {`AnimeVault-${VERSION}.AppImage`}
-            </FocusableLink>
-          </div>
-        {/* Android Card */}
-        <div className="card glass-card platform-card">
-          <div className="platform-icon-container">
-            <img src={androidIcon} alt="Android" className="platform-icon" id="android-icon" />
-          </div>
-          <span className="platform-badge">Android 6+</span>
-          <h3 className="platform-title">Android</h3>
-          <p className="platform-desc">
-            Portable on-the-go experience with native performance.
-          </p>
-          <FocusableLink
-            to={urls.android}
-            className="button-primary download-btn-gradient"
-            aria-label="Download Anime Vault for Android"
-          >
-            {`AnimeVault-${VERSION}.apk`}
-          </FocusableLink>
+const Download = () => (
+  <div className="app-shell download-page">
+    <section className="download-hero" aria-labelledby="download-title">
+      <div className="download-hero__backdrop" />
+      <div className="download-hero__content">
+        <span className="download-eyebrow"><DownloadCloud size={18} /> Official downloads</span>
+        <h1 className="download-title gradient-text" id="download-title">Anime Vault</h1>
+        <p className="download-subtitle">
+          Download the latest AnimeVault release for Windows, macOS, Linux, and Android from GitHub Releases.
+        </p>
+        <div className="download-hero__meta" aria-label="Release details">
+          <span><CheckCircle2 size={16} /> Latest release assets</span>
+          <span><ShieldCheck size={16} /> Version {VERSION}</span>
         </div>
-        </div>
-      </section>
+      </div>
+    </section>
 
-      {/* Features Section */}
-      <section className="section features-section">
-        <div className="features-grid">
-          <div className="card glass-card feature-card">
-            <Sparkles className="feature-icon" size={32} />
-            <h3 className="feature-title">Fast Streaming</h3>
-            <p className="feature-text">
-              Watch anime instantly with ultra-low latency.
-            </p>
-          </div>
-          <div className="card glass-card feature-card">
-            <Tv className="feature-icon" size={32} />
-            <h3 className="feature-title">Huge Library</h3>
-            <p className="feature-text">
-              Access thousands of anime episodes across every genre.
-            </p>
-          </div>
-          <div className="card glass-card feature-card">
-            <Bookmark className="feature-icon" size={32} />
-            <h3 className="feature-title">Track Progress</h3>
-            <p className="feature-text">
-              Save your watch history and pick up where you left off.
-            </p>
-          </div>
-          <div className="card glass-card feature-card">
-            <Laptop className="feature-icon" size={32} />
-            <h3 className="feature-title">Responsive UI</h3>
-            <p className="feature-text">
-              Works beautifully across all your devices and screens.
-            </p>
-          </div>
-        </div>
-      </section>
+    <section className="downloads-section" aria-label="Platform downloads">
+      <div className="download-section-heading">
+        <span className="download-eyebrow">Choose your platform</span>
+        <h2>Install AnimeVault</h2>
+        <p>Each button points at the latest matching GitHub Release asset so downloads keep working after every tagged build.</p>
+      </div>
 
-      <footer className="footer">
-        © 2026 Anime Vault • All Rights Reserved
-      </footer>
-    </div>
-  );
-};
+      <div className="platform-cards">
+        {platforms.map((platform) => (
+          <article className="glass-card platform-card" key={platform.id}>
+            <div className="platform-card__shine" />
+            <div className="platform-icon-container">
+              <img src={platform.icon} alt={platform.iconAlt} className="platform-icon" />
+            </div>
+            <span className="platform-badge">{platform.badge}</span>
+            <h3 className="platform-title">{platform.name}</h3>
+            <p className="platform-desc">{platform.description}</p>
+            <a
+              href={platform.url}
+              className="button-primary download-btn-gradient"
+              aria-label={`Download AnimeVault for ${platform.name}`}
+              rel="noopener noreferrer"
+            >
+              <DownloadCloud size={18} />
+              <span>{platform.fileName}</span>
+            </a>
+            <small className="platform-note">{platform.note}</small>
+          </article>
+        ))}
+      </div>
+    </section>
+
+    <section className="features-section" aria-label="App features">
+      <div className="features-grid">
+        {features.map(({ icon: Icon, title, text }) => (
+          <article className="glass-card feature-card" key={title}>
+            <Icon className="feature-icon" size={32} />
+            <h3 className="feature-title">{title}</h3>
+            <p className="feature-text">{text}</p>
+          </article>
+        ))}
+      </div>
+    </section>
+
+    <footer className="download-footer">
+      © 2026 Anime Vault • All Rights Reserved
+    </footer>
+  </div>
+);
 
 export default Download;

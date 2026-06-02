@@ -40,27 +40,28 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
       - name: Build installer
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
-        run: |
-          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
-            npm run electron:release -- ${{ matrix.args }}
-          else
-            npm run electron:build -- ${{ matrix.args }}
-          fi
+        run: npm run electron:build -- ${{ matrix.args }}
 
       - name: Upload installer artifact
         uses: actions/upload-artifact@v4
         with:
           name: animevault-${{ matrix.name }}-installer
+          if-no-files-found: error
           path: |
-            release/**/*
-            !release/**/*.blockmap
+            release/*.exe
+            release/*.dmg
+            release/*.zip
+            release/*.AppImage
+            release/*.deb
+            release/*.yml
+            release/*.blockmap
 
   android:
     name: Android APK
@@ -85,7 +86,7 @@ jobs:
           java-version: '17'
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
       - name: Ensure Android project exists
         run: |
@@ -96,8 +97,35 @@ jobs:
       - name: Build Android release APK
         run: npm run android:build
 
+      - name: Normalize APK asset name
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          mkdir -p release
+          cp android/app/build/outputs/apk/release/*.apk "release/AnimeVault-${VERSION}.apk"
+
       - name: Upload Android artifact
         uses: actions/upload-artifact@v4
         with:
           name: animevault-Android-apk
-          path: android/app/build/outputs/apk/release/*.apk
+          if-no-files-found: error
+          path: release/*.apk
+
+  publish-release:
+    name: Upload assets to GitHub Release
+    needs: [desktop, android]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+
+    steps:
+      - name: Download installer artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+          merge-multiple: true
+
+      - name: Publish release assets
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          fail_on_unmatched_files: true
+          files: release-assets/**/*
