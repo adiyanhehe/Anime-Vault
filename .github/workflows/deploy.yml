@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - feature/animevault-ui
 
 permissions:
   contents: write
@@ -29,7 +28,7 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
       - name: Build production bundle
         run: npm run build
