@@ -43,7 +43,8 @@
         }
       ],
       "icon": "src/electron/.icon-ico/icon.ico",
-      "publisherName": "AnimeVault Team"
+      "publisherName": "AnimeVault Team",
+      "artifactName": "AnimeVault-Windows-${arch}.${ext}"
     },
     "mac": {
       "target": [
@@ -65,7 +66,8 @@
       "icon": "src/electron/.icon-ico/icon.icns",
       "hardenedRuntime": false,
       "gatekeeperAssess": false,
-      "identity": null
+      "identity": null,
+      "artifactName": "AnimeVault-macOS-${arch}.${ext}"
     },
     "linux": {
       "target": [
@@ -83,7 +85,8 @@
         }
       ],
       "category": "AudioVideo",
-      "maintainer": "AnimeVault Team"
+      "maintainer": "AnimeVault Team",
+      "artifactName": "AnimeVault-Linux-${arch}.${ext}"
     },
     "nsis": {
       "oneClick": false,
@@ -95,7 +98,8 @@
         "provider": "github",
         "releaseType": "release"
       }
-    ]
+    ],
+    "npmRebuild": false
   },
   "dependencies": {
     "@neondatabase/auth": "^0.3.0-beta",

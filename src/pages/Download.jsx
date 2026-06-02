@@ -17,8 +17,8 @@ const platforms = [
     description: 'Fast native desktop installer with automatic updates and Discord Rich Presence support.',
     icon: windowsIcon,
     iconAlt: 'Windows logo',
-    fileName: `AnimeVault Setup ${VERSION}.exe`,
-    url: releaseAssetUrl(`AnimeVault Setup ${VERSION}.exe`),
+    fileName: `AnimeVault Windows x64 v${VERSION}.exe`,
+    url: releaseAssetUrl('AnimeVault-Windows-x64.exe'),
     note: 'Recommended for most PCs',
   },
   {
@@ -28,8 +28,8 @@ const platforms = [
     description: 'Universal desktop downloads for Intel and Apple Silicon Macs with a polished native shell.',
     icon: 'https://img.icons8.com/color/512/mac-os.png',
     iconAlt: 'macOS logo',
-    fileName: `AnimeVault-${VERSION}-arm64.dmg`,
-    url: releaseAssetUrl(`AnimeVault-${VERSION}-arm64.dmg`),
+    fileName: `AnimeVault macOS Apple Silicon v${VERSION}.dmg`,
+    url: releaseAssetUrl('AnimeVault-macOS-arm64.dmg'),
     note: 'Apple Silicon DMG',
   },
   {
@@ -39,8 +39,8 @@ const platforms = [
     description: 'Portable AppImage build for modern Linux distributions without a complicated install flow.',
     icon: 'https://cdn.simpleicons.org/linux/f5c300',
     iconAlt: 'Linux logo',
-    fileName: `AnimeVault-${VERSION}.AppImage`,
-    url: releaseAssetUrl(`AnimeVault-${VERSION}.AppImage`),
+    fileName: `AnimeVault Linux x64 v${VERSION}.AppImage`,
+    url: releaseAssetUrl('AnimeVault-Linux-x64.AppImage'),
     note: 'Make executable, then run',
   },
   {
@@ -50,8 +50,8 @@ const platforms = [
     description: 'Take AnimeVault anywhere with a mobile APK built from the same release pipeline.',
     icon: androidIcon,
     iconAlt: 'Android logo',
-    fileName: `AnimeVault-${VERSION}.apk`,
-    url: releaseAssetUrl(`AnimeVault-${VERSION}.apk`),
+    fileName: `AnimeVault Android v${VERSION}.apk`,
+    url: releaseAssetUrl('AnimeVault-Android.apk'),
     note: 'Side-load APK release',
   },
 ];
@@ -84,7 +84,7 @@ const Download = () => (
       <div className="download-section-heading">
         <span className="download-eyebrow">Choose your platform</span>
         <h2>Install AnimeVault</h2>
-        <p>Each button points at the latest matching GitHub Release asset so downloads keep working after every tagged build.</p>
+        <p>Each button points at a stable GitHub Release asset name that CI replaces after every successful installer build.</p>
       </div>
 
       <div className="platform-cards">

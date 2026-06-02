@@ -99,9 +99,8 @@ jobs:
 
       - name: Normalize APK asset name
         run: |
-          VERSION=$(node -p "require('./package.json').version")
           mkdir -p release
-          cp android/app/build/outputs/apk/release/*.apk "release/AnimeVault-${VERSION}.apk"
+          cp android/app/build/outputs/apk/release/*.apk "release/AnimeVault-Android.apk"
 
       - name: Upload Android artifact
         uses: actions/upload-artifact@v4
