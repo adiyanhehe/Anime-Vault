@@ -80,7 +80,9 @@ jobs:
         with:
           name: animevault-${{ matrix.name }}-installer
           if-no-files-found: error
+
           retention-days: 14
+=======
           path: |
             release/*.exe
             release/*.dmg
@@ -139,5 +141,67 @@ jobs:
         with:
           name: animevault-Android-apk
           if-no-files-found: error
+
           retention-days: 14
           path: release/AnimeVault-Android.apk
+
+          path: release/AnimeVault-Android.apk
+
+  publish-release:
+    name: Upload assets to GitHub Release
+    needs: [desktop, android]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve release tag
+        id: release
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+            tag="${GITHUB_REF_NAME}"
+          else
+            version="$(node -p "require('./package.json').version")"
+            tag="v${version}"
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git tag -f "${tag}" "${GITHUB_SHA}"
+            git push origin "refs/tags/${tag}" --force
+          fi
+          echo "tag=${tag}" >> "${GITHUB_OUTPUT}"
+          echo "Publishing installer assets to ${tag}"
+
+      - name: Download installer artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+
+      - name: Upload assets to GitHub Release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ steps.release.outputs.tag }}
+        run: |
+          set -euo pipefail
+
+          if ! gh release view "${RELEASE_TAG}" >/dev/null 2>&1; then
+            gh release create "${RELEASE_TAG}" \
+              --target "${GITHUB_SHA}" \
+              --title "AnimeVault ${RELEASE_TAG}" \
+              --notes "Automated AnimeVault installer release for ${RELEASE_TAG}."
+          fi
+
+          mapfile -d '' files < <(find release-assets -type f -print0)
+          if [ "${#files[@]}" -eq 0 ]; then
+            echo "No installer files found to upload" >&2
+            exit 1
+          fi
+
+          gh release upload "${RELEASE_TAG}" "${files[@]}" --clobber
+          echo "Successfully uploaded ${#files[@]} files"
+
