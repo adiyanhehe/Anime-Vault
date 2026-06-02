@@ -241,3 +241,204 @@
   font-family: var(--font-main);
   padding: 2rem 0;
 }
+
+.release-live-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-bottom: 0.85rem;
+  padding: 0.45rem 0.85rem;
+  border: 1px solid rgba(76, 215, 246, 0.42);
+  border-radius: 999px;
+  background: rgba(8, 12, 24, 0.72);
+  color: #dff8ff;
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  box-shadow: 0 0 22px rgba(76, 215, 246, 0.16);
+  backdrop-filter: blur(12px);
+}
+
+.release-spin {
+  animation: releaseSpin 1s linear infinite;
+}
+
+.recommended-download-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  min-width: min(680px, calc(100vw - 2rem));
+  margin-top: 1.35rem;
+  padding: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 1.2rem;
+  background: rgba(7, 10, 20, 0.76);
+  box-shadow: 0 18px 55px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(16px);
+}
+
+.recommended-download-card div {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+}
+
+.recommended-download-card p {
+  margin: 0;
+  color: #4cd7f6;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.recommended-download-card strong {
+  overflow: hidden;
+  max-width: 100%;
+  margin-top: 0.2rem;
+  color: #fff;
+  font-size: 1rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.recommended-download-card span {
+  margin-top: 0.2rem;
+  color: var(--text-tertiary);
+  font-size: 0.78rem;
+}
+
+.recommended-download-btn {
+  width: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  white-space: nowrap;
+}
+
+.download-release-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.download-release-header p {
+  margin: 0;
+  color: #4cd7f6;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.download-release-header h2 {
+  margin: 0.25rem 0 0;
+  color: #fff;
+  font-size: clamp(1.35rem, 3vw, 2rem);
+}
+
+.release-notes-link {
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+  padding: 0.65rem 1rem;
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  font-size: 0.82rem;
+  font-weight: 900;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.download-alert {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 1rem;
+  border: 1px solid rgba(255, 170, 0, 0.36);
+  border-radius: 0.9rem;
+  padding: 0.85rem 1rem;
+  background: rgba(255, 170, 0, 0.12);
+  color: #ffd28a;
+  font-size: 0.86rem;
+}
+
+.platform-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.platform-card-recommended {
+  border-color: rgba(76, 215, 246, 0.42);
+  box-shadow: 0 0 35px rgba(76, 215, 246, 0.16);
+}
+
+.recommended-ribbon {
+  position: absolute;
+  top: 1rem;
+  right: -2.4rem;
+  width: 9rem;
+  transform: rotate(38deg);
+  background: linear-gradient(90deg, #8a2be2, #00d2ff);
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 950;
+  letter-spacing: 0.08em;
+  padding: 0.3rem;
+  text-transform: uppercase;
+}
+
+.asset-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  width: 100%;
+  min-height: 3.25rem;
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 0.85rem;
+  background: rgba(0, 0, 0, 0.18);
+}
+
+.asset-meta span {
+  overflow: hidden;
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.asset-meta small {
+  color: var(--text-tertiary);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+@keyframes releaseSpin {
+  to { transform: rotate(360deg); }
+}
+
+@media (max-width: 760px) {
+  .recommended-download-card,
+  .download-release-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .recommended-download-card {
+    min-width: 0;
+  }
+
+  .recommended-download-btn,
+  .release-notes-link {
+    width: 100%;
+  }
+}

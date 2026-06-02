@@ -1,67 +1,112 @@
-name: Electron Build CI
+name: Automated Installer Releases
 
 on:
   push:
     branches: [ main ]
-    tags:
-      - 'v*'
+    tags: [ 'v*' ]
   workflow_dispatch:
 
 permissions:
   contents: write
 
 jobs:
-  build:
+  desktop:
+    name: Desktop installer (${{ matrix.name }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ windows-latest, macos-latest, ubuntu-latest ]
+        include:
+          - os: windows-latest
+            name: Windows
+            args: --win
+          - os: macos-latest
+            name: macOS
+            args: --mac
+          - os: ubuntu-latest
+            name: Linux
+            args: --linux
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+          cache: 'npm'
+
       - name: Install dependencies
-        run: npm ci
-      - name: Build Electron app
+        run: npm install
+
+      - name: Build installer
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          CSC_LINK: ${{ secrets.CSC_LINK }}
-          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
         run: |
-          if [ "$RUNNER_OS" = "Windows" ]; then
-            npm run electron:build -- --win
-          elif [ "$RUNNER_OS" = "macOS" ]; then
-            export CSC_IDENTITY_AUTO_DISCOVERY=false
-            npm run electron:build -- --mac
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+            npm run electron:release -- ${{ matrix.args }}
           else
-            npm run electron:build -- --linux
+            npm run electron:build -- ${{ matrix.args }}
           fi
-      
-      # Optional: still keep the artifacts for debugging if it's not a tag
-      - name: Upload artifacts
-        if: ${{ !startsWith(github.ref, 'refs/tags/') }}
+
+      - name: Upload installer artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ runner.os }}-installer
-          path: release/*
+          name: animevault-${{ matrix.name }}-installer
+          path: |
+            release/**/*
+            !release/**/*.blockmap
 
-      # Automatically publish to GitHub Releases on tag (e.g. v0.1.0)
-- name: Release to GitHub
-  if: startsWith(github.ref, 'refs/tags/')
-  uses: softprops/action-gh-release@v2
-  with:
-    tag_name: ${{ github.ref_name }}
-    name: Release ${{ github.ref_name }}
-    generate_release_notes: true
-    files: |
-      release/*.exe
-      release/*.dmg
-      release/*.AppImage
-      release/*.deb
+  android:
+    name: Android APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Ensure Android project exists
+        run: |
+          if [ ! -d android ]; then
+            npx cap add android
+          fi
+
+      - name: Build Android release APK
+        run: npm run android:build
+
+      - name: Upload Android artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: animevault-Android-apk
+          path: android/app/build/outputs/apk/release/*.apk
+
+      - name: Publish Android APK to release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
+          generate_release_notes: true
+          files: android/app/build/outputs/apk/release/*.apk
