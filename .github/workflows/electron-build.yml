@@ -65,7 +65,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
         run: npm run electron:build -- ${{ matrix.args }}
-        continue-on-error: true
+      
 
       - name: Upload installer artifact
         uses: actions/upload-artifact@v4
