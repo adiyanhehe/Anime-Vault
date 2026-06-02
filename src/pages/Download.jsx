@@ -81,93 +81,11 @@ const Download = () => (
       </div>
     </section>
 
-=======
-
-const VERSION = '0.1.0';
-const REPOSITORY = 'adiyanhehe/Anime-Vault';
-const releaseAssetUrl = (assetName) => `https://github.com/${REPOSITORY}/releases/latest/download/${assetName}`;
-
-const platforms = [
-  {
-    id: 'windows',
-    name: 'Windows',
-    badge: 'Windows 10 / 11',
-    description: 'Fast native desktop installer with automatic updates and Discord Rich Presence support.',
-    icon: windowsIcon,
-    iconAlt: 'Windows logo',
-    fileName: `AnimeVault Setup ${VERSION}.exe`,
-    url: releaseAssetUrl(`AnimeVault Setup ${VERSION}.exe`),
-    note: 'Recommended for most PCs',
-  },
-  {
-    id: 'mac',
-    name: 'macOS',
-    badge: 'macOS 12+',
-    description: 'Universal desktop downloads for Intel and Apple Silicon Macs with a polished native shell.',
-    icon: 'https://img.icons8.com/color/512/mac-os.png',
-    iconAlt: 'macOS logo',
-    fileName: `AnimeVault-${VERSION}-arm64.dmg`,
-    url: releaseAssetUrl(`AnimeVault-${VERSION}-arm64.dmg`),
-    note: 'Apple Silicon DMG',
-  },
-  {
-    id: 'linux',
-    name: 'Linux',
-    badge: 'Ubuntu / Debian / AppImage',
-    description: 'Portable AppImage build for modern Linux distributions without a complicated install flow.',
-    icon: 'https://cdn.simpleicons.org/linux/f5c300',
-    iconAlt: 'Linux logo',
-    fileName: `AnimeVault-${VERSION}.AppImage`,
-    url: releaseAssetUrl(`AnimeVault-${VERSION}.AppImage`),
-    note: 'Make executable, then run',
-  },
-  {
-    id: 'android',
-    name: 'Android',
-    badge: 'Android 6+',
-    description: 'Take AnimeVault anywhere with a mobile APK built from the same release pipeline.',
-    icon: androidIcon,
-    iconAlt: 'Android logo',
-    fileName: `AnimeVault-${VERSION}.apk`,
-    url: releaseAssetUrl(`AnimeVault-${VERSION}.apk`),
-    note: 'Side-load APK release',
-  },
-];
-
-const features = [
-  { icon: Sparkles, title: 'Fast Streaming', text: 'Watch anime instantly with ultra-low latency and a modern playback layout.' },
-  { icon: Tv, title: 'Huge Library', text: 'Explore anime, dramas, movies, and manga from one responsive experience.' },
-  { icon: Bookmark, title: 'Track Progress', text: 'Save watch history and continue from where you left off across sessions.' },
-  { icon: Laptop, title: 'Desktop First', text: 'Installers are produced by CI and uploaded to GitHub Releases for every tag.' },
-];
-
-const Download = () => (
-  <div className="app-shell download-page">
-    <section className="download-hero" aria-labelledby="download-title">
-      <div className="download-hero__backdrop" />
-      <div className="download-hero__content">
-        <span className="download-eyebrow"><DownloadCloud size={18} /> Official downloads</span>
-        <h1 className="download-title gradient-text" id="download-title">Anime Vault</h1>
-        <p className="download-subtitle">
-          Download the latest AnimeVault release for Windows, macOS, Linux, and Android from GitHub Releases.
-        </p>
-        <div className="download-hero__meta" aria-label="Release details">
-          <span><CheckCircle2 size={16} /> Latest release assets</span>
-          <span><ShieldCheck size={16} /> Version {VERSION}</span>
-        </div>
-      </div>
-    </section>
-
-main
     <section className="downloads-section" aria-label="Platform downloads">
       <div className="download-section-heading">
         <span className="download-eyebrow">Choose your platform</span>
         <h2>Install AnimeVault</h2>
- codex/fix-major-bugs-and-clean-up-branches-ja4g55
-        <p>Each button points at a stable GitHub Release asset name that CI replaces after every successful installer build.</p>
-
         <p>Each button points at the latest matching GitHub Release asset so downloads keep working after every tagged build.</p>
- main
       </div>
 
       <div className="platform-cards">
