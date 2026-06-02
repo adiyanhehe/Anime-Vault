@@ -43,8 +43,20 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
+      - name: Install ImageMagick (Ubuntu)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y imagemagick
+
+      - name: Install ImageMagick (macOS)
+        if: runner.os == 'macOS'
+        run: brew install imagemagick
+
       - name: Install dependencies
         run: npm ci
+
+      - name: Generate icons
+        run: node scripts/generate-icons.js
+        continue-on-error: true
 
       - name: Build installer
         shell: bash
