@@ -1,7 +1,11 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import AnimeCard from "../components/AnimeCard";
-import { fetchTrendingMedia, fetchAnimeBySeason } from "../api/anilist";
+import {
+  fetchTrendingMedia,
+  fetchAnimeBySeason,
+  fetchAnimeByIds,
+} from "../api/anilist";
 import LatestSection from "../components/LatestSection";
 import {
   Play,
@@ -35,6 +39,24 @@ const GENRES = [
 const SEASONS = ["WINTER", "SPRING", "SUMMER", "FALL"];
 const YEARS = [2024, 2023, 2022, 2021, 2020];
 
+const CLASSROOM_OF_THE_ELITE_BANNER =
+  "https://occ-0-8407-2219.1.nflxso.net/dnm/api/v6/MgXQGyNr1xbI8tJSYiMWv5kXg5g/AAAABbu2mrfgMEMATRppz3WvutNHbUSBM3rWWq3nIBWGk3n1DgG9GVI1yX5gkfdDK73a0_L0SVQnfKp2HEIMdC9KeAXdmZB7VjTqO8EI0Pyv3C8DvfJtXEYE1mXA9g.jpg?r=6ae";
+
+const FEATURED_SLIDE_IDS = [144192, 5114, 1535, 1735, 1];
+
+const FEATURED_SLIDE_COPY = {
+  144192:
+    "Class D returns to a brutal merit-based school system where alliances, betrayals, and psychological tests decide who can climb to the top.",
+  5114:
+    "Two brothers search for the Philosopher's Stone after a forbidden ritual changes their lives forever.",
+  1535:
+    "A genius student discovers a notebook with deadly power and begins a cat-and-mouse war against the world's greatest detective.",
+  1735:
+    "Naruto continues his journey home with bigger battles, stronger rivals, and the dream of becoming Hokage still burning bright.",
+  1:
+    "A crew of bounty hunters chases criminals across space while their pasts slowly catch up with them.",
+};
+
 function getTitle(anime) {
   return (
     anime?.title?.english ||
@@ -52,12 +74,31 @@ function getImage(anime) {
   );
 }
 
+function isClassroomOfTheElite(anime) {
+  const title = getTitle(anime).toLowerCase();
+  return (
+    title.includes("classroom of the elite") ||
+    title.includes("youkoso jitsuryoku")
+  );
+}
+
 function getBanner(anime) {
+  if (isClassroomOfTheElite(anime)) return CLASSROOM_OF_THE_ELITE_BANNER;
   return anime?.bannerImage || getImage(anime);
+}
+
+function getDescription(anime) {
+  const id = Number(anime?.id);
+  return (
+    FEATURED_SLIDE_COPY[id] ||
+    anime?.description?.replace(/<[^>]+>/g, "") ||
+    "No description available."
+  );
 }
 
 function Home() {
   const [animeList, setAnimeList] = useState([]);
+  const [featuredSlides, setFeaturedSlides] = useState([]);
   const [seasonalList, setSeasonalList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [seasonalLoading, setSeasonalLoading] = useState(false);
@@ -76,22 +117,19 @@ function Home() {
     async function load() {
       try {
         setLoading(true);
-        let data = await fetchTrendingMedia("ANIME");
+        const [data, featured] = await Promise.all([
+          fetchTrendingMedia("ANIME"),
+          fetchAnimeByIds(FEATURED_SLIDE_IDS),
+        ]);
 
-        const coteIndex = data.findIndex(
-          (a) =>
-            a.title?.english
-              ?.toLowerCase()
-              .includes("classroom of the elite") ||
-            a.title?.romaji?.toLowerCase().includes("youkoso jitsuryoku"),
-        );
-
-        if (coteIndex > 0) {
-          const cote = data.splice(coteIndex, 1)[0];
-          data.unshift(cote);
-        }
+        const orderedFeatured = FEATURED_SLIDE_IDS.map((id) =>
+          featured.find((anime) => Number(anime.id) === id),
+        ).filter(Boolean);
 
         setAnimeList(data);
+        setFeaturedSlides(
+          orderedFeatured.length ? orderedFeatured : data.slice(0, 5),
+        );
       } catch (err) {
         setError(err.message || "Failed to load trending anime");
       } finally {
@@ -118,12 +156,12 @@ function Home() {
 
   // Slideshow interval timer
   useEffect(() => {
-    if (animeList.length === 0) return;
+    if (featuredSlides.length === 0) return;
     const interval = setInterval(() => {
-      setActiveSlide((prev) => (prev + 1) % Math.min(5, animeList.length));
+      setActiveSlide((prev) => (prev + 1) % Math.min(5, featuredSlides.length));
     }, 6000);
     return () => clearInterval(interval);
-  }, [animeList]);
+  }, [featuredSlides]);
 
   const trending = animeList.slice(0, 12);
 
@@ -148,12 +186,12 @@ function Home() {
   return (
     <section className="home-v2">
       {/* Immersive Hero Slideshow Carousel (Flashcards) */}
-      {animeList.length > 0 && (
+      {featuredSlides.length > 0 && (
         <div
           className="hero-v2 hero-carousel-v2"
           style={{ position: "relative", overflow: "hidden", height: "520px" }}
         >
-          {animeList.slice(0, 5).map((anime, index) => {
+          {featuredSlides.slice(0, 5).map((anime, index) => {
             const isActive = index === activeSlide;
             return (
               <div
@@ -172,43 +210,75 @@ function Home() {
                   zIndex: isActive ? 2 : 1,
                 }}
               >
-                <div className="hero-img-wrapper" style={{ width: "100%", height: "100%" }}>
+                <div
+                  className="hero-img-wrapper"
+                  style={{ width: "100%", height: "100%" }}
+                >
                   <img
                     src={getBanner(anime)}
                     alt={getTitle(anime)}
-                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "cover",
+                    }}
                   />
-                  <div className="hero-overlay">
-                    <span className="hero-rank" style={{
-                      color: "var(--brand-color)",
-                      background: "rgba(0,0,0,0.6)",
-                      border: "1px solid var(--brand-color)",
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: "6px",
-                      padding: "4px 12px",
-                      borderRadius: "20px",
-                      fontSize: "0.75rem",
-                      fontWeight: "bold",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.05em",
-                    }}>
-                      <Sparkles size={14} /> #{index + 1} Trending
+                  <div className="hero-overlay-v2" />
+                </div>
+                <div className="hero-content-v2" style={{ zIndex: 5 }}>
+                  <div
+                    className="hero-info-v2"
+                    style={{
+                      transform: isActive ? "translateY(0)" : "translateY(20px)",
+                      opacity: isActive ? 1 : 0,
+                      transition:
+                        "all 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.2s",
+                    }}
+                  >
+                    <span
+                      className="hero-rank"
+                      style={{
+                        color: "var(--brand-color)",
+                        background: "rgba(0,0,0,0.6)",
+                        border: "1px solid var(--brand-color)",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "6px",
+                        padding: "4px 12px",
+                        borderRadius: "20px",
+                        fontSize: "0.75rem",
+                        fontWeight: "bold",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.05em",
+                        width: "fit-content",
+                      }}
+                    >
+                      <Sparkles size={14} /> #{index + 1} Trending Classic
                     </span>
                     <h1 className="hero-title-v2">{getTitle(anime)}</h1>
                     <div className="hero-meta-v2">
-                      <span><Calendar size={16} /> {anime?.seasonYear}</span>
-                      <span><Star size={16} /> {anime?.averageScore}%</span>
+                      <span>
+                        <Calendar size={16} /> {anime?.seasonYear}
+                      </span>
+                      <span>
+                        <Star size={16} /> {anime?.averageScore}%
+                      </span>
                       <span>{anime?.format}</span>
                     </div>
                     <p className="hero-desc-v2">
-                      {anime?.description?.replace(/<[^>]+>/g, "").slice(0, 220)}...
+                      {getDescription(anime).slice(0, 220)}...
                     </p>
                     <div className="hero-btns-v2">
-                      <button className="btn-play-v2" onClick={() => navigate(`/anime/${anime.id}`)}>
+                      <button
+                        className="btn-play-v2"
+                        onClick={() => navigate(`/anime/${anime.id}`)}
+                      >
                         <Play size={20} fill="black" /> Watch Now
                       </button>
-                      <button className="btn-info-v2" onClick={() => navigate(`/anime/${anime.id}`)}>
+                      <button
+                        className="btn-info-v2"
+                        onClick={() => navigate(`/anime/${anime.id}`)}
+                      >
                         <Info size={20} /> Details
                       </button>
                     </div>
@@ -230,7 +300,7 @@ function Home() {
               gap: "8px",
             }}
           >
-            {animeList.slice(0, 5).map((_, index) => (
+            {featuredSlides.slice(0, 5).map((_, index) => (
               <button
                 key={index}
                 onClick={() => setActiveSlide(index)}
