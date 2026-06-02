@@ -260,7 +260,7 @@ function Home() {
         {/* Security & Updates */}
         <div
           className="security-notice-v2"
-          style={{ marginTop: "-4.5rem", zIndex: 10, position: "relative" }}
+          style={{ marginTop: "1rem", zIndex: 10, position: "relative" }}
         >
           <ShieldAlert size={28} color="#ffa500" />
           <div>
