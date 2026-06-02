@@ -1,243 +1,349 @@
 /* src/styles/download.css */
-/* -------------------------------------------------
-   Download page – large vertical cards, gradient UI
-   Matches the user's reference design
-   ------------------------------------------------- */
 
 .download-page {
   min-height: 100vh;
-  background: var(--background);
+  overflow-x: hidden;
+  background:
+    radial-gradient(circle at 10% 10%, rgba(138, 43, 226, 0.2), transparent 28rem),
+    radial-gradient(circle at 90% 0%, rgba(0, 210, 255, 0.16), transparent 24rem),
+    var(--background);
   color: var(--foreground);
   font-family: var(--font-main);
-  padding: 2rem 0;
+  padding: clamp(1rem, 3vw, 2rem);
 }
 
-/* Hero Section */
-.hero-download {
+.download-hero {
   position: relative;
-  text-align: center;
-  color: var(--foreground);
-}
-
-.hero-banner-wrapper {
-  position: relative;
-  width: 100%;
-}
-
-.hero-banner {
-  width: 100%;
-  height: 350px;
-  object-fit: cover;
-  border-radius: 1rem;
-  margin-top: 0;
-}
-.hero-overlay {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  text-align: center;
-  color: var(--foreground);
-  z-index: 1;
-}
-
-  .gradient-text {
-  background: linear-gradient(90deg, #8a2be2, #4cd7f6);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  display: inline-block;
-  font-size: clamp(3rem, 6vw, 4.5rem);
-  font-weight: 800;
-  margin-bottom: 0.5rem;
-}
-
-.hero-subtitle {
-  color: var(--text-secondary);
-  font-size: 1.1rem;
-  margin-top: 0;
-}
-
-/* Platform Cards Grid */
-.downloads-section {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 2rem;
-  background-image: url('https://occ-0-8407-2219.1.nflxso.net/dnm/api/v6/MgXQGyNr1xbI8tJSYiMWv5kXg5g/AAAABbu2mrfgMEMATRppz3WvutNHbUSBM3rWWq3nIBWGk3n1DgG9GVI1yX5gkfdDK73a0_L0SVQnfKp2HEIMdC9KeAXdmZB7VjTqO8EI0Pyv3C8DvfJtXEYE1mXA9g.jpg?r=6ae');
-  background-size: cover;
-  background-position: center;
-  border-radius: 1.5rem;
-  position: relative;
+  isolation: isolate;
+  display: grid;
+  place-items: center;
+  min-height: clamp(360px, 50vw, 520px);
+  max-width: 1180px;
+  margin: 0 auto 2rem;
   overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 2rem;
+  box-shadow: 0 30px 90px rgba(0, 0, 0, 0.38);
 }
 
-.downloads-section::before {
+.download-hero::after {
   content: "";
   position: absolute;
   inset: 0;
-  background: rgba(0, 0, 0, 0.4);
-  z-index: 0;
+  z-index: -1;
+  background:
+    linear-gradient(135deg, rgba(5, 8, 18, 0.94), rgba(16, 20, 34, 0.62)),
+    url("https://occ-0-8407-2219.1.nflxso.net/dnm/api/v6/MgXQGyNr1xbI8tJSYiMWv5kXg5g/AAAABdWbeTi-T2LkIx0QRm1vN4Tx6ryR63A4af9LAXNaDo7ATekkicJGbdueUc8jFmSGcuNKi-lOG07qCLLyaijox6H_I0rSvOUJ2vbd-ECLw48WxW97AFHPf9wV5g.jpg?r=5af") center / cover;
+  transform: scale(1.02);
 }
 
-/* Ensure inner content sits above overlay */
-.downloads-section > * {
+.download-hero__backdrop {
+  position: absolute;
+  inset: auto -10% -35% -10%;
+  z-index: -1;
+  height: 70%;
+  background: radial-gradient(circle, rgba(76, 215, 246, 0.35), transparent 58%);
+  filter: blur(18px);
+}
+
+.download-hero__content {
+  width: min(760px, 92%);
+  text-align: center;
+  padding: clamp(2rem, 6vw, 4rem);
+}
+
+.download-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: fit-content;
+  margin: 0 auto 1rem;
+  padding: 0.45rem 0.85rem;
+  color: #d9c2ff;
+  background: rgba(138, 43, 226, 0.18);
+  border: 1px solid rgba(196, 142, 255, 0.24);
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.gradient-text {
+  display: inline-block;
+  margin: 0;
+  background: linear-gradient(90deg, #f4ecff, #8a2be2 48%, #4cd7f6);
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+}
+
+.download-title {
+  font-size: clamp(3.5rem, 10vw, 7rem);
+  font-weight: 900;
+  line-height: 0.95;
+  letter-spacing: -0.08em;
+}
+
+.download-subtitle {
+  max-width: 640px;
+  margin: 1.25rem auto 0;
+  color: rgba(245, 247, 255, 0.82);
+  font-size: clamp(1rem, 2.2vw, 1.35rem);
+  line-height: 1.65;
+}
+
+.download-hero__meta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+.download-hero__meta span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.6rem 0.9rem;
+  color: #dff8ff;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+  backdrop-filter: blur(16px);
+}
+
+.downloads-section,
+.features-section {
+  max-width: 1180px;
+  margin: 0 auto;
+}
+
+.downloads-section {
   position: relative;
-  z-index: 1;
+  overflow: hidden;
+  padding: clamp(1.25rem, 3vw, 2rem);
+  background:
+    linear-gradient(135deg, rgba(10, 13, 25, 0.9), rgba(21, 25, 35, 0.7)),
+    url("https://occ-0-8407-2219.1.nflxso.net/dnm/api/v6/MgXQGyNr1xbI8tJSYiMWv5kXg5g/AAAABbu2mrfgMEMATRppz3WvutNHbUSBM3rWWq3nIBWGk3n1DgG9GVI1yX5gkfdDK73a0_L0SVQnfKp2HEIMdC9KeAXdmZB7VjTqO8EI0Pyv3C8DvfJtXEYE1mXA9g.jpg?r=6ae") center / cover;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 2rem;
+}
+
+.download-section-heading {
+  max-width: 680px;
+  margin: 0 auto 1.75rem;
+  text-align: center;
+}
+
+.download-section-heading h2 {
+  margin: 0;
+  font-size: clamp(2rem, 5vw, 3.4rem);
+}
+
+.download-section-heading p {
+  margin: 0.85rem 0 0;
+  color: var(--text-secondary);
+  line-height: 1.6;
 }
 
 .platform-cards {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 2rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
 }
 
 .platform-card {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
+  min-height: 430px;
+  overflow: hidden;
+  padding: 1.5rem;
   text-align: center;
-  padding: 4rem 2rem;
-  background: rgba(21, 25, 35, 0.7);
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 1.5rem;
-  transition: transform 0.25s ease, box-shadow 0.25s ease;
-  min-height: 380px;
+  transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
 }
 
-.platform-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3);
+.platform-card:hover,
+.platform-card:focus-within {
+  transform: translateY(-6px);
+  border-color: rgba(76, 215, 246, 0.34);
+  box-shadow: 0 24px 55px rgba(0, 0, 0, 0.34);
+}
+
+.platform-card__shine {
+  position: absolute;
+  inset: -40% -20% auto;
+  height: 180px;
+  background: radial-gradient(circle, rgba(76, 215, 246, 0.18), transparent 64%);
+  pointer-events: none;
 }
 
 .platform-icon-container {
-  margin-bottom: 1.5rem;
-  height: 80px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: grid;
+  place-items: center;
+  width: 112px;
+  height: 112px;
+  margin-bottom: 1.25rem;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 2rem;
 }
 
 .platform-icon {
-  width: 96px;
-  height: 96px;
+  width: 76px;
+  height: 76px;
   object-fit: contain;
 }
 
 .platform-badge {
-  background: rgba(138, 43, 226, 0.15);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px;
+  padding: 0.35rem 0.8rem;
   color: #c48eff;
-  padding: 0.35rem 1rem;
+  background: rgba(138, 43, 226, 0.15);
+  border: 1px solid rgba(196, 142, 255, 0.16);
   border-radius: 999px;
-  font-size: 0.8rem;
-  font-weight: 600;
-  margin-bottom: 1rem;
+  font-size: 0.75rem;
+  font-weight: 800;
 }
 
 .platform-title {
-  font-size: 1.75rem;
-  margin: 0 0 0.75rem;
-  font-weight: 700;
+  margin: 1rem 0 0.6rem;
+  font-size: 1.55rem;
+  font-weight: 800;
 }
 
 .platform-desc {
+  flex: 1;
+  margin: 0 0 1.25rem;
   color: var(--text-secondary);
-  font-size: 0.95rem;
-  line-height: 1.5;
-  margin: 0 0 2rem;
-  flex-grow: 1;
+  font-size: 0.94rem;
+  line-height: 1.55;
 }
 
 .download-btn-gradient {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
   width: 100%;
-  padding: 1rem;
-  border-radius: 0.75rem;
+  min-height: 52px;
+  padding: 0.9rem 1rem;
+  color: #fff;
   background: linear-gradient(90deg, #8a2be2, #00d2ff);
-  color: white;
-  font-weight: 700;
-  font-size: 1.05rem;
-  text-decoration: none;
-  border: none;
+  border: 0;
+  border-radius: 0.9rem;
+  box-shadow: 0 14px 34px rgba(0, 210, 255, 0.18);
   cursor: pointer;
-  transition: opacity 0.2s, transform 0.1s;
-  display: inline-block;
+  font-size: 0.92rem;
+  font-weight: 800;
+  line-height: 1.2;
+  text-decoration: none;
+  transition: filter 0.2s ease, transform 0.1s ease;
 }
 
-.download-btn-gradient:hover {
-  opacity: 0.9;
+.download-btn-gradient:hover,
+.download-btn-gradient:focus-visible {
+  filter: brightness(1.08);
+  outline: none;
+}
+
+.download-btn-gradient:focus-visible {
+  box-shadow: 0 0 0 4px rgba(76, 215, 246, 0.24), 0 14px 34px rgba(0, 210, 255, 0.18);
 }
 
 .download-btn-gradient:active {
   transform: scale(0.98);
 }
 
-/* Features Section */
+.platform-note {
+  display: block;
+  margin-top: 0.75rem;
+  color: var(--text-tertiary);
+}
+
 .features-section {
-  max-width: 1100px;
-  margin: 3rem auto 0;
-  padding: 2rem;
+  margin-top: 2rem;
 }
 
 .features-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 1.5rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
 }
 
 .feature-card {
-  padding: 1.5rem;
-  background: rgba(21, 25, 35, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  border-radius: 1rem;
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+  padding: 1.4rem;
 }
 
 .feature-icon {
   color: #4cd7f6;
-  margin-bottom: 0.25rem;
-}
-.video-player-wrapper-v2 {
-  width: 100%;
-  max-width: 900px;
-  margin: 0 auto;
-}
-@media (min-width: 1600px) {
-  .video-player-wrapper-v2 { max-width: 1200px; }
 }
 
 .feature-title {
-  font-size: 1.1rem;
   margin: 0;
-  font-weight: 700;
+  font-size: 1.05rem;
+  font-weight: 800;
 }
 
 .feature-text {
+  margin: 0;
   color: var(--text-secondary);
   font-size: 0.9rem;
-  margin: 0;
-  line-height: 1.5;
+  line-height: 1.55;
 }
 
-.footer {
-  text-align: center;
-  padding: 3rem 2rem;
+.download-footer {
+  padding: 3rem 1rem 1rem;
   color: var(--text-tertiary);
   font-size: 0.9rem;
-}
-.glass-card {
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 1rem;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  text-align: center;
 }
 
-.search-page {
-  min-height: 100vh;
-  background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-main);
-  padding: 2rem 0;
+.glass-card {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 1.35rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.16);
+  backdrop-filter: blur(18px);
+}
+
+@media (max-width: 1050px) {
+  .platform-cards,
+  .features-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .download-page {
+    padding: 0.75rem;
+  }
+
+  .download-hero,
+  .downloads-section {
+    border-radius: 1.35rem;
+  }
+
+  .download-title {
+    letter-spacing: -0.05em;
+  }
+
+  .platform-cards,
+  .features-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .platform-card {
+    min-height: auto;
+  }
 }

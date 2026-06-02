@@ -40,27 +40,28 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
       - name: Build installer
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
-        run: |
-          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
-            npm run electron:release -- ${{ matrix.args }}
-          else
-            npm run electron:build -- ${{ matrix.args }}
-          fi
+        run: npm run electron:build -- ${{ matrix.args }}
 
       - name: Upload installer artifact
         uses: actions/upload-artifact@v4
         with:
           name: animevault-${{ matrix.name }}-installer
+          if-no-files-found: error
           path: |
-            release/**/*
-            !release/**/*.blockmap
+            release/*.exe
+            release/*.dmg
+            release/*.zip
+            release/*.AppImage
+            release/*.deb
+            release/*.yml
+            release/*.blockmap
 
   android:
     name: Android APK
@@ -85,7 +86,7 @@ jobs:
           java-version: '17'
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
       - name: Ensure Android project exists
         run: |
@@ -96,8 +97,68 @@ jobs:
       - name: Build Android release APK
         run: npm run android:build
 
+      - name: Normalize APK asset name
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          mkdir -p release
+          cp android/app/build/outputs/apk/release/*.apk "release/AnimeVault-${VERSION}.apk"
+
       - name: Upload Android artifact
         uses: actions/upload-artifact@v4
         with:
           name: animevault-Android-apk
-          path: android/app/build/outputs/apk/release/*.apk
+          if-no-files-found: error
+          path: release/*.apk
+
+  publish-release:
+    name: Replace assets in GitHub Release
+    needs: [desktop, android]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve release tag
+        id: release
+        shell: bash
+        run: |
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+            TAG="${GITHUB_REF_NAME}"
+          else
+            VERSION=$(node -p "require('./package.json').version")
+            TAG="v${VERSION}"
+          fi
+
+          echo "tag=${TAG}" >> "${GITHUB_OUTPUT}"
+          echo "Publishing installer assets to ${TAG}"
+
+      - name: Download installer artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+
+      - name: Create or update release and replace assets
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ steps.release.outputs.tag }}
+        run: |
+          set -euo pipefail
+
+          if ! gh release view "${RELEASE_TAG}" >/dev/null 2>&1; then
+            gh release create "${RELEASE_TAG}" \
+              --target "${GITHUB_SHA}" \
+              --title "AnimeVault ${RELEASE_TAG}" \
+              --notes "Automated AnimeVault installer release for ${RELEASE_TAG}."
+          fi
+
+          mapfile -d '' files < <(find release-assets -type f -print0)
+          if [ "${#files[@]}" -eq 0 ]; then
+            echo "No installer files were downloaded from build artifacts." >&2
+            exit 1
+          fi
+
+          gh release upload "${RELEASE_TAG}" "${files[@]}" --clobber
