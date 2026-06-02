@@ -26,4 +26,4 @@ The `/download` page now asks the GitHub Releases API for the newest release at 
 
 ## Release job reliability
 
-The workflow no longer asks each platform build to publish directly to GitHub Releases. Each platform only builds and uploads artifacts first. A final `release` job downloads all generated artifacts and creates one release, which avoids matrix jobs racing each other or failing to create duplicate releases.
+The workflow no longer asks each platform build to publish directly to GitHub Releases. Each platform only builds and uploads artifacts first. A final `release` job downloads all generated artifacts and creates or updates one release, which avoids matrix jobs racing each other or failing to create duplicate releases.
