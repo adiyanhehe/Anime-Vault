@@ -721,6 +721,61 @@ export function stripHtml(htmlText = "") {
 
 // ── Exported API Methods with Transparent Jikan Fallback ────────────────────
 
+export async function fetchAnimeByIds(ids = []) {
+  const cleanIds = ids.map((id) => Number(id)).filter(Number.isFinite);
+  if (!cleanIds.length) return [];
+
+  const query = `
+    query ($ids: [Int], $perPage: Int) {
+      Page(page: 1, perPage: $perPage) {
+        media(id_in: $ids, type: ANIME) {
+          id
+          idMal
+          title { romaji english native }
+          description
+          episodes
+          status
+          season
+          seasonYear
+          genres
+          averageScore
+          meanScore
+          popularity
+          format
+          duration
+          source
+          studios { nodes { name } }
+          coverImage { extraLarge large medium color }
+          bannerImage
+        }
+      }
+    }
+  `;
+
+  try {
+    const data = await postQuery(query, {
+      ids: cleanIds,
+      perPage: cleanIds.length,
+    });
+    return data.Page.media || [];
+  } catch (err) {
+    console.warn(
+      "AniList failed to fetch featured anime, falling back to individual lookups:",
+      err.message,
+    );
+    const results = await Promise.all(
+      cleanIds.map(async (id) => {
+        try {
+          return await fetchAnimeByIdJikan(id);
+        } catch (_) {
+          return null;
+        }
+      }),
+    );
+    return results.filter(Boolean);
+  }
+}
+
 export async function fetchTrendingMedia(
   type = "ANIME",
   page = 1,
