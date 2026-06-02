@@ -78,6 +78,10 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+
+        run: npm run electron:build -- ${{ matrix.args }}
+
+
         run: |
           npm run build
           npm run electron:build -- ${{ matrix.args }}
@@ -141,7 +145,9 @@ jobs:
             echo "No Android release APK was produced." >&2
             exit 1
           fi
+
           cp "${apks[0]}" "release/AnimeVault-Android.apk"
+
 
       - name: Upload Android artifact
         uses: actions/upload-artifact@v4
