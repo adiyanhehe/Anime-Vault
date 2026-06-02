@@ -21,6 +21,7 @@ import NotFound from './pages/NotFound';
 import Footer from './components/Footer';
 import AuthModal from './components/AuthModal';
 import ProfileModal from './components/ProfileModal';
+import UpdateCenter from './components/UpdateCenter';
 import { useUser } from './api/UserContext';
 import { fetchSiteSettings } from './api/db';
 import { FocusableNavLink, FocusableLink, FocusableButton } from './components/FocusableWrapper';
@@ -266,6 +267,7 @@ function App() {
       
       {/* Postgres Neon Modals */}
       <AuthModal />
+      <UpdateCenter />
       <ProfileModal isOpen={isProfileOpen} onClose={() => setIsProfileOpen(false)} />
     </div>
   );
