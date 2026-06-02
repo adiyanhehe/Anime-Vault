@@ -72,9 +72,30 @@ function findExternalId(links, siteName) {
 }
 
 // ─────────────────────────────────────────────────────────
-// Sole Streaming Source: VidNest
+// Streaming embeds with fallbacks for episodes missing on the primary host
 // ─────────────────────────────────────────────────────────
 const DEFAULT_LANGUAGE = 'sub';
+const DEFAULT_EMBED_SERVER = 'vidnest';
+const EMBED_SERVERS = [
+  {
+    id: 'vidnest',
+    label: 'VidNest',
+    description: 'Primary source',
+    buildUrl: (animeId, episode, lang) => `https://vidnest.fun/anime/${animeId}/${episode}/${lang}`,
+  },
+  {
+    id: 'animepahe',
+    label: 'AnimePahe',
+    description: 'Fallback for 404 episodes',
+    buildUrl: (animeId, episode, lang) => `https://vidnest.fun/animepahe/${animeId}/${episode}/${lang}`,
+  },
+  {
+    id: 'ninja',
+    label: 'NinjaShield',
+    description: 'Backup embed',
+    buildUrl: (animeId, episode, lang) => `https://ninjasheild.stream/map/anime/${animeId}/${episode}/${lang === 'hindi' ? 'sub' : lang}`,
+  },
+];
 
 function AnimeDetails() {
   const { id } = useParams();
@@ -92,6 +113,7 @@ function AnimeDetails() {
 
   // Player state
   const [language, setLanguage] = useState(DEFAULT_LANGUAGE);
+  const [embedServer, setEmbedServer] = useState(DEFAULT_EMBED_SERVER);
   const [videoSources, setVideoSources] = useState([]);
   const [playerLoading, setPlayerLoading] = useState(false);
   const [playerStatus, setPlayerStatus] = useState(''); // info/warning messages
@@ -118,6 +140,7 @@ function AnimeDetails() {
     setVideoSources([]);
     setPlayerStatus('');
     setLanguage(DEFAULT_LANGUAGE);
+    setEmbedServer(DEFAULT_EMBED_SERVER);
     setEpPage(0);
 
     async function load() {
@@ -258,10 +281,19 @@ function AnimeDetails() {
   }
 
   // ───── Compute embed URL for current episode + server ─────
+  function getEmbedAnimeId() {
+    if (!anime) return null;
+    const routeId = String(id || anime.id || '').trim();
+    if (routeId && !routeId.startsWith('mal-')) return routeId;
+    return anime.id && !String(anime.id).startsWith('mal-') ? String(anime.id) : null;
+  }
+
   function getEmbedUrl() {
     if (!anime || !currentEpisode) return null;
-    const cleanId = String(id || '').replace(/^mal-/, '');
-    return `https://vidnest.fun/anime/${cleanId}/${currentEpisode.number}/${language}`;
+    const embedAnimeId = getEmbedAnimeId();
+    if (!embedAnimeId) return null;
+    const server = EMBED_SERVERS.find((item) => item.id === embedServer) || EMBED_SERVERS[0];
+    return server.buildUrl(embedAnimeId, currentEpisode.number, language);
   }
 
   // ───── Episode pagination ─────  // ───── Episode pagination ─────
@@ -310,6 +342,7 @@ function AnimeDetails() {
             sources={[]}
             poster={anime.bannerImage || anime.coverImage?.extraLarge}
             title={`${animeTitle} · EP ${currentEpisode.number}`}
+            key={embedUrl || currentEpisode.id}
             embedUrl={embedUrl}
             isZen={zenMode}
           />
@@ -359,7 +392,7 @@ function AnimeDetails() {
               <Tv size={20} />
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <h4 style={{ margin: 0 }}>VidNest Player</h4>
+                  <h4 style={{ margin: 0 }}>{EMBED_SERVERS.find((item) => item.id === embedServer)?.label || 'Anime Player'}</h4>
                   <button
                     className={`zen-toggle-v2 ${zenMode ? 'active' : ''}`}
                     onClick={() => setZenMode(!zenMode)}
@@ -369,11 +402,31 @@ function AnimeDetails() {
                     {zenMode ? 'Zen Mode ON' : 'Zen Mode OFF'}
                   </button>
                 </div>
-                <p>Sole streaming source powered by VidNest. Choose your audio track below.</p>
+                <p>If an episode shows 404, switch servers here without leaving the page.</p>
               </div>
             </div>
 
-            <div className="server-controls" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <div className="server-controls" style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+              {EMBED_SERVERS.map((server) => (
+                <button
+                  key={server.id}
+                  className={`download-chip ${embedServer === server.id ? 'active' : ''}`}
+                  title={server.description}
+                  style={{
+                    padding: '0.5rem 1rem',
+                    fontSize: '0.85rem',
+                    fontWeight: 'bold',
+                    background: embedServer === server.id ? 'var(--brand-color)' : 'var(--glass)',
+                    color: embedServer === server.id ? '#fff' : 'var(--text-secondary)',
+                    borderColor: embedServer === server.id ? 'var(--brand-color)' : 'var(--glass-border)',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                  }}
+                  onClick={() => setEmbedServer(server.id)}
+                >
+                  {server.label}
+                </button>
+              ))}
               {['sub', 'dub', 'hindi'].map((lang) => (
                 <button
                   key={lang}
