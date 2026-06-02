@@ -5284,3 +5284,30 @@ select {
   outline: 3px solid var(--brand-color) !important;
   outline-offset: 2px;
 }
+
+/* Keep the anime trending slideshow content above its banner/gradient layers. */
+.anime-hero-carousel .carousel-slide {
+  isolation: isolate;
+}
+
+.anime-hero-carousel .hero-img-wrapper {
+  z-index: 0;
+}
+
+.anime-hero-carousel .hero-overlay-v2 {
+  z-index: 1;
+  pointer-events: none;
+}
+
+.anime-hero-carousel .hero-content-v2 {
+  position: relative;
+  z-index: 2;
+  min-height: 100%;
+}
+
+.anime-hero-carousel .hero-info-v2 {
+  position: relative;
+  z-index: 3;
+  color: #fff;
+  text-shadow: 0 2px 20px rgba(0, 0, 0, 0.45);
+}
