@@ -1,4 +1,4 @@
-name: Automated Installer Releases
+name: Automated Installer Builds
 
 on:
   push:
@@ -7,11 +7,11 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
   actions: read
 
 concurrency:
-  group: installer-release-${{ github.ref }}
+  group: installer-build-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
@@ -72,7 +72,6 @@ jobs:
       - name: Build installer
         shell: bash
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
         run: npm run electron:build -- ${{ matrix.args }}
 
@@ -81,6 +80,9 @@ jobs:
         with:
           name: animevault-${{ matrix.name }}-installer
           if-no-files-found: error
+
+          retention-days: 14
+=======
           path: |
             release/*.exe
             release/*.dmg
@@ -139,6 +141,10 @@ jobs:
         with:
           name: animevault-Android-apk
           if-no-files-found: error
+
+          retention-days: 14
+          path: release/AnimeVault-Android.apk
+
           path: release/AnimeVault-Android.apk
 
   publish-release:
@@ -198,3 +204,4 @@ jobs:
 
           gh release upload "${RELEASE_TAG}" "${files[@]}" --clobber
           echo "Successfully uploaded ${#files[@]} files"
+
