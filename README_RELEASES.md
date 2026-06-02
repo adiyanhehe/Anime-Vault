@@ -2,6 +2,10 @@
 
 AnimeVault builds installers automatically whenever `main` changes and whenever a version tag such as `v0.2.0` is pushed. The workflow publishes to the matching GitHub Release and replaces any installer assets with the same names so the release download buttons always point at the newest successful build. The download page reads the app version from `package.json` for display, but the actual download URLs use stable asset names such as `AnimeVault-Windows-x64.exe` and `AnimeVault-Android.apk`; CI replaces those assets in the release automatically.
 
+## Branch policy
+
+Release automation is maintained on `main`; do not create extra long-lived branches for installer publishing updates.
+
 ## What gets built
 
 - Windows: NSIS installers for x64 and arm64.
