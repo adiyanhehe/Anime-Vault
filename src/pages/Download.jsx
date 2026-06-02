@@ -61,7 +61,7 @@ const features = [
   { icon: Sparkles, title: 'Fast Streaming', text: 'Watch anime instantly with ultra-low latency and a modern playback layout.' },
   { icon: Tv, title: 'Huge Library', text: 'Explore anime, dramas, movies, and manga from one responsive experience.' },
   { icon: Bookmark, title: 'Track Progress', text: 'Save watch history and continue from where you left off across sessions.' },
-  { icon: Laptop, title: 'Desktop First', text: 'Installers are produced by CI and uploaded to GitHub Releases for every tag.' },
+  { icon: Laptop, title: 'Desktop First', text: 'Installers are produced by CI, auto-tagged from package.json, and uploaded to GitHub Releases.' },
 ];
 
 const Download = () => (
@@ -85,7 +85,7 @@ const Download = () => (
       <div className="download-section-heading">
         <span className="download-eyebrow">Choose your platform</span>
         <h2>Install AnimeVault</h2>
-        <p>Each button points at the latest matching GitHub Release asset so downloads keep working after every tagged build.</p>
+        <p>Each button points at the latest GitHub Release asset, so downloads update automatically after every successful main-branch installer build.</p>
       </div>
 
       <div className="platform-cards">
