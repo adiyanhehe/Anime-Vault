@@ -41,8 +41,22 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '24'
           cache: 'npm'
+
+      - name: Cache Electron downloads
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/electron
+            ~/.cache/electron-builder
+            ~/Library/Caches/electron
+            ~/Library/Caches/electron-builder
+            ~/AppData/Local/electron/Cache
+            ~/AppData/Local/electron-builder/Cache
+          key: electron-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            electron-${{ runner.os }}-
 
       - name: Install ImageMagick (Ubuntu)
         if: runner.os == 'Linux'
@@ -64,7 +78,13 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+
         run: npm run electron:build -- ${{ matrix.args }}
+
+
+        run: |
+          npm run build
+          npm run electron:build -- ${{ matrix.args }}
 
       - name: Upload installer artifact
         uses: actions/upload-artifact@v4
@@ -93,7 +113,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '24'
           cache: 'npm'
 
       - name: Setup Java
@@ -101,6 +121,7 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
+          cache: gradle
 
       - name: Install dependencies
         run: npm ci
@@ -113,17 +134,20 @@ jobs:
 
       - name: Build Android release APK
         run: npm run android:build
-        continue-on-error: true
 
       - name: Normalize APK asset name
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p release
-          apk_count=$(find android/app/build/outputs/apk/release -maxdepth 1 -name '*.apk' 2>/dev/null | wc -l)
-          if [ "${apk_count}" -eq 1 ]; then
-            cp android/app/build/outputs/apk/release/*.apk "release/AnimeVault-Android.apk"
+          mapfile -t apks < <(find android/app/build/outputs/apk/release -maxdepth 1 -name '*.apk' 2>/dev/null | sort)
+          if [ "${#apks[@]}" -eq 0 ]; then
+            echo "No Android release APK was produced." >&2
+            exit 1
           fi
+
+          cp "${apks[0]}" "release/AnimeVault-Android.apk"
+
 
       - name: Upload Android artifact
         uses: actions/upload-artifact@v4
