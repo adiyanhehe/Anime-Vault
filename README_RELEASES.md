@@ -1,6 +1,6 @@
 # Automated AnimeVault releases
 
-AnimeVault builds installers automatically whenever `main` changes and whenever a version tag such as `v0.2.0` is pushed. The workflow publishes to the matching GitHub Release and replaces any installer assets with the same names so the release download buttons always point at the newest successful build.
+AnimeVault builds installers automatically whenever `main` changes and whenever a version tag such as `v0.2.0` is pushed. The workflow publishes to the matching GitHub Release and replaces any installer assets with the same names so the release download buttons always point at the newest successful build. The download page reads the app version from `package.json`, so bumping the package version updates the displayed installer filenames during the next web build.
 
 ## What gets built
 

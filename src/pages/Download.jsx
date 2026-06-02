@@ -3,8 +3,9 @@ import { Bookmark, CheckCircle2, DownloadCloud, Laptop, ShieldCheck, Sparkles, T
 import androidIcon from '../../android.png';
 import windowsIcon from '../../windows icon.png';
 import '../styles/download.css';
+import packageJson from '../../package.json';
 
-const VERSION = '0.1.0';
+const VERSION = packageJson.version;
 const REPOSITORY = 'adiyanhehe/Anime-Vault';
 const releaseAssetUrl = (assetName) => `https://github.com/${REPOSITORY}/releases/latest/download/${assetName}`;
 
