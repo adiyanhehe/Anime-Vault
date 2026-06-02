@@ -92,20 +92,16 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-
-
       - name: Ensure Android project exists
         run: |
           if [ ! -d android ]; then
             npx cap add android
           fi
 
-
       - name: Build Android release APK
         run: npm run android:build
 
       - name: Normalize APK asset name
-
         shell: bash
         run: |
           set -euo pipefail
@@ -117,25 +113,19 @@ jobs:
             exit 1
           fi
           cp android/app/build/outputs/apk/release/*.apk "release/AnimeVault-Android.apk"
-=======
-        run: |
-          VERSION=$(node -p "require('./package.json').version")
-          mkdir -p release
-          cp android/app/build/outputs/apk/release/*.apk "release/AnimeVault-${VERSION}.apk"
-
 
       - name: Upload Android artifact
         uses: actions/upload-artifact@v4
         with:
           name: animevault-Android-apk
           if-no-files-found: error
-
           path: release/AnimeVault-Android.apk
 
   publish-release:
-    name: Create tag and replace GitHub Release assets
+    name: Upload assets to GitHub Release
     needs: [desktop, android]
     runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
 
     steps:
       - name: Checkout repository
@@ -148,51 +138,16 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
-            tag="${GITHUB_REF_NAME}"
-          else
-            version=$(node -p "require('./package.json').version")
-            tag="v${version}"
-          fi
+          tag="${GITHUB_REF_NAME}"
           echo "tag=${tag}" >> "${GITHUB_OUTPUT}"
           echo "Publishing installer assets to ${tag}"
-
-      - name: Create version tag if missing
-        shell: bash
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          RELEASE_TAG: ${{ steps.release.outputs.tag }}
-        run: |
-          set -euo pipefail
-          if git rev-parse -q --verify "refs/tags/${RELEASE_TAG}" >/dev/null; then
-            echo "Tag ${RELEASE_TAG} already exists locally."
-          elif git ls-remote --exit-code --tags origin "refs/tags/${RELEASE_TAG}" >/dev/null 2>&1; then
-            git fetch origin "refs/tags/${RELEASE_TAG}:refs/tags/${RELEASE_TAG}"
-          else
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git tag -a "${RELEASE_TAG}" "${GITHUB_SHA}" -m "AnimeVault ${RELEASE_TAG}"
-            git push origin "refs/tags/${RELEASE_TAG}"
-          fi
-
-
-          path: release/*.apk
-
-  publish-release:
-    name: Upload assets to GitHub Release
-    needs: [desktop, android]
-    runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/v')
-
-    steps:
 
       - name: Download installer artifacts
         uses: actions/download-artifact@v4
         with:
           path: release-assets
 
-
-      - name: Create or update release and replace assets
+      - name: Upload assets to GitHub Release
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -214,12 +169,3 @@ jobs:
           fi
 
           gh release upload "${RELEASE_TAG}" "${files[@]}" --clobber
-
-          merge-multiple: true
-
-      - name: Publish release assets
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ github.ref_name }}
-          fail_on_unmatched_files: true
-          files: release-assets/**/*
