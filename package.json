@@ -15,7 +15,7 @@
     "predeploy": "npm run build",
     "deploy": "gh-pages -d dist",
     "android:build": "npm run android:sync && cd android && ./gradlew assembleRelease",
-    "electron:release": "npm run electron:build",
+    "electron:release": "cross-env ELECTRON=1 vite build && electron-builder --publish always",
     "electron:build:win": "npm run electron:build -- --win",
     "electron:build:mac": "npm run electron:build -- --mac",
     "electron:build:linux": "npm run electron:build -- --linux",

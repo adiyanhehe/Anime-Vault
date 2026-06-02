@@ -1,0 +1,151 @@
+name: Reliable GitHub Release Publisher
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      publish_release:
+        description: 'Publish a GitHub Release for this manual build'
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+jobs:
+  desktop:
+    name: Desktop release asset (${{ matrix.name }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            name: Windows
+            args: --win
+          - os: macos-latest
+            name: macOS
+            args: --mac
+          - os: ubuntu-latest
+            name: Linux
+            args: --linux
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build installer without direct publishing
+        shell: bash
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+        run: npm run electron:build -- ${{ matrix.args }}
+
+      - name: Upload complete desktop release output
+        uses: actions/upload-artifact@v4
+        with:
+          name: reliable-${{ matrix.name }}-release-output
+          path: release/**/*
+          if-no-files-found: error
+
+  android:
+    name: Android release asset
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Ensure Android project exists
+        run: |
+          if [ ! -d android ]; then
+            npx cap add android
+          fi
+
+      - name: Build Android APK
+        run: npm run android:build
+
+      - name: Upload Android APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: reliable-Android-release-output
+          path: android/app/build/outputs/apk/release/*.apk
+          if-no-files-found: error
+
+  publish:
+    name: Create or update GitHub Release
+    runs-on: ubuntu-latest
+    needs: [ desktop, android ]
+    if: |
+      always() &&
+      (needs.desktop.result != 'cancelled' || needs.android.result != 'cancelled') &&
+      (github.event_name == 'push' || inputs.publish_release == true)
+
+    steps:
+      - name: Download generated release assets
+        uses: actions/download-artifact@v4
+        with:
+          path: generated-release-assets
+          merge-multiple: true
+
+      - name: Publish release from generated assets
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          SHORT_SHA="${GITHUB_SHA::7}"
+          TAG_NAME="autobuild-${GITHUB_RUN_NUMBER}-${SHORT_SHA}"
+          RELEASE_TITLE="AnimeVault automated build ${GITHUB_RUN_NUMBER} (${SHORT_SHA})"
+
+          mapfile -d '' RELEASE_FILES < <(find generated-release-assets -type f \
+            ! -name 'builder-debug.yml' \
+            ! -name 'builder-effective-config.yaml' \
+            -print0)
+
+          if [ "${#RELEASE_FILES[@]}" -eq 0 ]; then
+            echo "No release files were generated."
+            exit 1
+          fi
+
+          if gh release view "$TAG_NAME" >/dev/null 2>&1; then
+            gh release upload "$TAG_NAME" "${RELEASE_FILES[@]}" --clobber
+            gh release edit "$TAG_NAME" --title "$RELEASE_TITLE"
+          else
+            gh release create "$TAG_NAME" "${RELEASE_FILES[@]}" \
+              --target "$GITHUB_SHA" \
+              --title "$RELEASE_TITLE" \
+              --generate-notes
+          fi
