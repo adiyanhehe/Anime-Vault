@@ -56,8 +56,19 @@ function Search() {
     try {
       setLoading(true);
       setError('');
-      const data = await searchAnime(searchTerm || genreFilter || 'Popular', typeFilter);
-      setResults(data);
+      // If no search term and no genre, load trending media for the selected type
+      if (!searchTerm && !genreFilter) {
+        const trendingData = await fetchTrendingMedia(typeFilter);
+        setResults(trendingData);
+        return;
+      }
+      // If a genre is selected without a search term, fetch popular items (empty query) and filter client‑side
+      const query = searchTerm || (genreFilter ? '' : 'Popular');
+      const data = await searchAnime(query, typeFilter);
+      const filtered = genreFilter
+        ? data.filter((anime) => anime.genres && anime.genres.includes(genreFilter))
+        : data;
+      setResults(filtered);
     } catch (err) {
       setError(err.message || 'Search failed');
     } finally {
@@ -67,11 +78,12 @@ function Search() {
 
   function handleSearchSubmit(e) {
     e.preventDefault();
-    const params = {};
-    if (query) params.q = query;
-    if (selectedGenre) params.genre = selectedGenre;
-    params.type = selectedType;
-    setSearchParams(params);
+    // Directly set the search parameters without intermediate object
+    setSearchParams({
+      ...(query && { q: query }),
+      ...(selectedGenre && { genre: selectedGenre }),
+      type: selectedType,
+    });
   }
 
   function handleGenreToggle(genre) {
@@ -95,6 +107,7 @@ function Search() {
     setQuery('');
     setSelectedGenre('');
     setSelectedType('ANIME');
+    // Reset URL params to default type only
     setSearchParams({ type: 'ANIME' });
   }
 

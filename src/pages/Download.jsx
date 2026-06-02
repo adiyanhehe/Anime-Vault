@@ -1,8 +1,9 @@
 import React from 'react';
+import { Sparkles, Tv, Bookmark, Laptop } from 'lucide-react';
+import androidIcon from "../../android.png";
 import '../styles/download.css';
 import windowsIcon from "../../windows icon.png";
 import FocusableLink from '../components/FocusableLink';
-import { Sparkles, Tv, Bookmark, Laptop } from 'lucide-react';
 // -------------------------------
 // Version – keep in sync with your release assets
 // -------------------------------
@@ -12,7 +13,9 @@ const urls = {
   windows: `https://github.com/adiyanhehe/Anime-Vault/releases/download/v0.1.1/AnimeVault.Setup.0.1.0.exe`,
   mac: `https://github.com/adiyanhehe/Anime-Vault/releases/download/v0.1.1/AnimeVault-0.1.0-arm64.dmg`,
   linux: `https://github.com/adiyanhehe/Anime-Vault/releases/download/v0.1.1/AnimeVault-0.1.0.AppImage`,
+  android: `https://github.com/adiyanhehe/Anime-Vault/releases/download/v0.1.1/AnimeVault-0.1.0.apk`,
 };
+
 
 const Download = () => {
   return (
@@ -24,7 +27,7 @@ const Download = () => {
             <div className="hero-overlay">
               <h1 className="hero-heading gradient-text" id="hero-title">Anime Vault</h1>
               <p className="hero-subtitle" id="hero-subtitle">
-                Download Anime Vault for Windows, macOS, and Linux.
+                Download Anime Vault for Windows, macOS, Linux, and Android.
               </p>
             </div>
           </div>
@@ -89,6 +92,24 @@ const Download = () => {
               {`AnimeVault-${VERSION}.AppImage`}
             </FocusableLink>
           </div>
+        {/* Android Card */}
+        <div className="card glass-card platform-card">
+          <div className="platform-icon-container">
+            <img src={androidIcon} alt="Android" className="platform-icon" id="android-icon" />
+          </div>
+          <span className="platform-badge">Android 6+</span>
+          <h3 className="platform-title">Android</h3>
+          <p className="platform-desc">
+            Portable on-the-go experience with native performance.
+          </p>
+          <FocusableLink
+            to={urls.android}
+            className="button-primary download-btn-gradient"
+            aria-label="Download Anime Vault for Android"
+          >
+            {`AnimeVault-${VERSION}.apk`}
+          </FocusableLink>
+        </div>
         </div>
       </section>
 

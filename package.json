@@ -14,8 +14,9 @@
     "electron:build": "cross-env ELECTRON=1 vite build && electron-builder",
     "predeploy": "npm run build",
     "deploy": "gh-pages -d dist",
-    "lint": "echo 'No linter configured yet'"
+    "android:build": "npm run build && npx cap copy android && cd android && ./gradlew assembleRelease"
   },
+  
   "build": {
     "appId": "com.animevault.app",
     "productName": "AnimeVault",
@@ -33,7 +34,12 @@
     },
     "mac": {
       "target": ["dmg"],
-      "icon": "src/electron/.icon-ico/icon.icns"
+      "icon": "src/electron/.icon-ico/icon.icns",
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "identity": "Developer ID Application: <YOUR NAME> (<TEAM ID>)",
+      "entitlements": "build/mac/entitlements.plist",
+      "entitlementsInherit": "build/mac/entitlements.plist"
     },
     "linux": {
       "target": ["AppImage"]
