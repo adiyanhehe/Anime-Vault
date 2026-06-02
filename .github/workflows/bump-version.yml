@@ -15,7 +15,6 @@ on:
 
 permissions:
   contents: write
-  actions: write
 
 jobs:
   bump-version:
@@ -33,10 +32,10 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22.12.0'
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
       - name: Bump version
         id: new_version
@@ -46,7 +45,7 @@ jobs:
 
       - name: Commit version bump
         run: |
-          git add package.json
+          git add package.json package-lock.json
           git commit -m "chore: bump version to ${{ steps.new_version.outputs.version }}"
 
       - name: Push commit
@@ -56,9 +55,3 @@ jobs:
         run: |
           git tag -a v${{ steps.new_version.outputs.version }} -m "Release v${{ steps.new_version.outputs.version }}"
           git push origin v${{ steps.new_version.outputs.version }}
-
-      - name: Trigger release build
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh workflow run electron-build.yml --ref v${{ steps.new_version.outputs.version }}
