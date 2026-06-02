@@ -41,7 +41,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22.12.0'
           cache: 'npm'
 
       - name: Install ImageMagick (Ubuntu)
@@ -55,24 +55,18 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Generate icons
-        run: node scripts/generate-icons.js
-        continue-on-error: true
+      - name: Build installer
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+        run: npm run electron:build -- ${{ matrix.args }}
 
-   - name: Build installer
-  shell: bash
-  env:
-    GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    CSC_IDENTITY_AUTO_DISCOVERY: 'false'
-  run: |
-    npm run build
-    npm run electron:build -- ${{ matrix.args }}
-    
       - name: Upload installer artifact
         uses: actions/upload-artifact@v4
         with:
           name: animevault-${{ matrix.name }}-installer
-          if-no-files-found: warn
+          if-no-files-found: error
           path: |
             release/*.exe
             release/*.dmg
@@ -85,6 +79,7 @@ jobs:
   android:
     name: Android APK
     runs-on: ubuntu-latest
+    continue-on-error: true
 
     steps:
       - name: Checkout repository
@@ -95,7 +90,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22.12.0'
           cache: 'npm'
 
       - name: Setup Java
@@ -115,31 +110,31 @@ jobs:
 
       - name: Build Android release APK
         run: npm run android:build
-        continue-on-error: true
 
       - name: Normalize APK asset name
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p release
-          apk_count=$(find android/app/build/outputs/apk/release -maxdepth 1 -name '*.apk' 2>/dev/null | wc -l)
-          if [ "${apk_count}" -eq 1 ]; then
-            cp android/app/build/outputs/apk/release/*.apk "release/AnimeVault-Android.apk"
+          mapfile -t apks < <(find android/app/build/outputs/apk/release -maxdepth 1 -name '*.apk' 2>/dev/null | sort)
+          if [ "${#apks[@]}" -eq 0 ]; then
+            echo "No Android release APK was produced." >&2
+            exit 1
           fi
-        continue-on-error: true
+          cp "${apks[0]}" "release/AnimeVault-Android.apk"
 
       - name: Upload Android artifact
         uses: actions/upload-artifact@v4
         with:
           name: animevault-Android-apk
-          if-no-files-found: warn
+          if-no-files-found: error
           path: release/AnimeVault-Android.apk
 
   publish-release:
     name: Upload assets to GitHub Release
     needs: [desktop, android]
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: always() && startsWith(github.ref, 'refs/tags/v')
 
     steps:
       - name: Checkout repository
@@ -171,7 +166,6 @@ jobs:
 
           if ! gh release view "${RELEASE_TAG}" >/dev/null 2>&1; then
             gh release create "${RELEASE_TAG}" \
-              --target main \
               --title "AnimeVault ${RELEASE_TAG}" \
               --notes "Automated AnimeVault installer release for ${RELEASE_TAG}."
           fi
@@ -181,5 +175,6 @@ jobs:
             gh release upload "${RELEASE_TAG}" "${files[@]}" --clobber
             echo "Successfully uploaded ${#files[@]} files"
           else
-            echo "Warning: No installer files found to upload"
+            echo "No installer files found to upload. Check the desktop/Android build jobs above." >&2
+            exit 1
           fi

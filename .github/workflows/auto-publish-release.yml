@@ -1,21 +1,14 @@
-name: Auto Publish Release
+name: Auto Publish Release (disabled)
 
+# electron-build.yml creates and publishes GitHub Releases directly.
+# This old release-created hook is manual-only so it cannot fail after a
+# successful automated installer release.
 on:
-  release:
-    types: [created]
+  workflow_dispatch:
 
 jobs:
-  publish:
+  disabled:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Publish release (remove draft status)
-        run: |
-          gh release edit ${{ github.event.release.tag_name }} --draft=false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Post release notification
-        run: |
-          echo "✅ Release ${{ github.event.release.tag_name }} published successfully!"
+      - name: Use Automated Installer Releases
+        run: echo "Use .github/workflows/electron-build.yml for automated GitHub Releases."
