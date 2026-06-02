@@ -59,15 +59,15 @@ jobs:
         run: node scripts/generate-icons.js
         continue-on-error: true
 
-   - name: Build installer
-  shell: bash
-  env:
-    GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    CSC_IDENTITY_AUTO_DISCOVERY: 'false'
-  run: |
-    npm run build
-    npm run electron:build -- ${{ matrix.args }}
-    
+      - name: Build installer
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+        run: |
+          npm run build
+          npm run electron:build -- ${{ matrix.args }}
+
       - name: Upload installer artifact
         uses: actions/upload-artifact@v4
         with:
