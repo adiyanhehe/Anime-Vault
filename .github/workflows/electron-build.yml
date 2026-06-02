@@ -1,4 +1,4 @@
-name: Automated Installer Releases
+name: Automated Installer Builds
 
 on:
   push:
@@ -6,11 +6,11 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
   actions: read
 
 concurrency:
-  group: installer-release-${{ github.ref }}
+  group: installer-build-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
@@ -79,7 +79,12 @@ jobs:
         with:
           name: animevault-${{ matrix.name }}-installer
           if-no-files-found: error
+
           retention-days: 7
+
+
+          retention-days: 14
+
           path: |
             release/*.exe
             release/*.dmg
@@ -138,7 +143,14 @@ jobs:
         with:
           name: animevault-Android-apk
           if-no-files-found: error
+
           retention-days: 7
+
+
+          retention-days: 14
+          path: release/AnimeVault-Android.apk
+
+
           path: release/AnimeVault-Android.apk
 
   publish-release:
@@ -157,9 +169,23 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+
           version="$(node -p "require('./package.json').version")"
           tag="v${version}"
           echo "version=${version}" >> "${GITHUB_OUTPUT}"
+
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+            tag="${GITHUB_REF_NAME}"
+          else
+            version="$(node -p "require('./package.json').version")"
+            tag="v${version}"
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git tag -f "${tag}" "${GITHUB_SHA}"
+            git push origin "refs/tags/${tag}" --force
+          fi
+
+
           echo "tag=${tag}" >> "${GITHUB_OUTPUT}"
 
       - name: Download build artifacts
@@ -175,6 +201,7 @@ jobs:
           RELEASE_VERSION: ${{ steps.release.outputs.version }}
         run: |
           set -euo pipefail
+
 
           mapfile -d '' files < <(find release-assets -type f -print0)
           if [ "${#files[@]}" -eq 0 ]; then
@@ -224,3 +251,20 @@ jobs:
             echo
             echo "Uploaded ${#files[@]} release assets."
           } >> "${GITHUB_STEP_SUMMARY}"
+
+          if ! gh release view "${RELEASE_TAG}" >/dev/null 2>&1; then
+            gh release create "${RELEASE_TAG}" \
+              --target "${GITHUB_SHA}" \
+              --title "AnimeVault ${RELEASE_TAG}" \
+              --notes "Automated AnimeVault installer release for ${RELEASE_TAG}."
+          fi
+
+          mapfile -d '' files < <(find release-assets -type f -print0)
+          if [ "${#files[@]}" -eq 0 ]; then
+            echo "No installer files found to upload" >&2
+            exit 1
+          fi
+
+          gh release upload "${RELEASE_TAG}" "${files[@]}" --clobber
+          echo "Successfully uploaded ${#files[@]} files"
+
