@@ -28,6 +28,8 @@ function Search() {
     const type = searchParams.get('type') || 'ANIME';
     const trending = searchParams.get('trending');
 
+    setQuery(q || '');
+    setSelectedGenre(genre || '');
     setSelectedType(type);
     
     if (trending) {
@@ -62,9 +64,10 @@ function Search() {
         setResults(trendingData);
         return;
       }
-      // If a genre is selected without a search term, fetch popular items (empty query) and filter client‑side
-      const query = searchTerm || (genreFilter ? '' : 'Popular');
-      const data = await searchAnime(query, typeFilter);
+      const trimmedSearch = (searchTerm || '').trim();
+      const data = trimmedSearch
+        ? await searchAnime(trimmedSearch, typeFilter)
+        : await fetchTrendingMedia(typeFilter, 1, 50);
       const filtered = genreFilter
         ? data.filter((anime) => anime.genres && anime.genres.includes(genreFilter))
         : data;
@@ -76,38 +79,35 @@ function Search() {
     }
   }
 
+  function updateSearchParams({ nextQuery = query, nextGenre = selectedGenre, nextType = selectedType } = {}) {
+    const params = new URLSearchParams();
+    params.set('type', nextType);
+    const trimmedQuery = nextQuery.trim();
+    if (trimmedQuery) params.set('q', trimmedQuery);
+    if (nextGenre) params.set('genre', nextGenre);
+    setSearchParams(params);
+  }
+
   function handleSearchSubmit(e) {
     e.preventDefault();
-    // Directly set the search parameters without intermediate object
-    setSearchParams({
-      ...(query && { q: query }),
-      ...(selectedGenre && { genre: selectedGenre }),
-      type: selectedType,
-    });
+    updateSearchParams();
   }
 
   function handleGenreToggle(genre) {
     const newGenre = selectedGenre === genre ? '' : genre;
     setSelectedGenre(newGenre);
-    const params = { type: selectedType };
-    if (query) params.q = query;
-    if (newGenre) params.genre = newGenre;
-    setSearchParams(params);
+    updateSearchParams({ nextGenre: newGenre });
   }
 
   function handleTypeChange(type) {
     setSelectedType(type);
-    const params = { type };
-    if (query) params.q = query;
-    if (selectedGenre) params.genre = selectedGenre;
-    setSearchParams(params);
+    updateSearchParams({ nextType: type });
   }
 
   function handleReset() {
     setQuery('');
     setSelectedGenre('');
     setSelectedType('ANIME');
-    // Reset URL params to default type only
     setSearchParams({ type: 'ANIME' });
   }
 
@@ -174,7 +174,20 @@ function Search() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
-          {query && <X className="clear-btn-v2" size={20} onClick={() => setQuery('')} />}
+          {query && (
+            <button
+              type="button"
+              className="clear-btn-v2"
+              onClick={() => {
+                setQuery('');
+                updateSearchParams({ nextQuery: '' });
+              }}
+              aria-label="Clear search"
+            >
+              <X size={20} />
+            </button>
+          )}
+          <button type="submit" className="search-submit-v2">Search</button>
         </form>
 
         <div className="results-info-v2">

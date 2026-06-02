@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Link, NavLink, Route, Routes } from 'react-router-dom';
+import { NavLink, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { 
   Search as SearchIcon, Info, Home as HomeIcon, Tv as TvIcon, 
-  AlertTriangle, User, Sparkles, ShieldAlert 
+  AlertTriangle, User, Sparkles
 } from 'lucide-react';
 import Home from './pages/Home';
 import Search from './pages/Search';
@@ -30,6 +30,9 @@ function App() {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [announcement, setAnnouncement] = useState('');
   const [maintenanceMode, setMaintenanceMode] = useState(false);
+  const [topbarQuery, setTopbarQuery] = useState('');
+  const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     async function loadSettings() {
@@ -43,6 +46,22 @@ function App() {
     }
     loadSettings();
   }, []);
+
+
+  useEffect(() => {
+    if (location.pathname !== '/search') return;
+    const params = new URLSearchParams(location.search);
+    setTopbarQuery(params.get('q') || '');
+  }, [location.pathname, location.search]);
+
+  function handleTopbarSearch(event) {
+    event.preventDefault();
+    const trimmedQuery = topbarQuery.trim();
+    const params = new URLSearchParams();
+    params.set('type', 'ANIME');
+    if (trimmedQuery) params.set('q', trimmedQuery);
+    navigate(`/search?${params.toString()}`);
+  }
 
   if (maintenanceMode && (!user || !user.is_admin)) {
     return (
@@ -147,10 +166,17 @@ function App() {
           </FocusableNavLink>
         </nav>
         <div className="topbar-actions" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <FocusableLink to="/search" className="search-trigger">
-            <SearchIcon size={20} />
-            <span>Search...</span>
-          </FocusableLink>
+          <form className="topbar-search-form" onSubmit={handleTopbarSearch} role="search">
+            <SearchIcon size={18} aria-hidden="true" />
+            <input
+              type="search"
+              value={topbarQuery}
+              onChange={(event) => setTopbarQuery(event.target.value)}
+              placeholder="Search anime..."
+              aria-label="Search anime"
+            />
+            <button type="submit">Search</button>
+          </form>
           {user ? (
             <FocusableLink to="/profile" style={{
               display: 'inline-flex', alignItems: 'center', gap: '6px',
