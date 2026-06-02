@@ -169,7 +169,7 @@ jobs:
 
           if ! gh release view "${RELEASE_TAG}" >/dev/null 2>&1; then
             gh release create "${RELEASE_TAG}" \
-              --target "${RELEASE_TAG}" \
+              --target main \
               --title "AnimeVault ${RELEASE_TAG}" \
               --notes "Automated AnimeVault installer release for ${RELEASE_TAG}."
           fi
