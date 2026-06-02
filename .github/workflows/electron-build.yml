@@ -65,7 +65,6 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
         run: npm run electron:build -- ${{ matrix.args }}
-      
 
       - name: Upload installer artifact
         uses: actions/upload-artifact@v4
@@ -125,6 +124,7 @@ jobs:
           if [ "${apk_count}" -eq 1 ]; then
             cp android/app/build/outputs/apk/release/*.apk "release/AnimeVault-Android.apk"
           fi
+        continue-on-error: true
 
       - name: Upload Android artifact
         uses: actions/upload-artifact@v4
