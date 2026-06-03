@@ -17,9 +17,9 @@
     "deploy": "gh-pages -d dist",
     "android:build": "npm run android:sync && cd android && ./gradlew assembleRelease",
     "electron:release": "npm run generate-icons && cross-env ELECTRON=1 vite build && electron-builder --publish always",
-    "electron:build:win": "npm run electron:build -- --win",
+    "electron:build:win": "npm run generate-icons && cross-env ELECTRON=1 vite build && electron-builder --win --publish never",
     "electron:build:mac": "npm run generate-icons && cross-env ELECTRON=1 vite build && electron-builder --mac --publish never",
-    "electron:build:linux": "npm run electron:build -- --linux",
+    "electron:build:linux": "npm run generate-icons && cross-env ELECTRON=1 vite build && electron-builder --linux --publish never",
     "android:sync": "npm run build && npm run android:ensure && npx cap sync android",
     "android:ensure": "node -e \"const fs=require('fs'); const {spawnSync}=require('child_process'); if (!fs.existsSync('android')) { const r=spawnSync(process.platform==='win32'?'npx.cmd':'npx', ['cap', 'add', 'android']); process.exit(r.status); }\""
   },
@@ -45,7 +45,13 @@
       ],
       "icon": "src/electron/.icon-ico/icon.ico",
       "publisherName": "AnimeVault Team",
-      "artifactName": "AnimeVault-Windows-${arch}.${ext}"
+      "artifactName": "AnimeVault-Windows-${arch}.${ext}",
+      "certificateFile": "${env.WIN_CERTIFICATE_FILE}",
+      "certificatePassword": "${env.WIN_CERTIFICATE_PASSWORD}",
+      "signingHashAlgorithms": [
+        "sha256"
+      ],
+      "signAndEditExecutables": true
     },
     "mac": {
       "target": [
@@ -67,15 +73,23 @@
       "icon": "src/electron/.icon-ico/icon.icns",
       "hardenedRuntime": true,
       "gatekeeperAssess": false,
-      "identity": null,
+      "identity": "${env.MAC_IDENTITY}",
       "entitlements": "build/entitlements.mac.plist",
       "entitlementsInherit": "build/entitlements.mac.plist",
-      "artifactName": "AnimeVault-macOS-${arch}.${ext}"
+      "artifactName": "AnimeVault-macOS-${arch}.${ext}",
+      "type": "distribution",
+      "signingIdentity": "${env.MAC_SIGNING_IDENTITY}"
     },
     "linux": {
       "target": [
         {
           "target": "deb",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "AppImage",
           "arch": [
             "x64"
           ]
@@ -114,7 +128,8 @@
     "react-router-dom": "^6.30.1",
     "vidstack": "^1.12.13",
     "electron-updater": "^6.3.9",
-    "@capacitor/core": "^6.2.1"
+    "@capacitor/core": "^6.2.1",
+    "bcryptjs": "^2.4.3"
   },
   "devDependencies": {
     "@types/react-router-dom": "^5.3.3",
