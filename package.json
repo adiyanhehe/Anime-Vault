@@ -18,7 +18,8 @@
     "android:build": "npm run android:sync && cd android && ./gradlew assembleRelease",
     "electron:release": "npm run generate-icons && cross-env ELECTRON=1 vite build && electron-builder --publish always",
     "electron:build:win": "npm run electron:build -- --win",
-    "electron:build:mac": "npm run generate-icons && cross-env ELECTRON=1 vite build && electron-builder --mac --publish never",
+    "electron:build:mac": "npm run generate-icons && cross-env ELECTRON=1 vite build && electron-builder --mac --publish never --arch x64 --arch arm64",
+    "electron:build:mac:dev": "npm run generate-icons && cross-env ELECTRON=1 vite build && electron-builder --mac --publish never",
     "electron:build:linux": "npm run electron:build -- --linux",
     "android:sync": "npm run build && npm run android:ensure && npx cap sync android",
     "android:ensure": "node -e \"const fs=require('fs'); const {spawnSync}=require('child_process'); if (!fs.existsSync('android')) { const r=spawnSync(process.platform==='win32'?'npx.cmd':'npx', ['cap', 'add', 'android']); process.exit(r.status); }\""
@@ -28,7 +29,8 @@
     "productName": "AnimeVault",
     "icon": "src/electron/.icon-ico/icon",
     "directories": {
-      "output": "release"
+      "output": "release",
+      "buildResources": "build"
     },
     "files": [
       "dist/**/*",
@@ -70,6 +72,8 @@
       "identity": null,
       "entitlements": "build/entitlements.mac.plist",
       "entitlementsInherit": "build/entitlements.mac.plist",
+      "provisioningProfile": null,
+      "signingIdentity": null,
       "artifactName": "AnimeVault-macOS-${arch}.${ext}"
     },
     "linux": {
