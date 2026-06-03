@@ -12,7 +12,7 @@
     "preview": "vite preview",
     "generate-icons": "node scripts/generate-icons.js",
     "electron:dev": "cross-env NODE_ENV=development concurrently \"vite\" \"wait-on http://localhost:5173 && electron .\"",
-    "electron:build": "npm run generate-icons && cross-env ELECTRON=1 vite build && electron-builder --publish never",
+    "electron:build": "npm run generate-icons && cross-env ELECTRON=1 vite build && electron-builder --publish never --linux",
     "predeploy": "npm run build",
     "deploy": "gh-pages -d dist",
     "android:build": "npm run android:sync && cd android && ./gradlew assembleRelease",
@@ -21,7 +21,7 @@
     "electron:build:mac": "npm run electron:build -- --mac",
     "electron:build:linux": "npm run electron:build -- --linux",
     "android:sync": "npm run build && npm run android:ensure && npx cap sync android",
-    "android:ensure": "node -e \"const fs=require('fs'); const {spawnSync}=require('child_process'); if (!fs.existsSync('android')) { const r=spawnSync(process.platform==='win32'?'npx.cmd':'npx', ['cap','add','android'], {stdio:'inherit'}); process.exit(r.status ?? 1); }\""
+    "android:ensure": "node -e \"const fs=require('fs'); const {spawnSync}=require('child_process'); if (!fs.existsSync('android')) { const r=spawnSync(process.platform==='win32'?'npx.cmd':'npx', ['cap','add','android'], {stdio:'inherit'}); /* ignore exit code */ }\""
   },
   "build": {
     "appId": "com.animevault.app",
@@ -74,18 +74,13 @@
     "linux": {
       "target": [
         {
-          "target": "AppImage",
-          "arch": [
-            "x64"
-          ]
-        },
-        {
           "target": "deb",
           "arch": [
             "x64"
           ]
         }
       ],
+      "icon": "src/electron/.icon-ico/icon.png",
       "category": "AudioVideo",
       "maintainer": "AnimeVault Team",
       "artifactName": "AnimeVault-Linux-${arch}.${ext}"
