@@ -1,19 +1,32 @@
+name: Automated Installer Builds & Releases
 
-name: Automated Installer Releases
-run-name: Installer release/build • ${{ github.ref_name }}
-
-name: Automated Installer Builds
-
-
+# This workflow is the "signal-driven" automation for Anime-Vault.
+#
+# Triggers (any one of these will fire the pipeline):
+#   * push to main               -> rebuild installers and publish a release
+#   * pull_request to main       -> build installers as PR artifacts (no release)
+#   * workflow_dispatch          -> manual run from the Actions tab
+#   * repository_dispatch        -> external signal, e.g.
+#                                    curl -X POST \
+#                                      -H "Accept: application/vnd.github+json" \
+#                                      -H "Authorization: Bearer <PAT>" \
+#                                      https://api.github.com/repos/adiyanhehe/Anime-Vault/dispatches \
+#                                      -d '{"event_type":"release"}'
+#
+# Outputs:
+#   * Windows / macOS / Linux / Android installers uploaded as Actions artifacts
+#   * On non-PR runs: a vX.Y.Z tag (from package.json) and a GitHub Release
+#     are created/updated with the installer assets, so the in-app download
+#     page (https://github.com/<owner>/Anime-Vault/releases/latest/download/...)
+#     always serves the newest build.
 on:
   push:
     branches: [ main ]
-
   pull_request:
     branches: [ main ]
-
-
   workflow_dispatch:
+  repository_dispatch:
+    types: [release]
 
 permissions:
   contents: read
@@ -89,16 +102,7 @@ jobs:
         with:
           name: animevault-${{ matrix.name }}-installer
           if-no-files-found: error
-
-          retention-days: 7
-
-
-          retention-days: 7
-
-
           retention-days: 14
-
-
           path: |
             release/*.exe
             release/*.dmg
@@ -111,7 +115,6 @@ jobs:
   android:
     name: Android APK
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -157,66 +160,40 @@ jobs:
         with:
           name: animevault-Android-apk
           if-no-files-found: error
-
-          retention-days: 7
-
-
-          retention-days: 7
-
-
           retention-days: 14
-          path: release/AnimeVault-Android.apk
-
-
-
           path: release/AnimeVault-Android.apk
 
   publish-release:
     name: Create release and publish downloads
     needs: [desktop, android]
     runs-on: ubuntu-latest
-
     if: github.event_name != 'pull_request'
     permissions:
       contents: write
       actions: read
-
-
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Resolve version tag
         id: release
         shell: bash
         run: |
           set -euo pipefail
-
           version="$(node -p "require('./package.json').version")"
           tag="v${version}"
-          echo "version=${version}" >> "${GITHUB_OUTPUT}"
-
-
-          version="$(node -p "require('./package.json').version")"
-          tag="v${version}"
-          echo "version=${version}" >> "${GITHUB_OUTPUT}"
-
           if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
             tag="${GITHUB_REF_NAME}"
           else
-            version="$(node -p "require('./package.json').version")"
-            tag="v${version}"
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
             git tag -f "${tag}" "${GITHUB_SHA}"
             git push origin "refs/tags/${tag}" --force
           fi
-
-
-
+          echo "version=${version}" >> "${GITHUB_OUTPUT}"
           echo "tag=${tag}" >> "${GITHUB_OUTPUT}"
 
       - name: Download build artifacts
@@ -228,25 +205,16 @@ jobs:
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          RELEASE_TAG: ${{ steps.release.outputs.tag }}
-          RELEASE_VERSION: ${{ steps.release.outputs.version }}
         run: |
           set -euo pipefail
-
-
-
+          RELEASE_TAG="${{ steps.release.outputs.tag }}"
+          RELEASE_VERSION="${{ steps.release.outputs.version }}"
 
           mapfile -d '' files < <(find release-assets -type f -print0)
           if [ "${#files[@]}" -eq 0 ]; then
             echo "No installer files found to upload." >&2
             exit 1
-
           fi
-
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git tag -f "${RELEASE_TAG}" "${GITHUB_SHA}"
-          git push origin "refs/tags/${RELEASE_TAG}" --force
 
           cat > release-notes.md <<NOTES
           Automated AnimeVault installer release for ${RELEASE_TAG}.
@@ -285,65 +253,3 @@ jobs:
             echo
             echo "Uploaded ${#files[@]} release assets."
           } >> "${GITHUB_STEP_SUMMARY}"
-
-          fi
-
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git tag -f "${RELEASE_TAG}" "${GITHUB_SHA}"
-          git push origin "refs/tags/${RELEASE_TAG}" --force
-
-          cat > release-notes.md <<NOTES
-          Automated AnimeVault installer release for ${RELEASE_TAG}.
-
-          Download page links use the stable latest-release URLs, for example:
-          - https://github.com/${GITHUB_REPOSITORY}/releases/latest/download/AnimeVault-Windows-x64.exe
-          - https://github.com/${GITHUB_REPOSITORY}/releases/latest/download/AnimeVault-Android.apk
-
-          Built from commit ${GITHUB_SHA}.
-          NOTES
-
-          if gh release view "${RELEASE_TAG}" >/dev/null 2>&1; then
-            gh release edit "${RELEASE_TAG}" \
-              --title "AnimeVault ${RELEASE_TAG}" \
-              --notes-file release-notes.md \
-              --target "${GITHUB_SHA}" \
-              --latest
-          else
-            gh release create "${RELEASE_TAG}" \
-              --target "${GITHUB_SHA}" \
-              --title "AnimeVault ${RELEASE_TAG}" \
-              --notes-file release-notes.md \
-              --latest
-          fi
-
-          gh release upload "${RELEASE_TAG}" "${files[@]}" --clobber
-
-          {
-            echo "## Release downloads"
-            echo
-            echo "Published **AnimeVault ${RELEASE_TAG}** from commit \`${GITHUB_SHA}\`."
-            echo
-            echo "Download page URL pattern:"
-            echo
-            echo "\`https://github.com/${GITHUB_REPOSITORY}/releases/latest/download/<asset-name>\`"
-            echo
-            echo "Uploaded ${#files[@]} release assets."
-          } >> "${GITHUB_STEP_SUMMARY}"
-
-          if ! gh release view "${RELEASE_TAG}" >/dev/null 2>&1; then
-            gh release create "${RELEASE_TAG}" \
-              --target "${GITHUB_SHA}" \
-              --title "AnimeVault ${RELEASE_TAG}" \
-              --notes "Automated AnimeVault installer release for ${RELEASE_TAG}."
-          fi
-
-          mapfile -d '' files < <(find release-assets -type f -print0)
-          if [ "${#files[@]}" -eq 0 ]; then
-            echo "No installer files found to upload" >&2
-            exit 1
-          fi
-
-          gh release upload "${RELEASE_TAG}" "${files[@]}" --clobber
-          echo "Successfully uploaded ${#files[@]} files"
-
