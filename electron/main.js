@@ -11,6 +11,7 @@ const require = createRequire(import.meta.url);
 let rpc;
 let mainWindow;
 let autoUpdater;
+let updateCheckInterval;
 let updateStatus = {
   status: 'idle',
   message: 'Updater is waiting to check for releases.',
@@ -65,6 +66,7 @@ function initAutoUpdater() {
   autoUpdater.logger = console;
 
   autoUpdater.on('checking-for-update', () => {
+    console.log('[AutoUpdater] Checking for updates...');
     sendUpdateStatus({
       status: 'checking',
       message: 'Checking GitHub Releases for a fresh AnimeVault build...',
@@ -73,15 +75,17 @@ function initAutoUpdater() {
   });
 
   autoUpdater.on('update-available', (info) => {
+    console.log('[AutoUpdater] Update available:', info.version);
     sendUpdateStatus({
       status: 'available',
-      message: `Version ${info.version} is available. Downloading it in the background...`,
+      message: `Version ${info.version} is available. Downloading in the background...`,
       version: info.version,
       progress: 0,
     });
   });
 
   autoUpdater.on('update-not-available', () => {
+    console.log('[AutoUpdater] Already on latest version');
     sendUpdateStatus({
       status: 'current',
       message: 'You are running the newest AnimeVault release.',
@@ -99,16 +103,17 @@ function initAutoUpdater() {
   });
 
   autoUpdater.on('update-downloaded', (info) => {
+    console.log('[AutoUpdater] Update downloaded, ready to install:', info.version);
     sendUpdateStatus({
       status: 'ready',
-      message: `Version ${info.version} is ready. Restart AnimeVault to switch over instantly.`,
+      message: `Version ${info.version} is ready. Restart AnimeVault to install instantly.`,
       version: info.version,
       progress: 100,
     });
   });
 
   autoUpdater.on('error', (error) => {
-    console.error('Auto updater error:', error);
+    console.error('[AutoUpdater] Error:', error);
     sendUpdateStatus({
       status: 'error',
       message: error?.message || 'AnimeVault could not reach the release server.',
@@ -120,8 +125,9 @@ function initAutoUpdater() {
 function checkForUpdates() {
   if (!autoUpdater) return updateStatus;
 
+  console.log('[AutoUpdater] User triggered manual check');
   autoUpdater.checkForUpdates().catch((error) => {
-    console.error('Manual update check failed:', error);
+    console.error('[AutoUpdater] Manual check failed:', error);
     sendUpdateStatus({
       status: 'error',
       message: error?.message || 'Manual update check failed.',
@@ -134,8 +140,23 @@ function checkForUpdates() {
 
 function installUpdateNow() {
   if (!autoUpdater) return false;
+  console.log('[AutoUpdater] User clicked "Install Now", installing and quitting...');
   autoUpdater.quitAndInstall(false, true);
   return true;
+}
+
+function setupPeriodicUpdateCheck() {
+  // Check for updates every 1 hour (3600000ms)
+  // Only in packaged app mode
+  if (!app.isPackaged || !autoUpdater) return;
+
+  console.log('[AutoUpdater] Setting up periodic check (every 1 hour)');
+  updateCheckInterval = setInterval(() => {
+    console.log('[AutoUpdater] Periodic check triggered');
+    autoUpdater.checkForUpdates().catch((error) => {
+      console.warn('[AutoUpdater] Periodic check failed:', error.message);
+    });
+  }, 3600000); // 1 hour
 }
 
 function createWindow() {
@@ -168,8 +189,14 @@ function createWindow() {
   }
 
   win.webContents.once('did-finish-load', () => {
+    console.log('[Electron] Window loaded, sending current update status');
     sendUpdateStatus(updateStatus);
-    if (app.isPackaged) checkForUpdates();
+    
+    // Check for updates immediately when app launches
+    if (app.isPackaged) {
+      console.log('[Electron] App is packaged, checking for updates...');
+      checkForUpdates();
+    }
   });
 }
 
@@ -199,8 +226,10 @@ ipcMain.handle('updates:check', () => checkForUpdates());
 ipcMain.handle('updates:install', () => installUpdateNow());
 
 app.whenReady().then(() => {
+  console.log('[Electron] App ready, initializing...');
   initDiscord();
   initAutoUpdater();
+  setupPeriodicUpdateCheck();
   createWindow();
 
   app.on('activate', () => {
@@ -210,6 +239,7 @@ app.whenReady().then(() => {
 
 app.on('window-all-closed', () => {
   mainWindow = null;
+  if (updateCheckInterval) clearInterval(updateCheckInterval);
   if (process.platform !== 'darwin') {
     app.quit();
   }
