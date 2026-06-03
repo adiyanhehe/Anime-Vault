@@ -60,11 +60,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '24'
-          cache: 'npm'
+
 
       - name: Cache Electron downloads
         uses: actions/cache@v4
@@ -130,8 +126,16 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '24'
+          node-version: '20'
           cache: 'npm'
+
+      - name: Setup Android SDK
+        uses: android/setup-android@v3
+        with:
+          api-level: 34
+          build-tools: 34.0.0
+          ndk: 26.1.11579264
+          platform-tools: true
 
       - name: Setup Java
         uses: actions/setup-java@v4

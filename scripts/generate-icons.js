@@ -41,18 +41,21 @@ try {
   }
   
   if (hasImageMagick) {
+    const isWin = process.platform === 'win32';
+    const imCmd = isWin ? 'magick' : 'convert';
+
     try {
-      // Generate .ico for Windows using magick without -define
+      // Generate .ico (Windows) or .ico for other platforms using appropriate command
       console.log('  📦 Generating Windows icon (.ico)...');
-      execSync(`magick "${sourceIcon}" -resize 256x256 "${path.join(iconDir, 'icon.ico')}"`, { stdio: 'inherit' });
+      execSync(`${imCmd} "${sourceIcon}" -resize 256x256 "${path.join(iconDir, 'icon.ico')}"`, { stdio: 'inherit' });
     } catch (e) {
       console.log('  ⚠️  Windows .ico generation failed, skipping...');
     }
 
     try {
-      // Generate .icns for macOS using magick without -define
+      // Generate .icns (macOS) using appropriate command
       console.log('  📦 Generating macOS icon (.icns)...');
-      execSync(`magick "${sourceIcon}" -resize 512x512 "${path.join(iconDir, 'icon.icns')}"`, { stdio: 'inherit' });
+      execSync(`${imCmd} "${sourceIcon}" -resize 512x512 "${path.join(iconDir, 'icon.icns')}"`, { stdio: 'inherit' });
     } catch (e) {
       console.log('  ⚠️  macOS .icns generation failed, skipping...');
     }
