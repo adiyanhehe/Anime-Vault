@@ -65,16 +65,16 @@ function initAutoUpdater() {
   autoUpdater.autoInstallOnAppQuit = true;
   autoUpdater.allowPrerelease = false;
   autoUpdater.logger = console;
+  autoUpdater.requestHeaders = {
+    'User-Agent': 'AnimeVault/AutoUpdater',
+  };
   
   // Platform-specific configuration
   if (process.platform === 'win32') {
-    // Windows signing verification
     autoUpdater.allowDowngrade = false;
   } else if (process.platform === 'darwin') {
-    // macOS specific settings
     autoUpdater.allowDowngrade = false;
   } else if (process.platform === 'linux') {
-    // Linux specific settings
     autoUpdater.allowDowngrade = false;
   }
 
@@ -89,7 +89,6 @@ function initAutoUpdater() {
 
   autoUpdater.on('update-available', (info) => {
     console.log('[AutoUpdater] Update available:', info.version);
-    // Validate platform-specific downloads
     const platform = process.platform;
     console.log('[AutoUpdater] Platform:', platform, 'Version:', info.version);
     sendUpdateStatus({
@@ -109,13 +108,13 @@ function initAutoUpdater() {
     });
   });
 
-  autoUpdater.on('download-progress', (progress) => {
-    console.log('[AutoUpdater] Download progress:', Math.round(progress.percent) + '%');
+  autoUpdater.on('download-progress', (progressInfo) => {
+    console.log('[AutoUpdater] Download progress:', Math.round(progressInfo.percent) + '%');
     sendUpdateStatus({
       status: 'downloading',
-      message: `Downloading update at ${Math.round(progress.percent)}%...`,
-      progress: Math.round(progress.percent),
-      bytesPerSecond: progress.bytesPerSecond,
+      message: `Downloading update at ${Math.round(progressInfo.percent)}%...`,
+      progress: Math.round(progressInfo.percent),
+      bytesPerSecond: progressInfo.bytesPerSecond,
     });
   });
 
@@ -131,18 +130,34 @@ function initAutoUpdater() {
 
   autoUpdater.on('error', (error) => {
     console.error('[AutoUpdater] Error:', error);
-    const errorMsg = error?.message || 'AnimeVault could not reach the release server.';
-    // Handle 404 errors for specific platforms
-    if (errorMsg.includes('404') || errorMsg.includes('not found')) {
+    const errorMsg = error?.message || error?.toString() || 'AnimeVault could not reach the release server.';
+    
+    // ✅ IMPROVED ERROR HANDLING FOR 404 AND NETWORK ISSUES
+    if (errorMsg.includes('404') || errorMsg.includes('Not Found')) {
+      console.warn('[AutoUpdater] 404 Error - Build not available for this platform');
       sendUpdateStatus({
         status: 'error',
-        message: `Download unavailable for ${process.platform}. Please check releases at https://github.com/adiyanhehe/Anime-Vault/releases`,
+        message: `⚠️ Build unavailable for ${process.platform}. This is normal for pre-release versions. Check releases: https://github.com/adiyanhehe/Anime-Vault/releases`,
+        progress: 0,
+      });
+    } else if (errorMsg.includes('ENOTFOUND') || errorMsg.includes('ECONNREFUSED') || errorMsg.includes('Network')) {
+      console.warn('[AutoUpdater] Network error - No internet connection or DNS failure');
+      sendUpdateStatus({
+        status: 'error',
+        message: '🌐 Network error: Cannot reach GitHub. Check your internet connection.',
+        progress: 0,
+      });
+    } else if (errorMsg.includes('ETIMEDOUT')) {
+      console.warn('[AutoUpdater] Connection timeout');
+      sendUpdateStatus({
+        status: 'error',
+        message: '⏱️ Connection timeout: GitHub took too long to respond. Try again later.',
         progress: 0,
       });
     } else {
       sendUpdateStatus({
         status: 'error',
-        message: errorMsg,
+        message: `Update check failed: ${errorMsg.substring(0, 100)}`,
         progress: 0,
       });
     }
@@ -155,11 +170,22 @@ function checkForUpdates() {
   console.log('[AutoUpdater] User triggered manual check');
   autoUpdater.checkForUpdates().catch((error) => {
     console.error('[AutoUpdater] Manual check failed:', error);
-    sendUpdateStatus({
-      status: 'error',
-      message: error?.message || 'Manual update check failed.',
-      progress: 0,
-    });
+    const errorMsg = error?.message || error?.toString() || 'Manual update check failed.';
+    
+    // Same error handling as above
+    if (errorMsg.includes('404')) {
+      sendUpdateStatus({
+        status: 'error',
+        message: '⚠️ Build not available for your platform yet.',
+        progress: 0,
+      });
+    } else {
+      sendUpdateStatus({
+        status: 'error',
+        message: errorMsg.substring(0, 150),
+        progress: 0,
+      });
+    }
   });
 
   return updateStatus;
@@ -181,7 +207,8 @@ function setupPeriodicUpdateCheck() {
   updateCheckInterval = setInterval(() => {
     console.log('[AutoUpdater] Periodic check triggered');
     autoUpdater.checkForUpdates().catch((error) => {
-      console.warn('[AutoUpdater] Periodic check failed:', error.message);
+      console.warn('[AutoUpdater] Periodic check failed silently:', error.message);
+      // Don't spam user with errors on periodic checks - only log
     });
   }, 3600000); // 1 hour
 }
@@ -201,9 +228,6 @@ function createWindow() {
 
   if (app.isPackaged) {
     // ── Production (packaged .exe / .dmg) ──
-    // electron-builder puts our files at <app>/resources/app/
-    // so dist/ is at <app>/resources/app/dist/index.html
-    // which is the same as path.join(__dirname, '..', 'dist', 'index.html')
     const indexPath = path.join(__dirname, '..', 'dist', 'index.html');
     console.log('[Electron] Loading production UI from:', indexPath);
     win.loadFile(indexPath);
