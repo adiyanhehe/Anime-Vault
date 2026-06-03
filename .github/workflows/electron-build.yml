@@ -3,7 +3,7 @@ name: Automated Installer Builds & Releases
 # This workflow is the "signal-driven" automation for Anime-Vault.
 #
 # Triggers (any one of these will fire the pipeline):
-#   * push to main               -> rebuild installers and publish a release
+#   * push to main               -> auto-bump version, rebuild installers and publish a release
 #   * pull_request to main       -> build installers as PR artifacts (no release)
 #   * workflow_dispatch          -> manual run from the Actions tab
 #   * repository_dispatch        -> external signal, e.g.
@@ -37,9 +37,54 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  version-bump:
+    name: Auto-bump version
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    outputs:
+      new-version: ${{ steps.bump.outputs.version }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Auto-increment patch version
+        id: bump
+        shell: bash
+        run: |
+          set -euo pipefail
+          current_version=$(node -p "require('./package.json').version")
+          IFS='.' read -r major minor patch <<< "$current_version"
+          new_patch=$((patch + 1))
+          new_version="${major}.${minor}.${new_patch}"
+          
+          # Update package.json
+          node -e "const pkg = require('./package.json'); pkg.version = '${new_version}'; require('fs').writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');"
+          
+          echo "version=${new_version}" >> "${GITHUB_OUTPUT}"
+          echo "Bumped version from ${current_version} to ${new_version}"
+
+      - name: Commit version bump
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package.json
+          git commit -m "chore: bump version to ${{ steps.bump.outputs.version }}" || true
+          git push origin main || true
+
   desktop:
     name: Desktop installer (${{ matrix.name }})
     runs-on: ${{ matrix.os }}
+    needs: [version-bump]
+    if: github.event_name != 'pull_request' ? always() : true
     strategy:
       fail-fast: false
       matrix:
@@ -59,8 +104,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
-
 
       - name: Cache Electron downloads
         uses: actions/cache@v4
@@ -122,14 +165,6 @@ jobs:
           set -euo pipefail
           version="$(node -p "require('./package.json').version")"
           tag="v${version}"
-          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
-            tag="${GITHUB_REF_NAME}"
-          else
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git tag -f "${tag}" "${GITHUB_SHA}" 2>/dev/null || true
-            git push origin "refs/tags/${tag}" --force 2>/dev/null || true
-          fi
           echo "version=${version}" >> "${GITHUB_OUTPUT}"
           echo "tag=${tag}" >> "${GITHUB_OUTPUT}"
 
@@ -187,6 +222,8 @@ jobs:
   android:
     name: Android APK
     runs-on: ubuntu-latest
+    needs: [version-bump]
+    if: github.event_name != 'pull_request' ? always() : true
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -246,14 +283,6 @@ jobs:
           set -euo pipefail
           version="$(node -p "require('./package.json').version")"
           tag="v${version}"
-          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
-            tag="${GITHUB_REF_NAME}"
-          else
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git tag -f "${tag}" "${GITHUB_SHA}" 2>/dev/null || true
-            git push origin "refs/tags/${tag}" --force 2>/dev/null || true
-          fi
           echo "version=${version}" >> "${GITHUB_OUTPUT}"
           echo "tag=${tag}" >> "${GITHUB_OUTPUT}"
 
