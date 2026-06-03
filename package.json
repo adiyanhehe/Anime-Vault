@@ -1,7 +1,7 @@
 {
   "name": "animevault",
   "private": true,
-  "version": "0.2.21",
+  "version": "0.2.22",
   "description": "The ultimate anime streaming experience",
   "author": "AnimeVault Team",
   "type": "module",
@@ -21,7 +21,7 @@
     "electron:build:mac": "npm run generate-icons && cross-env ELECTRON=1 vite build && electron-builder --mac --publish never",
     "electron:build:linux": "npm run generate-icons && cross-env ELECTRON=1 vite build && electron-builder --linux --publish never",
     "android:sync": "npm run build && npm run android:ensure && npx cap sync android",
-        "android:mobile": "npm run generate-icons && vite build --config vite.mobile.config.js && npx cap sync android && cd android && gradlew assembleRelease"
+    "android:mobile": "npm run generate-icons && vite build --config vite.mobile.config.js && npx cap sync android && cd android && gradlew assembleRelease"
   },
   "build": {
     "appId": "com.animevault.app",
@@ -47,7 +47,9 @@
       "publisherName": "AnimeVault Team",
       "artifactName": "AnimeVault-Windows-${arch}.${ext}",
       "sign": false,
-      "signingHashAlgorithms": ["sha256"]
+      "signingHashAlgorithms": [
+        "sha256"
+      ]
     },
     "mac": {
       "target": [
