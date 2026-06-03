@@ -3,7 +3,7 @@
 /**
  * Icon Generation Script
  * Converts logo.png to required formats for Electron Builder
- * Requires: ImageMagick (`convert` command) installed on the system.
+ * Requires: ImageMagick (`magick` or `convert` command) installed on the system.
  */
 
 import fs from 'fs';
@@ -33,23 +33,28 @@ if (!fs.existsSync(sourceIcon)) {
 console.log('🎨 Generating icons for all platforms...');
 
 try {
-  // Detect ImageMagick's `convert` command.
-  let hasConvert = false;
+  // Detect ImageMagick's command (magick for v7+, convert for older versions).
+  let imageMagickCmd = null;
   try {
-    execSync('which convert', { stdio: 'ignore' });
-    hasConvert = true;
+    execSync('magick -version', { stdio: 'ignore' });
+    imageMagickCmd = 'magick';
   } catch (_) {
-    // No ImageMagick – we will skip .ico/.icns creation.
+    try {
+      execSync('convert -version', { stdio: 'ignore' });
+      imageMagickCmd = 'convert';
+    } catch (__) {
+      // No ImageMagick found
+    }
   }
 
   // On Windows generate .ico, on macOS generate .icns.
-  if (hasConvert) {
+  if (imageMagickCmd) {
     if (process.platform === 'win32') {
       console.log('  📦 Generating Windows icon (.ico)...');
-      execSync(`convert "${sourceIcon}" -define icon:auto-resize=256,128,96,64,48,32,16 "${path.join(iconDir, 'icon.ico')}"`, { stdio: 'inherit' });
+      execSync(`${imageMagickCmd} "${sourceIcon}" -define icon:auto-resize="256,128,96,64,48,32,16" "${path.join(iconDir, 'icon.ico')}"`, { stdio: 'inherit' });
     } else if (process.platform === 'darwin') {
       console.log('  📦 Generating macOS icon (.icns)...');
-      execSync(`convert "${sourceIcon}" -define icon:auto-resize=512,256,128,64,32,16 "${path.join(iconDir, 'icon.icns')}"`, { stdio: 'inherit' });
+      execSync(`${imageMagickCmd} "${sourceIcon}" -define icon:auto-resize="512,256,128,64,32,16" "${path.join(iconDir, 'icon.icns')}"`, { stdio: 'inherit' });
     } else {
       console.log('  ℹ️  Skipping .ico/.icns generation on this platform (Linux/Android).');
     }
