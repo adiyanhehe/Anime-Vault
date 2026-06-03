@@ -219,7 +219,8 @@ jobs:
           RELEASE_TAG="${{ steps.release.outputs.tag }}"
           RELEASE_VERSION="${{ steps.release.outputs.version }}"
 
-          mapfile -d '' files < <(find release-assets -type f -print0)
+          # Filter out debug files to avoid conflicts with existing releases
+          mapfile -d '' files < <(find release-assets -type f ! -name '*-debug.*' ! -name 'builder-debug.*' -print0 | sort -z)
           if [ "${#files[@]}" -eq 0 ]; then
             echo "No installer files found to upload." >&2
             exit 1
