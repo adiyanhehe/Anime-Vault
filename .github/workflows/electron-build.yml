@@ -136,15 +136,18 @@ jobs:
       - name: Publish to GitHub Release
         if: github.event_name != 'pull_request'
         shell: bash
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          #!/bin/bash
           set -euo pipefail
           RELEASE_TAG="${{ steps.release.outputs.tag }}"
           RELEASE_VERSION="${{ steps.release.outputs.version }}"
           
-          # Find all files to upload for this platform
-          mapfile -d '' files < <(find release -type f ! -name '*-debug.*' ! -name 'builder-debug.*' -print0 | sort -z)
+          # Find all files to upload for this platform (compatible with macOS)
+          files=()
+          while IFS= read -r -d '' file; do
+            files+=("$file")
+          done < <(find release -type f ! -name '*-debug.*' ! -name 'builder-debug.*' -print0 | sort -z)
+          
           if [ "${#files[@]}" -eq 0 ]; then
             echo "No installer files found." >&2
             exit 1
@@ -178,6 +181,8 @@ jobs:
           gh release upload "${RELEASE_TAG}" "${files[@]}" --clobber
           
           echo "✅ Successfully published ${#files[@]} files to ${RELEASE_TAG}"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   android:
     name: Android APK
@@ -220,9 +225,13 @@ jobs:
       - name: Normalize APK asset name
         shell: bash
         run: |
+          #!/bin/bash
           set -euo pipefail
           mkdir -p release
-          mapfile -t apks < <(find android/app/build/outputs/apk/release -maxdepth 1 -name '*.apk' 2>/dev/null | sort)
+          apks=()
+          while IFS= read -r -d '' apk; do
+            apks+=("$apk")
+          done < <(find android/app/build/outputs/apk/release -maxdepth 1 -name '*.apk' -print0 2>/dev/null | sort -z)
           if [ "${#apks[@]}" -eq 0 ]; then
             echo "No Android release APK was produced." >&2
             exit 1
@@ -251,9 +260,8 @@ jobs:
       - name: Publish Android APK to GitHub Release
         if: github.event_name != 'pull_request'
         shell: bash
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          #!/bin/bash
           set -euo pipefail
           RELEASE_TAG="${{ steps.release.outputs.tag }}"
           
@@ -285,3 +293,5 @@ jobs:
           gh release upload "${RELEASE_TAG}" "release/AnimeVault-Android.apk" --clobber
           
           echo "✅ Successfully published Android APK to ${RELEASE_TAG}"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
