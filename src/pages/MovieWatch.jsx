@@ -32,8 +32,21 @@ const STREAM_SERVERS = [
         : `https://vixsrc.to/movie/${id}?primaryColor=ff1a75&secondaryColor=1a0711&autoplay=true`,
   },
   {
+    id: "vidnest-movie",
+    name: "Server 2 • VidNest",
+    badge: "AniList/TMDB",
+    description: "VidNest embed with large TMDB library for movies and TV.",
+    buildUrl: ({ id, isSeries, season, episode, isImdb }) => {
+      // VidNest uses TMDB ID by default for TV, but can try with IMDb ID as fallback
+      // Format: https://vidnest.fun/tv/tmdbId/season/episode or /movie/tmdbId
+      return isSeries
+        ? `https://vidnest.fun/tv/${id}/${season}/${episode}`
+        : `https://vidnest.fun/movie/${id}`;
+    },
+  },
+  {
     id: "2embed-viking",
-    name: "Server 2 • Viking",
+    name: "Server 3 • Viking",
     badge: "2Embed Fix",
     description:
       "Direct Viking player fallback so users do not need to pick it inside another embed.",
@@ -46,8 +59,7 @@ const STREAM_SERVERS = [
     id: "vidsrc-ru",
     name: "VidSrc RU",
     badge: "VidSrc Alt",
-    description:
-      "Current VidSrc route using direct movie/tv paths instead of the older embed query URL.",
+    description: "Current VidSrc route using direct movie/tv paths instead of the older embed query URL.",
     buildUrl: ({ id, isSeries, season, episode }) =>
       isSeries
         ? `https://vidsrc.ru/tv/${id}/${season}/${episode}`
@@ -62,6 +74,29 @@ const STREAM_SERVERS = [
       isSeries
         ? `https://vidsrc.fyi/embed/tv/${id}/${season}/${episode}`
         : `https://vidsrc.fyi/embed/movie/${id}`,
+  },
+  {
+    id: "kickassanime",
+    name: "KickAssAnime",
+    badge: "Extra Anime",
+    description: "KickAssAnime embed with extensive anime and dub collections.",
+    buildUrl: ({ id, isSeries, season, episode, isImdb }) => {
+      // KickAssAnime primarily works with anime IDs, but can sometimes work with TMDB
+      return isSeries
+        ? `https://kickassanime.am/embed/tv/${id}/${season}/${episode}`
+        : `https://kickassanime.am/embed/movie/${id}`;
+    },
+  },
+  {
+    id: "hianime",
+    name: "HiAnime",
+    badge: "Anime Focus",
+    description: "HiAnime embed optimized for anime with strong dub support.",
+    buildUrl: ({ id, isSeries, season, episode }) => {
+      return isSeries
+        ? `https://hianime.to/embed?id=${id}&ep=${episode}&season=${season}`
+        : `https://hianime.to/embed?id=${id}`;
+    },
   },
   {
     id: "vidsrc-cc",
