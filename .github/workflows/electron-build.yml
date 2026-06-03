@@ -51,7 +51,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
 
       - name: Auto-increment patch version
         id: bump
@@ -106,6 +106,12 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
       - name: Cache Electron downloads
         uses: actions/cache@v4
         with:
@@ -135,7 +141,7 @@ jobs:
         run: brew install imagemagick
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install
 
       - name: Build installer
         shell: bash
@@ -234,7 +240,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
 
       - name: Setup Android SDK
@@ -252,7 +258,7 @@ jobs:
           java-version: '17'
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install
 
       - name: Ensure Android project exists
         run: npm run android:ensure
