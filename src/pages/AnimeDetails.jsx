@@ -457,7 +457,20 @@ function AnimeDetails() {
               target="_blank"
               rel="noopener noreferrer"
               className="btn-info-v2"
-              style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '0.6rem 1.5rem', background: 'var(--brand-color)', color: '#fff', textDecoration: 'none', borderRadius: '8px', f[...]
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '0.6rem 1.5rem',
+                background: 'var(--brand-color)',
+                color: '#fff',
+                textDecoration: 'none',
+                borderRadius: '8px',
+                border: 'none',
+                cursor: 'pointer',
+                fontSize: '0.9rem',
+                fontWeight: '600',
+              }}
             >
               <ExternalLink size={16} /> Open Player in New Tab (Bypasses Blocks)
             </a>
