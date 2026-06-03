@@ -75,7 +75,7 @@ function findExternalId(links, siteName) {
 // Streaming embeds with fallbacks for episodes missing on the primary host
 // ─────────────────────────────────────────────────────────
 const DEFAULT_LANGUAGE = 'sub';
-const DEFAULT_EMBED_SERVER = 'vidnest';
+const DEFAULT_EMBED_SERVER = 'megaplay';
 const EMBED_LANGUAGE_OPTIONS = [
   { id: 'sub', label: 'SUB' },
   { id: 'dub', label: 'DUB' },
@@ -95,6 +95,13 @@ const withParams = (url, params) => {
 };
 const EMBED_SERVERS = [
   {
+    id: 'megaplay',
+    label: 'MegaPlay',
+    description: 'AniList embed with dedicated sub and dub routes.',
+    languages: ['sub', 'dub'],
+    buildUrl: ({ animeId, episode, lang }) => `https://animeplay.cfd/stream/ani/${animeId}/${episode}/${toSupportedLanguage(lang)}`,
+  },
+  {
     id: 'vidnest',
     label: 'VidNest',
     description: 'Large AniList library with sub, dub, Hindi, and internal mirror switching.',
@@ -110,13 +117,6 @@ const EMBED_SERVERS = [
     description: 'AnimePahe-backed VidNest route for a second large sub/dub library.',
     languages: ['sub', 'dub', 'hindi'],
     buildUrl: ({ animeId, episode, lang }) => `https://vidnest.fun/animepahe/${animeId}/${episode}/${toSupportedLanguage(lang, ['sub', 'dub', 'hindi'])}`,
-  },
-  {
-    id: 'megaplay',
-    label: 'MegaPlay',
-    description: 'AniList embed with dedicated sub and dub routes.',
-    languages: ['sub', 'dub'],
-    buildUrl: ({ animeId, episode, lang }) => `https://animeplay.cfd/stream/ani/${animeId}/${episode}/${toSupportedLanguage(lang)}`,
   },
   {
     id: 'ninja',
@@ -457,7 +457,7 @@ function AnimeDetails() {
               target="_blank"
               rel="noopener noreferrer"
               className="btn-info-v2"
-              style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '0.6rem 1.5rem', background: 'var(--brand-color)', color: '#fff', textDecoration: 'none', borderRadius: '8px', fontWeight: 600 }}
+              style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '0.6rem 1.5rem', background: 'var(--brand-color)', color: '#fff', textDecoration: 'none', borderRadius: '8px', f[...]
             >
               <ExternalLink size={16} /> Open Player in New Tab (Bypasses Blocks)
             </a>
