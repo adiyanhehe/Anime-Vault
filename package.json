@@ -12,7 +12,7 @@
     "preview": "vite preview",
     "generate-icons": "node scripts/generate-icons.js",
     "electron:dev": "cross-env NODE_ENV=development concurrently \"vite\" \"wait-on http://localhost:5173 && electron .\"",
-    "electron:build": "npm run generate-icons && cross-env ELECTRON=1 vite build && electron-builder --publish never --linux",
+    "electron:build": "npm run generate-icons && cross-env ELECTRON=1 vite build && electron-builder --publish never",
     "predeploy": "npm run build",
     "deploy": "gh-pages -d dist",
     "android:build": "npm run android:sync && cd android && ./gradlew assembleRelease",
