@@ -1,4 +1,5 @@
 import { neon } from '@neondatabase/serverless';
+import bcrypt from 'bcryptjs';
 
 const DATABASE_URL = 'postgresql://neondb_owner:npg_cprHoA5wBt0Z@ep-lively-surf-apnkb5f1.c-7.us-east-1.aws.neon.tech/neondb?sslmode=require';
 const sql = neon(DATABASE_URL);
@@ -10,9 +11,10 @@ export async function initDatabase() {
       CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY,
         username VARCHAR(50) UNIQUE NOT NULL,
-        password VARCHAR(100) NOT NULL,
+        password VARCHAR(255) NOT NULL,
         avatar TEXT,
         banner TEXT,
+        is_admin BOOLEAN DEFAULT FALSE,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `;
@@ -104,13 +106,15 @@ export async function initDatabase() {
 initDatabase();
 
 /* ==========================================================================
-   USER MANAGEMENT (SIGNUP / LOGIN)
+   USER MANAGEMENT (SIGNUP / LOGIN) - SECURE WITH BCRYPT
    ========================================================================== */
 
 export async function userSignup(username, password) {
   try {
     const trimmedUser = username.trim();
     if (!trimmedUser || !password) throw new Error('Username and password are required.');
+    if (password.length < 6) throw new Error('Password must be at least 6 characters.');
+    if (trimmedUser.length < 3) throw new Error('Username must be at least 3 characters.');
     
     // Check if user already exists
     const existing = await sql`SELECT id FROM users WHERE username = ${trimmedUser}`;
@@ -118,11 +122,13 @@ export async function userSignup(username, password) {
       return { success: false, message: 'Username is already taken' };
     }
 
+    // Hash password with bcrypt (salt rounds: 10)
+    const hashedPassword = await bcrypt.hash(password, 10);
     const isAdmin = trimmedUser.toLowerCase() === 'admin' || trimmedUser.toLowerCase().includes('admin');
 
     const result = await sql`
       INSERT INTO users (username, password, is_admin) 
-      VALUES (${trimmedUser}, ${password}, ${isAdmin})
+      VALUES (${trimmedUser}, ${hashedPassword}, ${isAdmin})
       RETURNING id, username, avatar, banner, is_admin
     `;
     return { success: true, user: result[0] };
@@ -140,7 +146,13 @@ export async function userLogin(username, password) {
       WHERE username = ${trimmedUser}
     `;
     
-    if (result.length === 0 || result[0].password !== password) {
+    if (result.length === 0) {
+      return { success: false, message: 'Invalid username or password' };
+    }
+    
+    // Compare hashed password using bcrypt
+    const passwordMatch = await bcrypt.compare(password, result[0].password);
+    if (!passwordMatch) {
       return { success: false, message: 'Invalid username or password' };
     }
     
@@ -496,13 +508,14 @@ export async function syncGoogleUserToDb(email, displayName, googleAvatar) {
       return { success: true, user: existing[0] };
     }
 
-    // User doesn't exist, create a new record!
-    // If the email includes 'admin', let's make them an admin!
+    // User doesn't exist, create a new record
+    // Use hashed placeholder for OAuth users
+    const hashedPassword = await bcrypt.hash('google_oauth_bypass', 10);
     const isAdmin = trimmedUser.toLowerCase().includes('admin') || trimmedUser.toLowerCase() === 'adiyanhehe@gmail.com'; 
 
     const result = await sql`
       INSERT INTO users (username, password, avatar, is_admin) 
-      VALUES (${trimmedUser}, 'google_oauth_bypass', ${googleAvatar || ''}, ${isAdmin})
+      VALUES (${trimmedUser}, ${hashedPassword}, ${googleAvatar || ''}, ${isAdmin})
       RETURNING id, username, avatar, banner, is_admin, created_at
     `;
     return { success: true, user: result[0] };
