@@ -147,6 +147,8 @@ jobs:
         shell: bash
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+          CSC_KEY_PASSWORD: ''
+          WIN_CSC_KEY_PASSWORD: ''
         run: npm run electron:build -- ${{ matrix.args }}
 
       - name: Upload installer artifact
