@@ -29,7 +29,7 @@ on:
     types: [release]
 
 permissions:
-  contents: read
+  contents: write
   actions: read
 
 concurrency:
