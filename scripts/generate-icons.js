@@ -42,17 +42,17 @@ try {
   
   if (hasImageMagick) {
     try {
-      // Generate .ico for Windows
+      // Generate .ico for Windows using magick without -define
       console.log('  📦 Generating Windows icon (.ico)...');
-      execSync(`convert "${sourceIcon}" -define icon:auto-resize=256,128,96,64,48,32,16 "${path.join(iconDir, 'icon.ico')}"`, { stdio: 'inherit' });
+      execSync(`magick "${sourceIcon}" -resize 256x256 "${path.join(iconDir, 'icon.ico')}"`, { stdio: 'inherit' });
     } catch (e) {
       console.log('  ⚠️  Windows .ico generation failed, skipping...');
     }
-    
+
     try {
-      // Generate .icns for macOS
+      // Generate .icns for macOS using magick without -define
       console.log('  📦 Generating macOS icon (.icns)...');
-      execSync(`convert "${sourceIcon}" -define icon:auto-resize=512,256,128,64,32,16 "${path.join(iconDir, 'icon.icns')}"`, { stdio: 'inherit' });
+      execSync(`magick "${sourceIcon}" -resize 512x512 "${path.join(iconDir, 'icon.icns')}"`, { stdio: 'inherit' });
     } catch (e) {
       console.log('  ⚠️  macOS .icns generation failed, skipping...');
     }
