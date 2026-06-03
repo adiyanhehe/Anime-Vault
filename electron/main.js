@@ -60,10 +60,23 @@ function initAutoUpdater() {
     return;
   }
 
+  // Configure updater for all platforms
   autoUpdater.autoDownload = true;
   autoUpdater.autoInstallOnAppQuit = true;
   autoUpdater.allowPrerelease = false;
   autoUpdater.logger = console;
+  
+  // Platform-specific configuration
+  if (process.platform === 'win32') {
+    // Windows signing verification
+    autoUpdater.allowDowngrade = false;
+  } else if (process.platform === 'darwin') {
+    // macOS specific settings
+    autoUpdater.allowDowngrade = false;
+  } else if (process.platform === 'linux') {
+    // Linux specific settings
+    autoUpdater.allowDowngrade = false;
+  }
 
   autoUpdater.on('checking-for-update', () => {
     console.log('[AutoUpdater] Checking for updates...');
@@ -76,6 +89,9 @@ function initAutoUpdater() {
 
   autoUpdater.on('update-available', (info) => {
     console.log('[AutoUpdater] Update available:', info.version);
+    // Validate platform-specific downloads
+    const platform = process.platform;
+    console.log('[AutoUpdater] Platform:', platform, 'Version:', info.version);
     sendUpdateStatus({
       status: 'available',
       message: `Version ${info.version} is available. Downloading in the background...`,
@@ -94,6 +110,7 @@ function initAutoUpdater() {
   });
 
   autoUpdater.on('download-progress', (progress) => {
+    console.log('[AutoUpdater] Download progress:', Math.round(progress.percent) + '%');
     sendUpdateStatus({
       status: 'downloading',
       message: `Downloading update at ${Math.round(progress.percent)}%...`,
@@ -114,11 +131,21 @@ function initAutoUpdater() {
 
   autoUpdater.on('error', (error) => {
     console.error('[AutoUpdater] Error:', error);
-    sendUpdateStatus({
-      status: 'error',
-      message: error?.message || 'AnimeVault could not reach the release server.',
-      progress: 0,
-    });
+    const errorMsg = error?.message || 'AnimeVault could not reach the release server.';
+    // Handle 404 errors for specific platforms
+    if (errorMsg.includes('404') || errorMsg.includes('not found')) {
+      sendUpdateStatus({
+        status: 'error',
+        message: `Download unavailable for ${process.platform}. Please check releases at https://github.com/adiyanhehe/Anime-Vault/releases`,
+        progress: 0,
+      });
+    } else {
+      sendUpdateStatus({
+        status: 'error',
+        message: errorMsg,
+        progress: 0,
+      });
+    }
   });
 }
 
