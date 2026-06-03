@@ -1,7 +1,7 @@
 {
   "name": "animevault",
   "private": true,
-  "version": "0.2.20",
+  "version": "0.2.21",
   "description": "The ultimate anime streaming experience",
   "author": "AnimeVault Team",
   "type": "module",
@@ -35,16 +35,40 @@
       "electron/**/*"
     ],
     "win": {
-      "target": [{ "target": "nsis", "arch": ["x64"] }],
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
       "icon": "src/electron/.icon-ico/icon.ico",
       "publisherName": "AnimeVault Team",
       "artifactName": "AnimeVault-Windows-${arch}.${ext}",
       "certificateFile": "${env.WIN_CERTIFICATE_FILE}",
       "certificatePassword": "${env.WIN_CERTIFICATE_PASSWORD}",
-      "signingHashAlgorithms": ["sha256"]
+      "signingHashAlgorithms": [
+        "sha256"
+      ]
     },
     "mac": {
-      "target": [{ "target": "dmg", "arch": ["x64","arm64"] },{ "target": "zip", "arch": ["x64","arm64"] }],
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ],
       "icon": "src/electron/.icon-ico/icon.icns",
       "hardenedRuntime": true,
       "gatekeeperAssess": false,
@@ -55,7 +79,20 @@
       "type": "distribution"
     },
     "linux": {
-      "target": [{ "target": "deb", "arch": ["x64"] },{ "target": "AppImage", "arch": ["x64"] }],
+      "target": [
+        {
+          "target": "deb",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "AppImage",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
       "icon": "src/electron/.icon-ico/icon.png",
       "category": "AudioVideo",
       "maintainer": "AnimeVault Team",
@@ -66,7 +103,12 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true
     },
-    "publish": [{ "provider": "github", "releaseType": "release" }],
+    "publish": [
+      {
+        "provider": "github",
+        "releaseType": "release"
+      }
+    ],
     "npmRebuild": false
   },
   "dependencies": {
@@ -100,5 +142,7 @@
     "@capacitor/android": "^6.2.1",
     "@capacitor/cli": "^6.2.1"
   },
-  "engines": { "node": ">=22.12.0" }
+  "engines": {
+    "node": ">=22.12.0"
+  }
 }
