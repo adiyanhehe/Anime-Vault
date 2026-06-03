@@ -14,7 +14,11 @@ export default defineConfig(({ command }) => {
       : '/Anime-Vault/';       // GitHub Pages
 
   return {
-    plugins: [react()],
+    build: {
+    rollupOptions: {
+      external: ['bcryptjs']
+    }
+  },
     base,
     resolve: {
       alias: {
