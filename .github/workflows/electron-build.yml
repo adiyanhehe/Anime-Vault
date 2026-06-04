@@ -186,11 +186,9 @@ jobs:
           RELEASE_TAG="${{ steps.release.outputs.tag }}"
           RELEASE_VERSION="${{ steps.release.outputs.version }}"
           
-          # Find all files to upload for this platform (compatible with macOS)
-          files=()
-          while IFS= read -r -d '' file; do
-            files+=("$file")
-          done < <(find release -type f ! -name '*-debug.*' ! -name 'builder-debug.*' -print0 | sort -z)
+          # Find only the compiled installers and metadata files, not the uncompressed folders
+          shopt -s nullglob
+          files=(release/*.exe release/*.dmg release/*.zip release/*.AppImage release/*.deb release/*.yml release/*.blockmap)
           
           if [ "${#files[@]}" -eq 0 ]; then
             echo "No installer files found." >&2
