@@ -12,25 +12,27 @@
     "preview": "vite preview",
     "generate-icons": "node scripts/generate-icons.js",
     "electron:dev": "cross-env NODE_ENV=development concurrently \"vite\" \"wait-on http://localhost:5173 && electron .\"",
-    "electron:build": "npm run generate-icons && cross-env ELECTRON=1 vite build && electron-builder --publish never",
+    "electron:build": "npm run generate-icons && set ELECTRON=1 && vite build && electron-builder --publish never",
     "predeploy": "npm run build",
     "deploy": "gh-pages -d dist",
     "android:build": "npm run android:sync && cd android && ./gradlew assembleRelease",
     "electron:release": "npm run generate-icons && cross-env ELECTRON=1 vite build && electron-builder --publish always",
-    "electron:build:win": "npm run generate-icons && cross-env ELECTRON=1 vite build && electron-builder --win --publish never",
+    "electron:build:win": "npm run generate-icons && set ELECTRON=1 && vite build && electron-builder --win --publish never",
     "electron:build:mac": "npm run generate-icons && cross-env ELECTRON=1 vite build && electron-builder --mac --publish never",
     "electron:build:linux": "npm run generate-icons && cross-env ELECTRON=1 vite build && electron-builder --linux --publish never",
     "android:sync": "npm run build & npm run android:ensure & npx cap sync android",
+    "android:sync": "npm run build && npx cap sync android",
     "android:ensure": "npx cap add android || echo 'Android already added'",
-    "android:mobile": "npm run generate-icons & vite build --config vite.mobile.config.js & npx cap sync android & cd android & gradlew assembleRelease"
+    "android:mobile": "npm run generate-icons && vite build --config vite.mobile.config.js && npx cap sync android && cd android && ./gradlew assembleRelease"
   },
   "build": {
     "appId": "com.animevault.app",
     "productName": "AnimeVault",
-    "icon": "src/electron/.icon-ico/icon",
+
     "directories": {
       "output": "release"
     },
+    "asar": false,
     "files": [
       "dist/**/*",
       "electron/**/*"
@@ -44,13 +46,11 @@
           ]
         }
       ],
-      "icon": "src/electron/.icon-ico/icon.ico",
+
+
       "publisherName": "AnimeVault Team",
       "artifactName": "AnimeVault-Windows-${arch}.${ext}",
-      "sign": false,
-      "signingHashAlgorithms": [
-        "sha256"
-      ]
+      "sign": false
     },
     "mac": {
       "target": [
@@ -69,7 +69,6 @@
           ]
         }
       ],
-      "icon": "src/electron/.icon-ico/icon.icns",
       "hardenedRuntime": true,
       "gatekeeperAssess": false,
       "identity": "${env.MAC_IDENTITY}",
