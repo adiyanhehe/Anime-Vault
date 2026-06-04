@@ -12,7 +12,7 @@
     "preview": "vite preview",
     "generate-icons": "node scripts/generate-icons.js",
     "electron:dev": "cross-env NODE_ENV=development concurrently \"vite\" \"wait-on http://localhost:5173 && electron .\"",
-    "electron:build": "npm run generate-icons && set ELECTRON=1 && vite build && electron-builder --publish never",
+    "electron:build": "set NODE_OPTIONS=--max_old_space_size=8192 && npm run generate-icons && set ELECTRON=1 && vite build && electron-builder --publish never",
     "predeploy": "npm run build",
     "deploy": "gh-pages -d dist",
     "bump-version": "npm version patch -m \"chore: bump version to %s\"",
@@ -32,7 +32,7 @@
     "directories": {
       "output": "release"
     },
-    "asar": false,
+    "asar": true,
     "files": [
       "dist/**/*",
       "electron/**/*"
@@ -45,8 +45,7 @@
     },
     "nsis": {
       "allowToChangeInstallationDirectory": true,
-      "oneClick": false,
-      "include": "build/installer.nsh"
+      "oneClick": false
     },
     "target": [
       {
