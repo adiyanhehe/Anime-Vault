@@ -36,25 +36,28 @@
       "dist/**/*",
       "electron/**/*"
     ],
-    "win": {
-      "target": [
-        {
-          "target": "nsis",
-          "arch": [
-            "x64"
-          ]
-        }
-      ],
-      "publisherName": "AnimeVault Team",
-      "artifactName": "AnimeVault-Windows-${arch}.${ext}",
-      "certificateFile": "animevault-code-signing.pfx",
-      "certificatePassword": "StrongPassword123!"
+    "npmRebuild": false,
+    "extraMetadata": {
+      "dependencies": {
+        "bcryptjs": "2.4.3"
+      }
     },
-    "nsis": {
-      "oneClick": false,
+          "nsis": {
       "allowToChangeInstallationDirectory": true,
-      "createDesktopShortcut": true
+      "include": "build/installer.nsh"
     },
+    "target": [
+      {
+        "target": "nsis",
+        "arch": [
+          "x64"
+        ]
+      }
+    ],
+    "publisherName": "AnimeVault Team",
+    "artifactName": "AnimeVault-Windows-${arch}.${ext}",
+    "verifyUpdateCodeSignature": false
+  },
     "mac": {
       "target": [
         {
@@ -105,9 +108,8 @@
         "provider": "github",
         "releaseType": "release"
       }
-    ]
-  },
-  "dependencies": {
+    ],
+    "dependencies": {
     "@neondatabase/auth": "^0.3.0-beta",
     "@neondatabase/serverless": "^1.1.0",
     "@noriginmedia/norigin-spatial-navigation": "^3.1.0",

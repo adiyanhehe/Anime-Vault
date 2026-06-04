@@ -10,13 +10,8 @@ export default defineConfig(({ command }) => {
       ? './' // Electron build uses relative paths
       : '/Anime-Vault/'; // GitHub Pages absolute base
 
-
   return {
-    build: {
-    rollupOptions: {
-      external: ['bcryptjs']
-    }
-  },
+    plugins: [react()],
     base,
     resolve: {
       alias: {
@@ -30,6 +25,11 @@ export default defineConfig(({ command }) => {
           changeOrigin: true,
           rewrite: (p) => p.replace(/^\/api/, '/api'),
         },
+      },
+    },
+    build: {
+      rollupOptions: {
+        external: ['bcryptjs'],
       },
     },
   };

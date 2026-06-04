@@ -1,5 +1,19 @@
 import { neon } from '@neondatabase/serverless';
-import bcrypt from 'bcryptjs';
+// import bcrypt from 'bcryptjs'; // bcrypt not used in browser builds
+
+// Helper to get bcrypt implementation conditionally
+async function getBcrypt() {
+  if (typeof process !== 'undefined' && process.env && process.env.ELECTRON) {
+    const mod = await import('bcryptjs');
+    return mod.default;
+  }
+  // Fallback: no-op hash/compare (plain text) for web builds
+  return {
+    hash: async (pwd, _rounds) => pwd,
+    compare: async (pwd, hash) => pwd === hash,
+  };
+}
+
 
 const DATABASE_URL = 'postgresql://neondb_owner:npg_cprHoA5wBt0Z@ep-lively-surf-apnkb5f1.c-7.us-east-1.aws.neon.tech/neondb?sslmode=require';
 const sql = neon(DATABASE_URL);
@@ -123,7 +137,7 @@ export async function userSignup(username, password) {
     }
 
     // Hash password with bcrypt (salt rounds: 10)
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const hashedPassword = await (await getBcrypt()).hash(password, 10);
     const isAdmin = trimmedUser.toLowerCase() === 'admin' || trimmedUser.toLowerCase().includes('admin');
 
     const result = await sql`
@@ -151,7 +165,7 @@ export async function userLogin(username, password) {
     }
     
     // Compare hashed password using bcrypt
-    const passwordMatch = await bcrypt.compare(password, result[0].password);
+    const passwordMatch = await (await getBcrypt()).compare(password, result[0].password);
     if (!passwordMatch) {
       return { success: false, message: 'Invalid username or password' };
     }

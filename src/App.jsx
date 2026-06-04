@@ -35,6 +35,8 @@ function App() {
   const navigate = useNavigate();
   const location = useLocation();
 
+  const [isReady, setIsReady] = useState(true); // Skip loading screen
+
   useEffect(() => {
     async function loadSettings() {
       try {
@@ -43,6 +45,8 @@ function App() {
         if (settings.maintenance === 'true') setMaintenanceMode(true);
       } catch (err) {
         console.error('Failed to load global site settings:', err);
+      } finally {
+        setIsReady(true);
       }
     }
     loadSettings();
@@ -64,37 +68,15 @@ function App() {
     navigate(`/search?${params.toString()}`);
   }
 
-  if (maintenanceMode && (!user || !user.is_admin)) {
-    return (
-      <div style={{
-        height: '100vh', display: 'flex', flexDirection: 'column',
-        justifyContent: 'center', alignItems: 'center', background: '#06060c',
-        color: '#fff', textAlign: 'center', padding: '20px', fontFamily: 'sans-serif'
-      }}>
-        <AlertTriangle size={64} style={{ color: '#ffd700', marginBottom: '20px', filter: 'drop-shadow(0 0 15px rgba(255, 215, 0, 0.4))' }} />
-        <h1 style={{ fontSize: '2.5rem', fontWeight: '900', margin: '0 0 12px' }}>Vault Offline</h1>
-        <p style={{ color: 'var(--text-secondary)', maxWidth: '500px', fontSize: '0.95rem', lineHeight: '1.6', margin: '0 0 30px' }}>
-          AnimeVault is currently undergoing emergency database optimizations. The command deck will return shortly!
-        </p>
-        
-        <button 
-          onClick={() => { setAuthTab('login'); setShowAuthModal(true); }}
-          style={{
-            padding: '10px 24px', background: 'rgba(255,255,255,0.03)',
-            border: '1px solid rgba(255,255,255,0.1)', color: '#fff',
-            borderRadius: '8px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: '800',
-            transition: 'all 0.2s'
-          }}
-          onMouseEnter={e => e.currentTarget.style.borderColor = '#ffd700'}
-          onMouseLeave={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'}
-        >
-          Administrator Login
-        </button>
+  // Loading screen removed; app renders immediately.
 
-        <AuthModal />
-      </div>
-    );
-  }
+
+
+  if (maintenanceMode && (!user || !user.is_admin)) {
+  console.warn('Maintenance mode active - displaying site normally');
+  // Optionally show a banner or notification here
+}
+
 
   return (
     <div className="app-shell">

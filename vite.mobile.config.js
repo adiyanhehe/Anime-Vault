@@ -16,7 +16,7 @@ export default defineConfig({
     outDir: path.resolve(__dirname, 'dist-mobile'), // separate output for mobile build
     rollupOptions: {
       // Exclude node built‑ins that cause issues in the mobile webview
-      external: ['bcryptjs'],
+      external: [],
     },
   },
 });
