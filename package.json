@@ -54,8 +54,8 @@
         ]
       }
     ],
-    "publisherName": "AnimeVault Team",
-    "artifactName": "AnimeVault-Windows-${arch}.${ext}",
+
+    "artifactName": "AnimeVault-Windows-${arch}.${ext}"
 
   },
   "mac": {
