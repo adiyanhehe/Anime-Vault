@@ -22,6 +22,15 @@ export function setAnimeActivity(activity) {
 }
 
 /**
+ * Update current activity with progress info.
+ */
+export function updateAnimeActivityTime(currentTime, duration) {
+  if (_electronAPI && typeof _electronAPI.updateAnimeActivityTime === 'function') {
+    _electronAPI.updateAnimeActivityTime({ currentTime, duration });
+  }
+}
+
+/**
  * Clear the activity – tells Discord the user is no longer watching.
  */
 export function clearAnimeActivity() {
@@ -56,6 +65,7 @@ export function onUpdateStatus(callback) {
 // Export a default object for convenient destructuring imports.
 export default {
   setAnimeActivity,
+  updateAnimeActivityTime,
   clearAnimeActivity,
   getUpdateStatus,
   checkForUpdates,

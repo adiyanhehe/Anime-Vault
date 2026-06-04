@@ -251,20 +251,42 @@ function createWindow() {
   });
 }
 
+let currentAnimeActivity = null;
+
 ipcMain.handle('set-anime-activity', async (_, activity) => {
   if (!rpc) return;
   const { title, episode, coverUrl, url } = activity;
+  
+  currentAnimeActivity = {
+    details: `Watching ${title}`,
+    state: episode ? `Episode ${episode}` : 'Movie',
+    largeImageKey: coverUrl || 'anime_vault',
+    largeImageText: title,
+    buttons: url ? [{ label: 'View Details', url }] : [],
+    startTimestamp: Date.now(),
+  };
+
   try {
-    await rpc.setActivity({
-      details: `Watching ${title}`,
-      state: episode ? `Episode ${episode}` : 'Movie',
-      largeImageKey: coverUrl || 'anime_vault',
-      largeImageText: title,
-      startTimestamp: Date.now(),
-      buttons: url ? [{ label: 'View Details', url }] : [],
-    });
+    await rpc.setActivity(currentAnimeActivity);
   } catch (err) {
     console.error('Discord RPC setActivity error:', err);
+  }
+});
+
+ipcMain.handle('update-anime-activity-time', async (_, { currentTime, duration }) => {
+  if (!rpc || !currentAnimeActivity || !duration) return;
+  
+  try {
+    const startTimestamp = Date.now() - (currentTime * 1000);
+    const endTimestamp = startTimestamp + (duration * 1000);
+    
+    await rpc.setActivity({
+      ...currentAnimeActivity,
+      startTimestamp,
+      endTimestamp,
+    });
+  } catch (err) {
+    console.error('Discord RPC update time error:', err);
   }
 });
 

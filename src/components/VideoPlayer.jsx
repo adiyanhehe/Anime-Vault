@@ -4,7 +4,10 @@ import { defaultLayoutIcons, DefaultVideoLayout } from '@vidstack/react/player/l
 import { Settings } from 'lucide-react';
 
 import '@vidstack/react/player/styles/default/theme.css';
-import '@vidstack/react/player/styles/default/layouts/video.css';
+import electronBridge from '../utils/electronBridge';
+
+// Throttle updates so we don't spam Discord RPC (e.g. every 5 seconds)
+let lastUpdateTime = 0;
 
 function VideoPlayer({ sources, poster, title, embedUrl, isZen }) {
   const [videoUrl, setVideoUrl] = useState('');
@@ -28,6 +31,35 @@ function VideoPlayer({ sources, poster, title, embedUrl, isZen }) {
       setVideoUrl(preferred.url);
     }
   }, [sources]);
+
+  useEffect(() => {
+    // Attempt to catch cross-origin postMessages from embeds like megaplay
+    const handleMessage = (event) => {
+      if (event.data && typeof event.data === 'object') {
+        const { type, currentTime, duration } = event.data;
+        if ((type === 'timeupdate' || type === 'progress') && currentTime && duration) {
+          const now = Date.now();
+          if (now - lastUpdateTime > 5000) { // throttle
+            electronBridge.updateAnimeActivityTime(currentTime, duration);
+            lastUpdateTime = now;
+          }
+        }
+      }
+    };
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, []);
+
+  const handleTimeUpdate = (event) => {
+    const { currentTime, duration } = event.detail;
+    if (duration > 0) {
+      const now = Date.now();
+      if (now - lastUpdateTime > 5000) {
+        electronBridge.updateAnimeActivityTime(currentTime, duration);
+        lastUpdateTime = now;
+      }
+    }
+  };
 
   if (embedUrl) {
     const isMiruro = embedUrl.includes('miruro.ro');

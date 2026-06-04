@@ -16,6 +16,7 @@
     "predeploy": "npm run build",
     "deploy": "gh-pages -d dist",
     "android:build": "npm run android:sync && cd android && ./gradlew assembleRelease",
+    "android:build:win": "npm run android:sync && cd android && gradlew assembleRelease",
     "electron:release": "npm run generate-icons && cross-env ELECTRON=1 vite build && electron-builder --publish always",
     "electron:build:win": "npm run generate-icons && set ELECTRON=1 && vite build && electron-builder --win --publish never",
     "electron:build:mac": "npm run generate-icons && cross-env ELECTRON=1 vite build && electron-builder --mac --publish never",
@@ -104,7 +105,7 @@
         "releaseType": "release"
       }
     ],
-    "npmRebuild": false
+    "sign": false
   },
   "dependencies": {
     "@neondatabase/auth": "^0.3.0-beta",
