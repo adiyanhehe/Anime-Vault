@@ -97,15 +97,15 @@ function MovieWatch() {
         const newSources = [];
         
         if (type === 'movie') {
+          newSources.push({ name: 'MultiEmbed', url: `https://multiembed.mov/?video_id=${imdbId}` });
           newSources.push({ name: 'AutoEmbed', url: `https://autoembed.co/movie/imdb/${imdbId}` });
           newSources.push({ name: 'VidSrc.me', url: `https://vidsrc.me/embed/movie?imdb=${imdbId}` });
           newSources.push({ name: 'EmbedAPI', url: `https://player.embed-api.stream/?id=${imdbId}&type=movie` });
-          newSources.push({ name: 'MultiEmbed', url: `https://multiembed.mov/?video_id=${imdbId}` });
         } else {
+          newSources.push({ name: 'MultiEmbed', url: `https://multiembed.mov/?video_id=${imdbId}&s=${sNum}&e=${eNum}` });
           newSources.push({ name: 'AutoEmbed', url: `https://autoembed.co/tv/imdb/${imdbId}-${sNum}-${eNum}` });
           newSources.push({ name: 'VidSrc.me', url: `https://vidsrc.me/embed/tv?imdb=${imdbId}&season=${sNum}&episode=${eNum}` });
           newSources.push({ name: 'EmbedAPI', url: `https://player.embed-api.stream/?id=${imdbId}&type=tv&season=${sNum}&episode=${eNum}` });
-          newSources.push({ name: 'MultiEmbed', url: `https://multiembed.mov/?video_id=${imdbId}&s=${sNum}&e=${eNum}` });
         }
         
         setSources(newSources);
