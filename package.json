@@ -1,7 +1,7 @@
 {
   "name": "animevault",
   "private": true,
-  "version": "0.2.36",
+  "version": "0.2.37",
   "description": "The ultimate anime streaming experience",
   "author": "AnimeVault Team",
   "type": "module",
@@ -55,9 +55,7 @@
         ]
       }
     ],
-
     "artifactName": "AnimeVault-Windows-${arch}.${ext}"
-
   },
   "mac": {
     "target": [
