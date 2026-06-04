@@ -46,8 +46,16 @@
         }
       ],
       "publisherName": "AnimeVault Team",
-      "artifactName": "AnimeVault-Windows-${arch}.${ext}"
+      "artifactName": "AnimeVault-Windows-${arch}.${ext}",
+      "certificateFile": "animevault-code-signing.pfx",
+      "certificatePassword": "StrongPassword123!"
     },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true
+    },
+
     "mac": {
       "target": [
         {
