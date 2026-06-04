@@ -1,7 +1,7 @@
 {
   "name": "animevault",
   "private": true,
-  "version": "0.2.31",
+  "version": "0.2.32",
   "description": "The ultimate anime streaming experience",
   "author": "AnimeVault Team",
   "type": "module",
@@ -55,7 +55,6 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true
     },
-
     "mac": {
       "target": [
         {
@@ -100,11 +99,6 @@
       "category": "AudioVideo",
       "maintainer": "AnimeVault Team",
       "artifactName": "AnimeVault-Linux-${arch}.${ext}"
-    },
-    "nsis": {
-      "oneClick": false,
-      "allowToChangeInstallationDirectory": true,
-      "createDesktopShortcut": true
     },
     "publish": [
       {
