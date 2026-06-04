@@ -58,20 +58,10 @@ function Search() {
     try {
       setLoading(true);
       setError('');
-      // If no search term and no genre, load trending media for the selected type
-      if (!searchTerm && !genreFilter) {
-        const trendingData = await fetchTrendingMedia(typeFilter);
-        setResults(trendingData);
-        return;
-      }
       const trimmedSearch = (searchTerm || '').trim();
-      const data = trimmedSearch
-        ? await searchAnime(trimmedSearch, typeFilter)
-        : await fetchTrendingMedia(typeFilter, 1, 50);
-      const filtered = genreFilter
-        ? data.filter((anime) => anime.genres && anime.genres.includes(genreFilter))
-        : data;
-      setResults(filtered);
+      
+      const data = await searchAnime(trimmedSearch || null, typeFilter, genreFilter || null, 1, 50);
+      setResults(data);
     } catch (err) {
       setError(err.message || 'Search failed');
     } finally {

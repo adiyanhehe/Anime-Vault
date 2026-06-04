@@ -22,113 +22,24 @@ import { FocusableButton, FocusableLink } from '../components/FocusableWrapper';
 
 const STREAM_SERVERS = [
   {
-    id: "vixsrc",
-    name: "Server 1 • VixSrc",
-    badge: "Recommended",
-    description: "Primary non-VidSrc player for movies and TV episodes.",
+    id: "vidlink",
+    name: "Server 1 • VidLink",
+    badge: "Ad-Free",
+    description: "Premium ad-free server for movies and TV shows.",
     buildUrl: ({ id, isSeries, season, episode }) =>
       isSeries
-        ? `https://vixsrc.to/tv/${id}/${season}/${episode}?primaryColor=ff1a75&secondaryColor=1a0711&autoplay=true`
-        : `https://vixsrc.to/movie/${id}?primaryColor=ff1a75&secondaryColor=1a0711&autoplay=true`,
+        ? `https://vidlink.pro/tv/${id}/${season}/${episode}?primaryColor=ff1a75&autoplay=false`
+        : `https://vidlink.pro/movie/${id}?primaryColor=ff1a75&autoplay=false`,
   },
   {
-    id: "vidnest-movie",
-    name: "Server 2 • VidNest",
-    badge: "AniList/TMDB",
-    description: "VidNest embed with large TMDB library for movies and TV.",
-    buildUrl: ({ id, isSeries, season, episode, isImdb }) => {
-      // VidNest uses TMDB ID by default for TV, but can try with IMDb ID as fallback
-      // Format: https://vidnest.fun/tv/tmdbId/season/episode or /movie/tmdbId
-      return isSeries
-        ? `https://vidnest.fun/tv/${id}/${season}/${episode}`
-        : `https://vidnest.fun/movie/${id}`;
-    },
-  },
-  {
-    id: "2embed-viking",
-    name: "Server 3 • Viking",
-    badge: "2Embed Fix",
-    description:
-      "Direct Viking player fallback so users do not need to pick it inside another embed.",
+    id: "autoembed",
+    name: "Server 2 • AutoEmbed",
+    badge: "Ad-Free",
+    description: "Backup ad-free server.",
     buildUrl: ({ id, isSeries, season, episode }) =>
       isSeries
-        ? `https://vembed.stream/play/${id}_s${season}?episode=${episode}&autoPlay=true&poster=true&controls=true`
-        : `https://vembed.stream/play/${id}?autoPlay=true&poster=true&controls=true`,
-  },
-  {
-    id: "vidsrc-ru",
-    name: "VidSrc RU",
-    badge: "VidSrc Alt",
-    description: "Current VidSrc route using direct movie/tv paths instead of the older embed query URL.",
-    buildUrl: ({ id, isSeries, season, episode }) =>
-      isSeries
-        ? `https://vidsrc.ru/tv/${id}/${season}/${episode}`
-        : `https://vidsrc.ru/movie/${id}`,
-  },
-  {
-    id: "vidsrc-fyi",
-    name: "VidSrc FYI",
-    badge: "Backup",
-    description: "IMDb/TMDB movie and TV embeds with multi-server failover.",
-    buildUrl: ({ id, isSeries, season, episode }) =>
-      isSeries
-        ? `https://vidsrc.fyi/embed/tv/${id}/${season}/${episode}`
-        : `https://vidsrc.fyi/embed/movie/${id}`,
-  },
-  {
-    id: "kickassanime",
-    name: "KickAssAnime",
-    badge: "Extra Anime",
-    description: "KickAssAnime embed with extensive anime and dub collections.",
-    buildUrl: ({ id, isSeries, season, episode, isImdb }) => {
-      // KickAssAnime primarily works with anime IDs, but can sometimes work with TMDB
-      return isSeries
-        ? `https://kickassanime.am/embed/tv/${id}/${season}/${episode}`
-        : `https://kickassanime.am/embed/movie/${id}`;
-    },
-  },
-  {
-    id: "hianime",
-    name: "HiAnime",
-    badge: "Anime Focus",
-    description: "HiAnime embed optimized for anime with strong dub support.",
-    buildUrl: ({ id, isSeries, season, episode }) => {
-      return isSeries
-        ? `https://hianime.to/embed?id=${id}&ep=${episode}&season=${season}`
-        : `https://hianime.to/embed?id=${id}`;
-    },
-  },
-  {
-    id: "vidsrc-cc",
-    name: "VidSrc CC",
-    badge: "Extra",
-    description: "Alternate VidSrc endpoint for titles missing elsewhere.",
-    buildUrl: ({ id, isSeries, season, episode }) =>
-      isSeries
-        ? `https://vidsrc.cc/v2/embed/tv/${id}/${season}/${episode}?autoPlay=true`
-        : `https://vidsrc.cc/v2/embed/movie/${id}?autoPlay=true`,
-  },
-  {
-    id: "multiembed",
-    name: "MultiEmbed",
-    badge: "Extra",
-    description: "Extra provider for IDs unavailable elsewhere.",
-    buildUrl: ({ id, isSeries, season, episode, isImdb }) => {
-      const tmdbFlag = isImdb ? "0" : "1";
-      return isSeries
-        ? `https://multiembed.mov/?video_id=${id}&tmdb=${tmdbFlag}&s=${season}&e=${episode}`
-        : `https://multiembed.mov/?video_id=${id}&tmdb=${tmdbFlag}`;
-    },
-  },
-  {
-    id: "2embed",
-    name: "2Embed",
-    badge: "Last Resort",
-    description: "Original 2Embed mirror kept as a final fallback.",
-    buildUrl: ({ id, isSeries, season, episode }) =>
-      isSeries
-        ? `https://www.2embed.cc/embedtv/${id}?s=${season}&e=${episode}`
-        : `https://www.2embed.cc/embed/${id}`,
+        ? `https://player.autoembed.cc/embed/tv/${id}/${season}/${episode}`
+        : `https://player.autoembed.cc/embed/movie/${id}`,
   },
 ];
 

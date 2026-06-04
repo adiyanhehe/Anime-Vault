@@ -787,7 +787,7 @@ export async function fetchTrendingMedia(
   const query = `
     query ($type: MediaType, $page: Int, $perPage: Int) {
       Page(page: $page, perPage: $perPage) {
-        media(sort: TRENDING_DESC, type: $type) {
+        media(sort: TRENDING_DESC, type: $type, countryOfOrigin: "JP", isAdult: false) {
           id
           idMal
           title { romaji english }
@@ -820,16 +820,35 @@ export async function fetchTrendingMedia(
 export async function searchAnime(
   search,
   type = "ANIME",
+  genre = null,
   page = 1,
-  perPage = 18,
+  perPage = 50,
 ) {
   if (globalFallbackActive) {
     return searchAnimeJikan(search, type, page, perPage);
   }
+
+  let queryArgs = `$type: MediaType, $page: Int, $perPage: Int`;
+  let mediaArgs = `type: $type, sort: POPULARITY_DESC, countryOfOrigin: "JP", isAdult: false`;
+  
+  const variables = { type, page, perPage };
+
+  if (search) {
+    queryArgs += `, $search: String`;
+    mediaArgs += `, search: $search`;
+    variables.search = search;
+  }
+  
+  if (genre) {
+    queryArgs += `, $genre: String`;
+    mediaArgs += `, genre: $genre`;
+    variables.genre = genre;
+  }
+
   const query = `
-    query ($search: String, $type: MediaType, $page: Int, $perPage: Int) {
+    query (${queryArgs}) {
       Page(page: $page, perPage: $perPage) {
-        media(search: $search, type: $type, sort: POPULARITY_DESC) {
+        media(${mediaArgs}) {
           id
           idMal
           title { romaji english native }
@@ -848,7 +867,7 @@ export async function searchAnime(
   `;
 
   try {
-    const data = await postQuery(query, { search, type, page, perPage });
+    const data = await postQuery(query, variables);
     return data.Page.media;
   } catch (err) {
     console.warn(
@@ -942,7 +961,7 @@ export async function fetchAiringAnime(page = 1, perPage = 18) {
   const query = `
     query ($page: Int, $perPage: Int) {
       Page(page: $page, perPage: $perPage) {
-        media(status: RELEASING, type: ANIME, sort: POPULARITY_DESC) {
+        media(status: RELEASING, type: ANIME, sort: POPULARITY_DESC, countryOfOrigin: "JP", isAdult: false) {
           id
           title { romaji english }
           coverImage { large }
@@ -971,7 +990,7 @@ export async function fetchAnimeBySeason(season, year, page = 1, perPage = 12) {
   const query = `
     query ($season: MediaSeason, $year: Int, $page: Int, $perPage: Int) {
       Page(page: $page, perPage: $perPage) {
-        media(season: $season, seasonYear: $year, type: ANIME, sort: POPULARITY_DESC) {
+        media(season: $season, seasonYear: $year, type: ANIME, sort: POPULARITY_DESC, countryOfOrigin: "JP", isAdult: false) {
           id
           title { romaji english }
           coverImage { extraLarge large }
