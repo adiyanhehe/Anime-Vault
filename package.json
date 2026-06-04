@@ -56,7 +56,7 @@
     ],
     "publisherName": "AnimeVault Team",
     "artifactName": "AnimeVault-Windows-${arch}.${ext}",
-    "verifyUpdateCodeSignature": false
+
   },
   "mac": {
     "target": [
