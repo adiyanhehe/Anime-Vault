@@ -45,6 +45,7 @@
     },
     "nsis": {
       "allowToChangeInstallationDirectory": true,
+      "oneClick": false,
       "include": "build/installer.nsh"
     },
     "target": [
