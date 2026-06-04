@@ -15,7 +15,7 @@
     "electron:build": "npm run generate-icons && set ELECTRON=1 && vite build && electron-builder --publish never",
     "predeploy": "npm run build",
     "deploy": "gh-pages -d dist",
-    "android:build": "npm run android:sync && cd android && ./gradlew assembleRelease",
+    "android:build": "npm run android:sync && cd android && chmod +x gradlew && ./gradlew assembleRelease",
     "android:build:win": "npm run android:sync && cd android && gradlew assembleRelease",
     "electron:release": "npm run generate-icons && cross-env ELECTRON=1 vite build && electron-builder --publish always",
     "electron:build:win": "npm run generate-icons && set ELECTRON=1 && vite build && electron-builder --win --publish never",
@@ -23,7 +23,7 @@
     "electron:build:linux": "npm run generate-icons && cross-env ELECTRON=1 vite build && electron-builder --linux --publish never",
     "android:sync": "npm run build && npx cap sync android",
     "android:ensure": "npx cap add android || echo 'Android already added'",
-    "android:mobile": "npm run generate-icons && vite build --config vite.mobile.config.js && npx cap sync android && cd android && ./gradlew assembleRelease"
+    "android:mobile": "npm run generate-icons && vite build --config vite.mobile.config.js && npx cap sync android && cd android && chmod +x gradlew && ./gradlew assembleRelease"
   },
   "build": {
     "appId": "com.animevault.app",
@@ -46,8 +46,7 @@
         }
       ],
       "publisherName": "AnimeVault Team",
-      "artifactName": "AnimeVault-Windows-${arch}.${ext}",
-      "sign": false
+      "artifactName": "AnimeVault-Windows-${arch}.${ext}"
     },
     "mac": {
       "target": [
