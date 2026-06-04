@@ -221,8 +221,11 @@ jobs:
               --latest
           fi
           
-          # Upload files (--clobber replaces existing files)
-          gh release upload "${RELEASE_TAG}" "${files[@]}" --clobber
+          # Delete existing Info.plist if present to avoid duplicate errors
+          existing_ids=$(gh release view "${RELEASE_TAG}" --json assets --jq '.assets[] | select(.name=="Info.plist") | .id')
+          for id in $existing_ids; do
+            gh api -X DELETE "repos/${GITHUB_REPOSITORY}/releases/assets/${id}"
+          done
           
           echo "✅ Successfully published ${#files[@]} files to ${RELEASE_TAG}"
         env:
