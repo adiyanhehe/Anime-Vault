@@ -120,7 +120,7 @@ function App() {
             {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
           <FocusableLink to="/" className="brand" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <img src="https://github.com/animevaultofficial/animevaultofficial.github.io/blob/main/logo.png" alt="AnimeVault" style={{ height: 40, width: 'auto' }} />
+            <img src="/src/logo.png" alt="l" style={{ height: 40, width: 'auto' }} />
             <span>AnimeVault</span>
           </FocusableLink>
         </div>
