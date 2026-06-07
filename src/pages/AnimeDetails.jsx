@@ -149,7 +149,7 @@ const EMBED_SERVERS = [
 
 function AnimeDetails() {
   const { id } = useParams();
-  const { user, addToHistory, toggleLike, isLiked } = useUser();
+  const { user, addToHistory, toggleLike, isLiked, setShowAuthModal, setAuthTab } = useUser();
 
   const [anime, setAnime] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -178,7 +178,7 @@ function AnimeDetails() {
 
   // ───── Probe mirrors once per session (fire-and-forget) ─────
   useEffect(() => {
-    probeMirrors().catch(() => { });
+    probeMirrors().catch(() => {});
   }, []);
 
   // ───── Main data load ─────
@@ -211,10 +211,12 @@ function AnimeDetails() {
         const epList = buildEpisodeList(media);
         setEpisodes(epList);
 
-        // Resume from last watched episode, else start at 1
-        const lastWatched = JSON.parse(localStorage.getItem(PROGRESS_KEY) || '{}')[media.id];
-        const startEp = epList.find(e => e.number === lastWatched) || epList[0];
-        setCurrentEpisode(startEp || null);
+        // Only set current episode if user is logged in
+        if (user) {
+          const lastWatched = JSON.parse(localStorage.getItem(PROGRESS_KEY) || '{}')[media.id];
+          const startEp = epList.find(e => e.number === lastWatched) || epList[0];
+          setCurrentEpisode(startEp || null);
+        }
 
         // Done — page is interactive immediately
         setLoading(false);
@@ -229,7 +231,7 @@ function AnimeDetails() {
         localStorage.setItem(RECENTS_KEY, JSON.stringify(updated));
 
         // ── Background: Consumet enrichment ──
-        enrichWithConsumer(media, epList).catch(() => { });
+        enrichWithConsumer(media, epList).catch(() => {});
       } catch (err) {
         setError(err.message || 'Failed to load anime details.');
       } finally {
@@ -319,6 +321,11 @@ function AnimeDetails() {
 
   // ───── Episode selection ─────
   function selectEpisode(ep) {
+    if (!user) {
+      setAuthTab('login');
+      setShowAuthModal(true);
+      return;
+    }
     setCurrentEpisode(ep);
     setVideoSources([]);
     setPlayerStatus('');
@@ -425,7 +432,21 @@ function AnimeDetails() {
 
       {/* ── Video Player ── */}
       <div className="player-section-v2">
-        {currentEpisode ? (
+        {!user ? (
+          <div className="video-player-error">
+            <PlayCircle size={48} />
+            <p>Login required to watch!</p>
+            <button
+              className="btn-play-v2"
+              onClick={() => {
+                setAuthTab('login');
+                setShowAuthModal(true);
+              }}
+            >
+              Login Now
+            </button>
+          </div>
+        ) : currentEpisode ? (
           <VideoPlayer
             sources={[]}
             poster={anime.bannerImage || anime.coverImage?.extraLarge}
@@ -442,7 +463,7 @@ function AnimeDetails() {
         )}
 
         {/* Player status message */}
-        {playerStatus && (
+        {user && playerStatus && (
           <div className="player-status-bar">
             <AlertCircle size={14} />
             <span>{playerStatus}</span>
@@ -450,7 +471,7 @@ function AnimeDetails() {
         )}
 
         {/* Fallback External Link for broken iframes */}
-        {embedUrl && (
+        {user && embedUrl && (
           <div style={{ display: 'flex', justifyContent: 'center', margin: '1rem 0' }}>
             <a
               href={embedUrl}
@@ -486,8 +507,29 @@ function AnimeDetails() {
           </div>
         )}
 
+        {user && anime && (
+          <div style={{ display: 'flex', justifyContent: 'center', margin: '1rem 0' }}>
+            <button 
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: '8px',
+                color: isLiked(anime.id, 'anime') ? '#ff1a75' : 'var(--text-secondary)',
+                borderColor: isLiked(anime.id, 'anime') ? '#ff1a75' : 'var(--glass-border)',
+                background: isLiked(anime.id, 'anime') ? 'rgba(255,26,117,0.1)' : 'var(--glass)',
+                boxShadow: isLiked(anime.id, 'anime') ? '0 0 10px rgba(255,26,117,0.2)' : 'none',
+                transition: 'all 0.2s ease', cursor: 'pointer',
+                padding: '0.75rem 1.5rem', borderRadius: '8px', border: '1px solid',
+                fontWeight: '600', fontSize: '0.9rem'
+              }}
+              onClick={() => toggleLike(anime.id, 'anime', safeTitle(anime.title), anime.coverImage?.large)}
+            >
+              <Heart size={20} fill={isLiked(anime.id, 'anime') ? '#ff1a75' : 'none'} /> 
+              {isLiked(anime.id, 'anime') ? 'Remove from Favorites' : 'Add to Favorites'}
+            </button>
+          </div>
+        )}
+
         {/* ── Language Selector ── */}
-        {currentEpisode && (
+        {user && currentEpisode && (
           <div className="server-selector-v2">
             <div className="server-info">
               <Tv size={20} />
@@ -556,7 +598,7 @@ function AnimeDetails() {
                     background: language === lang ? 'var(--brand-color)' : 'var(--glass)',
                     color: language === lang ? '#fff' : 'var(--text-secondary)',
                     borderColor: language === lang ? 'var(--brand-color)' : 'var(--glass-border)',
-                    boxShadow: language === lang ? '0 0 10px rgba(255, 26, 117, 0.4)' : 'none',
+                    boxShadow: language === lang ? '0 0 10px rgba(255,26,117,0.4)' : 'none',
                     transition: 'all 0.2s ease',
                     borderRadius: '6px',
                     cursor: 'pointer',
@@ -600,7 +642,7 @@ function AnimeDetails() {
             </div>
             <h1 className="detail-title-v2">
             {animeTitle}
-            <small style={{fontSize: '0.6em', marginLeft: '0.5rem', color: 'var(--text-secondary)'}}>
+            <small style={{ fontSize: '0.6em', marginLeft: '0.5rem', color: 'var(--text-secondary)' }}>
               watching in anime vault
             </small>
           </h1>
@@ -608,6 +650,11 @@ function AnimeDetails() {
               <button
                 className="btn-play-v2"
                 onClick={() => {
+                  if (!user) {
+                    setAuthTab('login');
+                    setShowAuthModal(true);
+                    return;
+                  }
                   if (episodes.length > 0) selectEpisode(episodes[0]);
                 }}
               >
@@ -619,8 +666,8 @@ function AnimeDetails() {
                   display: 'inline-flex', alignItems: 'center', gap: '8px',
                   color: isLiked(anime.id, 'anime') ? '#ff1a75' : 'var(--text-secondary)',
                   borderColor: isLiked(anime.id, 'anime') ? '#ff1a75' : 'var(--glass-border)',
-                  background: isLiked(anime.id, 'anime') ? 'rgba(255, 26, 117, 0.1)' : 'var(--glass)',
-                  boxShadow: isLiked(anime.id, 'anime') ? '0 0 10px rgba(255, 26, 117, 0.2)' : 'none',
+                  background: isLiked(anime.id, 'anime') ? 'rgba(255,26,117,0.1)' : 'var(--glass)',
+                  boxShadow: isLiked(anime.id, 'anime') ? '0 0 10px rgba(255,26,117,0.2)' : 'none',
                   transition: 'all 0.2s ease', cursor: 'pointer'
                 }}
                 onClick={() => toggleLike(anime.id, 'anime', safeTitle(anime.title), anime.coverImage?.large)}

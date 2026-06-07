@@ -1,30 +1,44 @@
+
 import { useState, useEffect } from 'react';
 import { NavLink, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
-import { 
-  Search as SearchIcon, Info, Home as HomeIcon, Tv as TvIcon, 
-  AlertTriangle, User, Sparkles
+import {
+  Search as SearchIcon, Info, Home as HomeIcon, Tv as TvIcon,
+  AlertTriangle, User, Sparkles, Menu, X, Bell, Download as DownloadIcon
 } from 'lucide-react';
+import './styles/designTokens.css';
+import { useUser } from './api/UserContext';
+import { fetchSiteSettings } from './api/db';
+import { initializeDatabase } from './api/database';
+import { FocusableNavLink, FocusableLink, FocusableButton } from './components/FocusableWrapper';
+import RequireAuth from './components/RequireAuth';
 import Home from './pages/Home';
 import Search from './pages/Search';
+import AnimeHome from './pages/AnimeHome';
 import AnimeDetails from './pages/AnimeDetails';
+import MangaHome from './pages/MangaHome';
 import MangaDetails from './pages/MangaDetails';
 import DramasMovies from './pages/DramasMovies';
 import MovieWatch from './pages/MovieWatch';
 import About from './pages/About';
-import Profile from './pages/Profile';
-import UserProfile from './pages/UserProfile';
-import AdminDashboard from './pages/AdminDashboard';
 import { Contact, FAQ, Terms, Privacy, DMCA, RequestAnime } from './pages/StaticPages';
 import Download from './pages/Download';
 import NotFound from './pages/NotFound';
-
 import Footer from './components/Footer';
 import AuthModal from './components/AuthModal';
 import ProfileModal from './components/ProfileModal';
 import UpdateCenter from './components/UpdateCenter';
-import { useUser } from './api/UserContext';
-import { fetchSiteSettings } from './api/db';
-import { FocusableNavLink, FocusableLink, FocusableButton } from './components/FocusableWrapper';
+import Profile from './pages/Profile';
+import UserProfile from './pages/UserProfile';
+import RequireAdmin from './components/RequireAdmin';
+import AdminDashboard from './pages/AdminDashboard';
+import Schedule from './pages/Schedule';
+import Collections from './pages/Collections';
+import Stats from './pages/Stats';
+import Notifications from './pages/Notifications';
+
+// duplicate import removed
+import AdminNav from './components/AdminNav';
+
 
 function App() {
   const { user, setShowAuthModal, setAuthTab } = useUser();
@@ -32,6 +46,7 @@ function App() {
   const [announcement, setAnnouncement] = useState('');
   const [maintenanceMode, setMaintenanceMode] = useState(false);
   const [topbarQuery, setTopbarQuery] = useState('');
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -40,6 +55,8 @@ function App() {
   useEffect(() => {
     async function loadSettings() {
       try {
+        // Initialize database first
+        await initializeDatabase();
         const settings = await fetchSiteSettings();
         if (settings.announcement) setAnnouncement(settings.announcement);
         if (settings.maintenance === 'true') setMaintenanceMode(true);
@@ -73,9 +90,9 @@ function App() {
 
 
   if (maintenanceMode && (!user || !user.is_admin)) {
-  console.warn('Maintenance mode active - displaying site normally');
-  // Optionally show a banner or notification here
-}
+    console.warn('Maintenance mode active - displaying site normally');
+    // Optionally show a banner or notification here
+  }
 
 
   return (
@@ -94,60 +111,76 @@ function App() {
         </div>
       )}
 
-      {/* ... header ... */}
+      {/* ... header with hamburger menu ... */}
       <header className="topbar">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-          <FocusableLink to="/" className="brand">AnimeVault</FocusableLink>
-          <div className="made-by-v2">
-            made with <span>🔥</span> by Adiyan
-          </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <button className="hamburger-btn" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} style={{
+            background: 'transparent', border: 'none', color: 'white', cursor: 'pointer', display: 'flex'
+          }}>
+            {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
+          <FocusableLink to="/" className="brand" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <img src="/logo.png" alt="AnimeVault" style={{ height: 40, width: 'auto' }} />
+            <span>AnimeVault</span>
+          </FocusableLink>
         </div>
+        
         <nav className="topnav">
-          <FocusableNavLink
-            to="/"
-            end
-            className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}
-          >
-            Home
-          </FocusableNavLink>
-          <FocusableNavLink
-            to="/search?type=ANIME"
-            className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}
-          >
-            Animes
-          </FocusableNavLink>
-          <FocusableNavLink
-            to="/search?type=MANGA"
-            className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}
-          >
-            Mangas
-          </FocusableNavLink>
-          <FocusableNavLink
-            to="/dramas-movies"
-            className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}
-          >
-            Dramas & Movies
-          </FocusableNavLink>
-          <FocusableNavLink
-            to="/search?trending=true"
-            className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}
-          >
-            Trending
-          </FocusableNavLink>
-          <FocusableNavLink
-            to="/about"
-            className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}
-            style={{ display: 'flex', alignItems: 'center', gap: '4px' }}
-          >
-            <Info size={16} /> About
-          </FocusableNavLink>
-          <FocusableNavLink
-            to="/download"
-            className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}
-          >
-            Download
-          </FocusableNavLink>
-        </nav>
+           <FocusableNavLink
+             to="/"
+             className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}
+           >
+             Home
+           </FocusableNavLink>
+           <FocusableNavLink
+             to="/anime"
+             className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}
+           >
+             Anime
+           </FocusableNavLink>
+           <FocusableNavLink
+             to="/dramas-movies"
+             className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}
+           >
+             Dramas & Movies
+           </FocusableNavLink>
+           <FocusableNavLink
+             to="/schedule"
+             className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}
+           >
+             Schedule
+           </FocusableNavLink>
+           <FocusableNavLink
+             to="/collections"
+             className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}
+           >
+             Collections
+           </FocusableNavLink>
+           <FocusableNavLink
+             to="/stats"
+             className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}
+           >
+             Stats
+           </FocusableNavLink>
+           <FocusableNavLink
+             to="/notifications"
+             className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}
+           >
+             <div style={{ display: "flex", alignItems: "center", gap: "0.3rem" }}>
+               <Bell size={16} />
+               Notifications
+             </div>
+           </FocusableNavLink>
+           <FocusableNavLink
+             to="/download"
+             className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}
+           >
+             <div style={{ display: "flex", alignItems: "center", gap: "0.3rem" }}>
+               <DownloadIcon size={16} />
+               Download
+             </div>
+           </FocusableNavLink>
+         </nav>
         <div className="topbar-actions" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <form className="topbar-search-form" onSubmit={handleTopbarSearch} role="search">
             <SearchIcon size={18} aria-hidden="true" />
@@ -189,14 +222,100 @@ function App() {
         </div>
       </header>
 
+      {/* Mobile Side Menu */}
+      {isMobileMenuOpen && (
+        <div className="mobile-menu-overlay" onClick={() => setIsMobileMenuOpen(false)}>
+          <div className="mobile-menu" onClick={(e) => e.stopPropagation()}>
+            <FocusableNavLink
+              to="/"
+              onClick={() => setIsMobileMenuOpen(false)}
+              className={({ isActive }) => (isActive ? 'mobile-nav-link active' : 'mobile-nav-link')}
+            >
+              <HomeIcon size={18} />
+              <span>Home</span>
+            </FocusableNavLink>
+            <FocusableNavLink
+              to="/anime"
+              onClick={() => setIsMobileMenuOpen(false)}
+              className={({ isActive }) => (isActive ? 'mobile-nav-link active' : 'mobile-nav-link')}
+            >
+              Anime
+            </FocusableNavLink>
+            <FocusableNavLink
+              to="/dramas-movies"
+              onClick={() => setIsMobileMenuOpen(false)}
+              className={({ isActive }) => (isActive ? 'mobile-nav-link active' : 'mobile-nav-link')}
+            >
+              <TvIcon size={18} />
+              <span>Dramas & Movies</span>
+            </FocusableNavLink>
+            <FocusableNavLink
+              to="/schedule"
+              onClick={() => setIsMobileMenuOpen(false)}
+              className={({ isActive }) => (isActive ? 'mobile-nav-link active' : 'mobile-nav-link')}
+            >
+              Schedule
+            </FocusableNavLink>
+            <FocusableNavLink
+              to="/collections"
+              onClick={() => setIsMobileMenuOpen(false)}
+              className={({ isActive }) => (isActive ? 'mobile-nav-link active' : 'mobile-nav-link')}
+            >
+              Collections
+            </FocusableNavLink>
+            <FocusableNavLink
+              to="/stats"
+              onClick={() => setIsMobileMenuOpen(false)}
+              className={({ isActive }) => (isActive ? 'mobile-nav-link active' : 'mobile-nav-link')}
+            >
+              Stats
+            </FocusableNavLink>
+            <FocusableNavLink
+              to="/notifications"
+              onClick={() => setIsMobileMenuOpen(false)}
+              className={({ isActive }) => (isActive ? 'mobile-nav-link active' : 'mobile-nav-link')}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <Bell size={18} />
+                <span>Notifications</span>
+              </div>
+            </FocusableNavLink>
+            <FocusableNavLink
+              to="/download"
+              onClick={() => setIsMobileMenuOpen(false)}
+              className={({ isActive }) => (isActive ? 'mobile-nav-link active' : 'mobile-nav-link')}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <DownloadIcon size={18} />
+                <span>Download</span>
+              </div>
+            </FocusableNavLink>
+            <FocusableNavLink
+              to="/about"
+              onClick={() => setIsMobileMenuOpen(false)}
+              className={({ isActive }) => (isActive ? 'mobile-nav-link active' : 'mobile-nav-link')}
+            >
+              <Info size={18} />
+              <span>About</span>
+            </FocusableNavLink>
+          </div>
+        </div>
+      )}
+
       <main className="content">
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/search" element={<Search />} />
+          <Route path="/anime" element={<AnimeHome />} />
           <Route path="/anime/:id" element={<AnimeDetails />} />
+          <Route path="/manga" element={<MangaHome />} />
           <Route path="/manga/:id" element={<MangaDetails />} />
           <Route path="/dramas-movies" element={<DramasMovies />} />
-          <Route path="/watch/:type/:id" element={<MovieWatch />} />
+          <Route path="/watch/:type/:id" element={<RequireAuth><MovieWatch /></RequireAuth>} />
+          <Route path="/schedule" element={<Schedule />} />
+          <Route path="/collections" element={<RequireAuth><Collections /></RequireAuth>} />
+          <Route path="/stats" element={<RequireAuth><Stats /></RequireAuth>} />
+          <Route path="/notifications" element={<RequireAuth><Notifications /></RequireAuth>} />
           <Route path="/about" element={<About />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/faq" element={<FAQ />} />
@@ -204,10 +323,10 @@ function App() {
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/dmca" element={<DMCA />} />
           <Route path="/request" element={<RequestAnime />} />
-          <Route path="/profile" element={<Profile />} />
+          <Route path="/profile" element={<RequireAuth><Profile /></RequireAuth>} />
           <Route path="/user/:username" element={<UserProfile />} />
-          <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/download" element={<Download />} />
+          <Route path="/admin/*" element={<RequireAdmin><AdminDashboard /></RequireAdmin>} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </main>
@@ -225,11 +344,11 @@ function App() {
           <span>Home</span>
         </NavLink>
         <NavLink
-          to="/search"
+          to="/anime"
           className={({ isActive }) => (isActive ? 'bottom-nav-link active' : 'bottom-nav-link')}
         >
-          <SearchIcon size={20} />
-          <span>Search</span>
+          <span style={{ fontSize: '0.8rem', fontWeight: 'bold' }}>アニメ</span>
+          <span>Anime</span>
         </NavLink>
         <NavLink
           to="/dramas-movies"
@@ -239,11 +358,11 @@ function App() {
           <span>Dramas</span>
         </NavLink>
         <NavLink
-          to="/about"
+          to="/search"
           className={({ isActive }) => (isActive ? 'bottom-nav-link active' : 'bottom-nav-link')}
         >
-          <Info size={20} />
-          <span>About</span>
+          <SearchIcon size={20} />
+          <span>Search</span>
         </NavLink>
       </nav>
       
@@ -251,6 +370,64 @@ function App() {
       <AuthModal />
       <UpdateCenter />
       <ProfileModal isOpen={isProfileOpen} onClose={() => setIsProfileOpen(false)} />
+
+      <style>{`
+        .mobile-menu-overlay {
+          position: fixed;
+          inset: 0;
+          background: rgba(0, 0, 0, 0.7);
+          z-index: 1000;
+          display: flex;
+          justify-content: flex-start;
+        }
+        .mobile-menu {
+          width: 75%;
+          max-width: 300px;
+          background: rgba(15, 23, 42, 0.98);
+          padding: 2rem 1.5rem;
+          display: flex;
+          flex-direction: column;
+          gap: 0.75rem;
+          border-right: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .mobile-nav-link {
+          padding: 0.75rem 1rem;
+          border-radius: 8px;
+          color: #94a3b8;
+          text-decoration: none;
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+          transition: all 0.2s ease;
+          font-weight: 600;
+        }
+        .mobile-nav-link:hover {
+          background: rgba(255, 255, 255, 0.05);
+          color: white;
+        }
+        .mobile-nav-link.active {
+          background: rgba(255, 26, 117, 0.15);
+          border: 1px solid rgba(255, 26, 117, 0.3);
+          color: #ff1a75;
+        }
+        .hamburger-btn {
+          display: none;
+        }
+        @media (max-width: 1024px) {
+          .hamburger-btn {
+            display: block;
+          }
+          .topnav {
+            display: none !important;
+          }
+          .topbar-search-form input {
+            display: none;
+          }
+          .topbar-search-form {
+            padding: 8px;
+          }
+        }
+      `}</style>
     </div>
   );
 }

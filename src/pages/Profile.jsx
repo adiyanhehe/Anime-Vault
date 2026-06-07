@@ -6,24 +6,31 @@ import {
 import { useUser } from '../api/UserContext';
 import { Link, useNavigate } from 'react-router-dom';
 import { fetchTrendingMedia } from '../api/anilist';
+import { getRecommended } from '../api/movies';
 
-// Sleek and modern presets for profile customization
+// Anime-themed presets for profile customization
 const PRESET_BANNERS = [
-  { name: 'Neon Cyberpunk', url: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&w=1200&q=80' },
-  { name: 'Retro Synthwave', url: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1200&q=80' },
-  { name: 'Sakura Blossoms', url: 'https://images.unsplash.com/photo-1522441815192-d9f04eb0615c?auto=format&fit=crop&w=1200&q=80' },
-  { name: 'Deep Nebula', url: 'https://images.unsplash.com/photo-1462331940025-496dfbfc7564?auto=format&fit=crop&w=1200&q=80' }
+  { name: 'Anime Landscape', url: 'https://images.unsplash.com/photo-1614728263952-c834c7302501?auto=format&fit=crop&w=1200&q=80' },
+  { name: 'Cherry Blossom', url: 'https://images.unsplash.com/photo-1522383225653-ed111181a951?auto=format&fit=crop&w=1200&q=80' },
+  { name: 'Night City', url: 'https://images.unsplash.com/photo-1503899036084-c55cdd92da26?auto=format&fit=crop&w=1200&q=80' },
+  { name: 'Sunset View', url: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=1200&q=80' }
 ];
 
 const PRESET_AVATARS = [
-  { name: 'Cyber Hunter', url: 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?auto=format&fit=crop&w=150&h=150&q=80' },
-  { name: 'Mech Pilot', url: 'https://images.unsplash.com/photo-1566492031773-4f4e44671857?auto=format&fit=crop&w=150&h=150&q=80' },
-  { name: 'Gamer Vibe', url: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&h=150&q=80' },
-  { name: 'Cat Companion', url: 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?auto=format&fit=crop&w=150&h=150&q=80' }
+  { name: 'Cute Anime', url: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?auto=format&fit=crop&w=150&h=150&q=80' },
+  { name: 'Manga Style', url: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=150&h=150&q=80' },
+  { name: 'Cosplay', url: 'https://images.unsplash.com/photo-1580480055273-228ff5388ef8?auto=format&fit=crop&w=150&h=150&q=80' },
+  { name: 'Art Style', url: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=150&h=150&q=80' }
 ];
 
-const DEFAULT_BANNER = 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=1200&q=80';
-const DEFAULT_AVATAR = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&h=150&q=80';
+const DEFAULT_BANNER = '';
+// Path to the AnimeVault logo placed in the project's public root (e.g., C:/Anime-Vault/public/logo.png)
+const DEFAULT_AVATAR = '/logo.png';
+// Generate a random hex color for banner fallback
+function getRandomBannerColor() {
+  return `#${Math.floor(Math.random() * 0xffffff).toString(16).padStart(6, '0')}`;
+}
+const RANDOM_BANNER_COLOR = getRandomBannerColor();
 
 export default function Profile() {
   const { user, history, likes, continueWatching, logout, clearHistory, updateProfile } = useUser();
@@ -55,10 +62,27 @@ export default function Profile() {
     async function loadRecs() {
       setLoadingRecs(true);
       try {
-        const trending = await fetchTrendingMedia('ANIME', 1, 8);
-        setRecommendations(trending || []);
+        const [animeRecs, movieRecs] = await Promise.all([
+          fetchTrendingMedia('ANIME', 1, 20), // increase to 20 anime trends
+          getRecommended(200), // 200 recommendations for longer list
+        ]);
+        // Merge and de-duplicate by unique id (media_id or id)
+        const combined = [...animeRecs, ...movieRecs];
+        const uniqueMap = new Map();
+        combined.forEach(item => {
+          const uid = item.media_id || item.id || item.imdb_id;
+          if (!uniqueMap.has(uid)) uniqueMap.set(uid, item);
+        });
+        // Sort by rating if available, otherwise keep order
+        const sorted = Array.from(uniqueMap.values()).sort((a, b) => {
+          const ra = a.rating ?? 0;
+          const rb = b.rating ?? 0;
+          return rb - ra;
+        });
+        setRecommendations(sorted);
       } catch (err) {
-        console.error('Failed to load recommended anime:', err);
+        console.error('Failed to load recommendations:', err);
+        setRecommendations([]);
       } finally {
         setLoadingRecs(false);
       }
@@ -80,6 +104,17 @@ export default function Profile() {
     }
   };
 
+  const getPosterUrl = (item, type = 'card') => {
+    if (item.media_poster && item.media_poster.trim() !== '') return item.media_poster;
+    if (item.coverImage && item.coverImage.large) return item.coverImage.large;
+    if (item.media_type === 'movie' || item.media_type === 'series' || item.media_type === 'tv') {
+      return `https://live.metahub.space/poster/medium/${item.media_id}/img`;
+    }
+    if (type === 'list') return 'https://placehold.co/45x64/1a1a2e/ff1a75.png?text=No+Img';
+    if (type === 'poster') return 'https://placehold.co/140x210/1a1a2e/ff1a75.png?text=No+Image';
+    return 'https://placehold.co/300x169/1a1a2e/ff1a75.png?text=No+Image';
+  };
+
   if (!user) return null;
 
   return (
@@ -94,12 +129,16 @@ export default function Profile() {
         overflow: 'hidden', border: '1px solid rgba(255, 26, 117, 0.2)',
         boxShadow: '0 10px 40px rgba(0,0,0,0.5)', background: '#0a0a14'
       }}>
-        <img 
-          src={bannerUrl || DEFAULT_BANNER} 
-          alt="User Profile Banner" 
-          style={{ width: '100%', height: '100%', objectFit: 'cover', filter: isEditing ? 'brightness(0.6)' : 'none', transition: 'all 0.3s ease' }}
-          onError={(e) => { e.target.src = DEFAULT_BANNER; }}
-        />
+        {bannerUrl ? (
+  <img
+    src={bannerUrl}
+    alt="User Profile Banner"
+    style={{ width: '100%', height: '100%', objectFit: 'cover', filter: isEditing ? 'brightness(0.6)' : 'none', transition: 'all 0.3s ease' }}
+    onError={() => {}}
+  />
+) : (
+  <div style={{ width: '100%', height: '100%', background: RANDOM_BANNER_COLOR }} />
+)}
         
         {isEditing && (
           <div style={{
@@ -202,24 +241,7 @@ export default function Profile() {
           </p>
         </div>
 
-        {/* Admin Command Quick Link */}
-        {user.is_admin && (
-          <Link 
-            to="/admin" 
-            style={{
-              padding: '12px 24px', background: 'rgba(255, 215, 0, 0.1)',
-              border: '1px solid rgba(255, 215, 0, 0.3)', color: '#ffd700',
-              fontSize: '0.85rem', fontWeight: '800', borderRadius: '12px',
-              textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '8px',
-              transition: 'all 0.2s ease', marginBottom: '10px',
-              boxShadow: '0 4px 15px rgba(255,215,0,0.1)'
-            }}
-            onMouseEnter={e => e.currentTarget.style.background = 'rgba(255, 215, 0, 0.2)'}
-            onMouseLeave={e => e.currentTarget.style.background = 'rgba(255, 215, 0, 0.1)'}
-          >
-            <Sparkles size={16} /> Admin Console
-          </Link>
-        )}
+
 
         {/* Logout Quick Trigger */}
         <button 
@@ -442,7 +464,7 @@ export default function Profile() {
                       
                       {/* Image Thumbnail wrapper */}
                       <div style={{ position: 'relative', aspectRatio: '16/9', overflow: 'hidden' }}>
-                        <img src={item.media_poster} alt={item.media_title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        <img src={getPosterUrl(item, 'card')} alt={item.media_title} onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = 'https://placehold.co/300x169/1a1a2e/ff1a75.png?text=No+Image'; }} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         <div style={{
                           position: 'absolute', bottom: '8px', right: '8px', background: 'rgba(0,0,0,0.85)',
                           padding: '3px 8px', borderRadius: '5px', fontSize: '0.65rem', fontWeight: '900', color: 'var(--brand-color)'
@@ -505,7 +527,7 @@ export default function Profile() {
                     }} onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.04)'; e.currentTarget.style.borderColor = 'var(--brand-color)'; }}
                        onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.04)'; }}>
                       
-                      <img src={item.media_poster} alt={item.media_title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      <img src={getPosterUrl(item, 'poster')} alt={item.media_title} onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = 'https://placehold.co/140x210/1a1a2e/ff1a75.png?text=No+Image'; }} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                       
                       <div style={{
                         position: 'absolute', top: '10px', left: '10px', background: 'rgba(0,0,0,0.7)',
@@ -547,7 +569,7 @@ export default function Profile() {
                   }} onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.borderColor = 'rgba(255, 26, 117, 0.2)'; }}
                      onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.02)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.04)'; }}>
                     
-                    <img src={item.media_poster} alt={item.media_title} style={{ width: '45px', height: '64px', borderRadius: '8px', objectFit: 'cover', flexShrink: 0 }} />
+                    <img src={getPosterUrl(item, 'list')} alt={item.media_title} onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = 'https://placehold.co/45x64/1a1a2e/ff1a75.png?text=No+Img'; }} style={{ width: '45px', height: '64px', borderRadius: '8px', objectFit: 'cover', flexShrink: 0 }} />
                     
                     <div style={{ flex: 1 }}>
                       <h4 style={{ margin: 0, fontSize: '0.9rem', fontWeight: '800', color: '#fff' }}>{item.media_title}</h4>
@@ -592,9 +614,9 @@ export default function Profile() {
                 <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Matching dynamic trending recommendations...</span>
               </div>
             ) : (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '20px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '20px', maxHeight: '80vh', overflowY: 'auto' }}>
                 {recommendations.map((item, idx) => (
-                  <Link key={idx} to={`/anime/${item.id}`} style={{ textDecoration: 'none' }}>
+                  <Link key={idx} to={item.media_type === 'movie' || item.media_type === 'series' || item.media_type === 'tv' ? `/watch/${item.media_type}/${item.media_id || item.id}` : `/anime/${item.id}`} style={{ textDecoration: 'none' }}>
                     <div style={{
                       position: 'relative', borderRadius: '14px', overflow: 'hidden',
                       aspectRatio: '2/3', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)',
@@ -602,7 +624,7 @@ export default function Profile() {
                     }} onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.borderColor = 'var(--brand-color)'; }}
                        onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.04)'; }}>
                       
-                      <img src={item.coverImage?.large} alt={item.title?.romaji} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      <img src={getPosterUrl(item, 'card')} alt={item.media_title || item.title?.romaji} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                       
                       <div style={{
                         position: 'absolute', bottom: 0, left: 0, width: '100%',
@@ -610,7 +632,7 @@ export default function Profile() {
                         padding: '12px 10px 10px', fontSize: '0.75rem', fontWeight: '800', color: '#fff',
                         textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
                       }}>
-                        {item.title?.romaji}
+                        {item.media_title || item.title?.romaji}
                       </div>
                     </div>
                   </Link>

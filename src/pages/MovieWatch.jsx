@@ -50,7 +50,7 @@ function MovieWatch() {
         id,
         type,
         meta.name || meta.title,
-        meta.poster_path ? `https://image.tmdb.org/t/p/w500${meta.poster_path}` : ""
+        meta.poster || (meta.poster_path ? `https://image.tmdb.org/t/p/w500${meta.poster_path}` : "")
       );
     }
   }, [user, meta, id, type]);
@@ -58,7 +58,7 @@ function MovieWatch() {
   // Sync continue watching progress
   useEffect(() => {
     if (user && meta) {
-      const poster = meta.poster_path ? `https://image.tmdb.org/t/p/w500${meta.poster_path}` : "";
+      const poster = meta.poster || (meta.poster_path ? `https://image.tmdb.org/t/p/w500${meta.poster_path}` : "");
       updateContinueWatching(
         id,
         type,

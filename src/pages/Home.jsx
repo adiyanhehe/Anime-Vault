@@ -44,7 +44,7 @@ const CLASSROOM_OF_THE_ELITE_BANNER =
 
 const FEATURED_SLIDE_FALLBACKS = [
   {
-    id: 144192,
+    id: 180745,
     idMal: 54968,
     title: {
       english: "Classroom of the Elite Season 3",
@@ -177,9 +177,10 @@ function Home() {
   const [selectedSeason, setSelectedSeason] = useState("SPRING");
   const [selectedYear, setSelectedYear] = useState(2024);
 
-  const [favorites, setFavorites] = useState(() =>
-    JSON.parse(localStorage.getItem("animevault_favorites") || "[]"),
+  const [favoritesData, setFavoritesData] = useState(() =>
+    JSON.parse(localStorage.getItem("animevault_favorites") || '{"animes":[],"studios":[],"characters":[]}'),
   );
+  const favorites = favoritesData.animes || [];
   const [activeSlide, setActiveSlide] = useState(0);
   const navigate = useNavigate();
 
@@ -237,10 +238,14 @@ function Home() {
   const trending = animeList.slice(0, 12);
 
   function toggleFavorite(anime) {
-    setFavorites((current) => {
-      const next = current.some((item) => item.id === anime.id)
-        ? current.filter((item) => item.id !== anime.id)
-        : [...current, { id: anime.id, title: getTitle(anime) }];
+    setFavoritesData((current) => {
+      const isFav = (current.animes || []).some((item) => item.id === anime.id);
+      const next = {
+        ...current,
+        animes: isFav
+          ? (current.animes || []).filter((item) => item.id !== anime.id)
+          : [...(current.animes || []), { id: anime.id, title: getTitle(anime), image: getImage(anime) }],
+      };
       localStorage.setItem("animevault_favorites", JSON.stringify(next));
       return next;
     });

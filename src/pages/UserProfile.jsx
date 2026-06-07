@@ -58,6 +58,17 @@ export default function UserProfile() {
 
   const { user, likes, history, continueWatching } = profileData;
 
+  const getPosterUrl = (item, type = 'card') => {
+    if (item.media_poster && item.media_poster.trim() !== '') return item.media_poster;
+    if (item.coverImage && item.coverImage.large) return item.coverImage.large;
+    if (item.media_type === 'movie' || item.media_type === 'series' || item.media_type === 'tv') {
+      return `https://live.metahub.space/poster/medium/${item.media_id}/img`;
+    }
+    if (type === 'list') return 'https://placehold.co/45x64/1a1a2e/ff1a75.png?text=No+Img';
+    if (type === 'poster') return 'https://placehold.co/140x210/1a1a2e/ff1a75.png?text=No+Image';
+    return 'https://placehold.co/300x169/1a1a2e/ff1a75.png?text=No+Image';
+  };
+
   return (
     <div className="profile-container" style={{
       maxWidth: '1200px', margin: '40px auto 80px', padding: '0 20px',
@@ -218,7 +229,7 @@ export default function UserProfile() {
                     }} onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.04)'; e.currentTarget.style.borderColor = user.is_admin ? '#ffd700' : 'var(--brand-color)'; }}
                        onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.04)'; }}>
                       
-                      <img src={item.media_poster} alt={item.media_title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      <img src={getPosterUrl(item, 'poster')} alt={item.media_title} onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = 'https://placehold.co/140x210/1a1a2e/ff1a75.png?text=No+Image'; }} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                       
                       <div style={{
                         position: 'absolute', top: '10px', left: '10px', background: 'rgba(0,0,0,0.7)',
@@ -265,7 +276,7 @@ export default function UserProfile() {
                       
                       {/* Image Thumbnail wrapper */}
                       <div style={{ position: 'relative', aspectRatio: '16/9', overflow: 'hidden' }}>
-                        <img src={item.media_poster} alt={item.media_title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        <img src={getPosterUrl(item, 'card')} alt={item.media_title} onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = 'https://placehold.co/300x169/1a1a2e/ff1a75.png?text=No+Image'; }} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         <div style={{
                           position: 'absolute', bottom: '8px', right: '8px', background: 'rgba(0,0,0,0.85)',
                           padding: '3px 8px', borderRadius: '5px', fontSize: '0.65rem', fontWeight: '900', color: user.is_admin ? '#ffd700' : 'var(--brand-color)'
@@ -314,7 +325,7 @@ export default function UserProfile() {
                   }} onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.borderColor = user.is_admin ? '#ffd700' : 'rgba(255, 26, 117, 0.2)'; }}
                      onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.02)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.04)'; }}>
                     
-                    <img src={item.media_poster} alt={item.media_title} style={{ width: '45px', height: '64px', borderRadius: '8px', objectFit: 'cover', flexShrink: 0 }} />
+                    <img src={getPosterUrl(item, 'list')} alt={item.media_title} onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = 'https://placehold.co/45x64/1a1a2e/ff1a75.png?text=No+Img'; }} style={{ width: '45px', height: '64px', borderRadius: '8px', objectFit: 'cover', flexShrink: 0 }} />
                     
                     <div style={{ flex: 1 }}>
                       <h4 style={{ margin: 0, fontSize: '0.9rem', fontWeight: '800', color: '#fff' }}>{item.media_title}</h4>

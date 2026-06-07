@@ -1,0 +1,76 @@
+/* src/styles/designTokens.css */
+/* Premium design tokens – use throughout the app */
+:root {
+  /* Brand */
+  --brand-primary: hsl(340, 85%, 55%); /* vibrant pink */
+  --brand-primary-light: hsl(340, 85%, 65%);
+  --brand-primary-dark: hsl(340, 85%, 45%);
+
+  /* Backgrounds */
+  --bg-primary: hsl(0, 0%, 12%);
+  --bg-secondary: hsl(0, 0%, 16%);
+  --bg-glass: rgba(255, 255, 255, 0.06);
+  --glass-border: rgba(255, 255, 255, 0.12);
+
+  /* Text */
+  --text-primary: hsl(0, 0%, 94%);
+  --text-secondary: hsl(0, 0%, 68%);
+  --text-muted: hsl(0, 0%, 45%);
+
+  /* Spacing */
+  --spacing-xs: 0.4rem;
+  --spacing-sm: 0.8rem;
+  --spacing-md: 1.6rem;
+  --spacing-lg: 2.4rem;
+  --spacing-xl: 3.2rem;
+
+  /* Shadows */
+  --shadow-sm: 0 2px 6px rgba(0,0,0,0.3);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.4);
+  --shadow-lg: 0 8px 24px rgba(0,0,0,0.5);
+
+  /* Animations */
+  --anim-duration: 0.25s;
+  --anim-ease: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Global helpers */
+body {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: 'Inter', sans-serif;
+  margin: 0;
+  padding: 0;
+}
+
+a {
+  color: var(--brand-primary);
+  text-decoration: none;
+  transition: color var(--anim-duration) var(--anim-ease);
+}
+a:hover {
+  color: var(--brand-primary-light);
+}
+
+.btn-primary {
+  background: var(--brand-primary);
+  border: none;
+  color: #fff;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background var(--anim-duration) var(--anim-ease),
+    box-shadow var(--anim-duration) var(--anim-ease);
+}
+.btn-primary:hover {
+  background: var(--brand-primary-dark);
+  box-shadow: var(--shadow-sm);
+}
+
+.glass {
+  background: var(--bg-glass);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  padding: var(--spacing-md);
+}

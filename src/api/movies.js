@@ -22,6 +22,39 @@ function buildMultiEmbedEpisodeUrl(imdbId, season, episode) {
 
 export { buildMultiEmbedUrl, buildMultiEmbedEpisodeUrl };
 
+// Fetch detailed metadata for a given media type ('movie' | 'series' | 'tv') and IMDB ID
+export async function fetchMediaMeta(mediaType, imdbId) {
+  const type = mediaType === 'series' || mediaType === 'tv' ? 'series' : 'movie';
+  const CINEMETA_API = "https://v3-cinemeta.strem.io";
+  try {
+    const res = await fetch(`${CINEMETA_API}/meta/${type}/${imdbId}.json`);
+    const data = await res.json();
+    if (data && data.meta) {
+      const meta = data.meta;
+      const tmdbId = await resolveTmdbId(imdbId);
+      return {
+        ...meta,
+        embedUrl: buildMultiEmbedUrl(imdbId),
+        progress: getMovieProgress(imdbId),
+        tmdbId,
+        type: mediaType,
+      };
+    }
+    // Fallback minimal info
+    return {
+      imdb_id: imdbId,
+      title: "Untitled",
+      poster: `https://live.metahub.space/poster/medium/${imdbId}/img`,
+      embedUrl: buildMultiEmbedUrl(imdbId),
+      progress: getMovieProgress(imdbId),
+      type: mediaType,
+    };
+  } catch (e) {
+    console.warn("Failed to fetch media meta", e);
+    return null;
+  }
+}
+
 const TMDB_API_KEY = import.meta.env.VITE_TMDB_API_KEY || "";
 
 // Placeholder resolveTmdbId – MultiEmbed does not require TMDB IDs.
@@ -157,39 +190,23 @@ export async function searchMoviesAndSeries(query) {
 }
 
 /** Fetch rich metadata – same as before but also include embed URL and progress */
-export async function fetchMediaMeta(type, imdbId) {
-  const CINEMETA_API = "https://v3-cinemeta.strem.io";
-  const mediaType = type === "series" || type === "tv" ? "series" : "movie";
+export async function getRecommended(limit = 50) {
+  // Fetch a broad list of movies/series and return the top N items as recommendations.
+  // For now we reuse the generic search API without a query to get the latest catalog.
+  // In a real scenario you would call a recommendation endpoint or apply a rating filter.
   try {
-    const res = await fetch(`${CINEMETA_API}/meta/${mediaType}/${imdbId}.json`);
-    const data = await res.json();
-    if (data && data.meta) {
-      const meta = data.meta;
-      const tmdbId = await resolveTmdbId(imdbId);
-      return {
-        ...meta,
-        embedUrl: buildMultiEmbedUrl(imdbId),
-        progress: getMovieProgress(imdbId),
-        tmdbId,
-      };
-    }
-  } catch (e) {
-    console.warn("Cinemeta meta fetch failed", e);
+    const results = await searchMoviesAndSeries('');
+    // Sort by rating if available (higher rating first)
+    const sorted = results.sort((a, b) => {
+      const ratingA = a.rating ?? 0;
+      const ratingB = b.rating ?? 0;
+      return ratingB - ratingA;
+    });
+    return sorted.slice(0, limit);
+  } catch (err) {
+    console.error('Failed to fetch recommendations:', err);
+    return [];
   }
-  // Fallback – same as original but with embedUrl and progress
-  const tmdbId = await resolveTmdbId(imdbId);
-  return {
-    id: imdbId,
-    imdb_id: imdbId,
-    name: "Untitled",
-    type: mediaType,
-    poster: `https://live.metahub.space/poster/medium/${imdbId}/img`,
-    background: `https://live.metahub.space/background/medium/${imdbId}/img`,
-    description: "Content not available.",
-    embedUrl: buildMultiEmbedUrl(imdbId),
-    progress: getMovieProgress(imdbId),
-    tmdbId,
-  };
 }
 
 /** Export progress helpers for UI */

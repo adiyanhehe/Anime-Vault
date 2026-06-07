@@ -13,7 +13,7 @@ function safeTitle(title) {
 
 function MangaDetails() {
   const { id } = useParams();
-  const { user, addToHistory, toggleLike, isLiked } = useUser();
+  const { user, addToHistory, toggleLike, isLiked, setShowAuthModal, setAuthTab } = useUser();
 
   // Media state (from AniList)
   const [manga, setManga] = useState(null);
@@ -84,6 +84,11 @@ function MangaDetails() {
   }
 
   async function openChapter(chapter) {
+    if (!user) {
+      setAuthTab('login');
+      setShowAuthModal(true);
+      return;
+    }
     if (chapter.externalUrl) {
       window.open(chapter.externalUrl, '_blank', 'noopener,noreferrer');
       return;
@@ -144,7 +149,7 @@ function MangaDetails() {
   return (
     <>
       {/* ── Manga Reader Fullscreen Overlay ── */}
-      {isReaderOpen && (
+      {user && isReaderOpen && (
         <div className="manga-reader-overlay">
           <div className="reader-toolbar">
             <div className="toolbar-left">
@@ -221,6 +226,11 @@ function MangaDetails() {
               <button
                 className="btn-play-v2"
                 onClick={() => {
+                  if (!user) {
+                    setAuthTab('login');
+                    setShowAuthModal(true);
+                    return;
+                  }
                   if (chapters.length > 0) openChapter(chapters[0]);
                 }}
                 disabled={chapters.length === 0}

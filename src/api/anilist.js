@@ -1013,3 +1013,87 @@ export async function fetchAnimeBySeason(season, year, page = 1, perPage = 12) {
     return fetchAnimeBySeasonJikan(season, year, page, perPage);
   }
 }
+
+export async function searchCharacters(search, page = 1, perPage = 20) {
+  const query = `
+    query ($search: String, $page: Int, $perPage: Int) {
+      Page(page: $page, perPage: $perPage) {
+        characters(search: $search, sort: FAVOURITES_DESC) {
+          id
+          name { full native userPreferred }
+          image { large medium }
+        }
+      }
+    }
+  `;
+  try {
+    const data = await postQuery(query, { search, page, perPage });
+    return data.Page.characters;
+  } catch (err) {
+    console.warn("AniList failed to search characters:", err.message);
+    return [];
+  }
+}
+
+export async function searchStudios(search, page = 1, perPage = 20) {
+  const query = `
+    query ($search: String, $page: Int, $perPage: Int) {
+      Page(page: $page, perPage: $perPage) {
+        studios(search: $search, sort: FAVOURITES_DESC) {
+          id
+          name
+          favourites
+        }
+      }
+    }
+  `;
+  try {
+    const data = await postQuery(query, { search, page, perPage });
+    return data.Page.studios;
+  } catch (err) {
+    console.warn("AniList failed to search studios:", err.message);
+    return [];
+  }
+}
+
+export async function fetchTrendingCharacters(page = 1, perPage = 20) {
+  const query = `
+    query ($page: Int, $perPage: Int) {
+      Page(page: $page, perPage: $perPage) {
+        characters(sort: FAVOURITES_DESC) {
+          id
+          name { full native userPreferred }
+          image { large medium }
+        }
+      }
+    }
+  `;
+  try {
+    const data = await postQuery(query, { page, perPage });
+    return data.Page.characters;
+  } catch (err) {
+    console.warn("AniList failed to fetch trending characters:", err.message);
+    return [];
+  }
+}
+
+export async function fetchTrendingStudios(page = 1, perPage = 20) {
+  const query = `
+    query ($page: Int, $perPage: Int) {
+      Page(page: $page, perPage: $perPage) {
+        studios(sort: FAVOURITES_DESC) {
+          id
+          name
+          favourites
+        }
+      }
+    }
+  `;
+  try {
+    const data = await postQuery(query, { page, perPage });
+    return data.Page.studios;
+  } catch (err) {
+    console.warn("AniList failed to fetch trending studios:", err.message);
+    return [];
+  }
+}

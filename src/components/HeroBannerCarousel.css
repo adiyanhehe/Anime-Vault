@@ -1,0 +1,43 @@
+/* HeroBannerCarousel.css */
+.hero-carousel {
+  position: relative;
+  overflow: hidden;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+
+.hero-image {
+  width: 100%;
+  height: 300px;
+  object-fit: cover;
+  transition: opacity 0.6s ease-in-out;
+}
+
+.hero-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 1.5rem;
+  background: linear-gradient(to top, rgba(0,0,0,0.7), transparent);
+  color: var(--text-primary);
+}
+
+.hero-title {
+  margin: 0;
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--brand-color);
+}
+
+.hero-episode,
+.hero-countdown,
+.hero-genres,
+.hero-score {
+  margin-top: 0.4rem;
+  font-size: 0.95rem;
+  opacity: 0.9;
+}

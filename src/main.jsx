@@ -18,14 +18,28 @@ import { UserProvider } from './api/UserContext';
 // so health data is warm by the time a user opens an anime page.
 probeMirrors().catch(() => {});
 
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      refetchInterval: 2 * 60 * 1000, // 2 minutes
+      refetchOnWindowFocus: true,
+    },
+  },
+});
+
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <ErrorBoundary>
-      <HashRouter>
-        <UserProvider>
-          <App />
-        </UserProvider>
-      </HashRouter>
+      <QueryClientProvider client={queryClient}>
+        <HashRouter>
+          <UserProvider>
+            <App />
+          </UserProvider>
+        </HashRouter>
+      </QueryClientProvider>
     </ErrorBoundary>
   </React.StrictMode>
 );

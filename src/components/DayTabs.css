@@ -1,0 +1,26 @@
+// src/components/DayTabs.css
+.day-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  justify-content: center;
+}
+
+.tab-button {
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  border-radius: 8px;
+  padding: 0.5rem 1rem;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.tab-button.active {
+  background: var(--brand-color);
+  color: #fff;
+}
+
+.tab-button:hover {
+  background: rgba(255, 255, 255, 0.2);
+}

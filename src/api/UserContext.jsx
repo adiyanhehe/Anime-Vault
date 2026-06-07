@@ -1,15 +1,17 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { createAuthClient } from '@neondatabase/auth';
 import { 
   fetchWatchHistory, addToHistory as dbAddToHistory, clearWatchHistory as dbClearWatchHistory,
   fetchContinueWatching, updateContinueWatching as dbUpdateContinueWatching,
   fetchLikedItems, toggleLikeItem as dbToggleLike,
   updateUserProfile as dbUpdateUserProfile,
-  syncGoogleUserToDb,
-  initDatabase
+  fetchReminders, addReminder as dbAddReminder, removeReminder as dbRemoveReminder
 } from './db';
-
-const authClient = createAuthClient('https://ep-lively-surf-apnkb5f1.neonauth.c-7.us-east-1.aws.neon.tech/neondb/auth');
+import {
+  getUserStats, updateUserStats,
+  getFavorites, addFavorite, removeFavorite,
+  getWatchHistory as dbGetWatchHistory, addWatchHistory as dbAddWatchHistory,
+  getLevel, addXP, addActivity
+} from './database';
 
 const UserContext = createContext(null);
 
@@ -22,35 +24,28 @@ export function UserProvider({ children }) {
   const [history, setHistory] = useState([]);
   const [continueWatching, setContinueWatching] = useState([]);
   const [likes, setLikes] = useState([]);
+  const [reminders, setReminders] = useState([]);
   const [showAuthModal, setShowAuthModal] = useState(false);
-  const [authTab, setAuthTab] = useState('login'); // 'login' | 'signup'
+  const [authTab, setAuthTab] = useState('login');
 
-  // Initialize DB tables and listen for Neon Auth session
-  useEffect(() => {
-    initDatabase();
-    
-    async function checkGoogleSession() {
-      try {
-        const { data, error } = await authClient.getSession();
-        if (data?.session && data?.user) {
-          const syncRes = await syncGoogleUserToDb(
-            data.user.email,
-            data.user.name || data.user.email,
-            data.user.image
-          );
-          if (syncRes.success) {
-            setUser(syncRes.user);
-          }
-        }
-      } catch (err) {
-        console.error('Failed to sync Neon Auth google session:', err);
-      }
+  const syncUserData = async () => {
+    if (!user) return;
+    try {
+      const [histData, contData, likedData, remData] = await Promise.all([
+        fetchWatchHistory(user.id),
+        fetchContinueWatching(user.id),
+        fetchLikedItems(user.id),
+        fetchReminders(user.id)
+      ]);
+      setHistory(histData || []);
+      setContinueWatching(contData || []);
+      setLikes(likedData || []);
+      setReminders(remData || []);
+    } catch (err) {
+      console.error('Failed to sync user data:', err);
     }
+  };
 
-    checkGoogleSession();
-  }, []);
-
-  // Fetch all user specific data when logged in
   useEffect(() => {
     if (user) {
       localStorage.setItem('vault_user', JSON.stringify(user));
@@ -60,24 +55,9 @@ export function UserProvider({ children }) {
       setHistory([]);
       setContinueWatching([]);
       setLikes([]);
+      setReminders([]);
     }
   }, [user]);
-
-  const syncUserData = async () => {
-    if (!user) return;
-    try {
-      const [histData, contData, likedData] = await Promise.all([
-        fetchWatchHistory(user.id),
-        fetchContinueWatching(user.id),
-        fetchLikedItems(user.id)
-      ]);
-      setHistory(histData || []);
-      setContinueWatching(contData || []);
-      setLikes(likedData || []);
-    } catch (err) {
-      console.error('Failed to sync user data:', err);
-    }
-  };
 
   const login = (userData) => {
     setUser(userData);
@@ -85,21 +65,26 @@ export function UserProvider({ children }) {
   };
 
   const logout = async () => {
-    try {
-      await authClient.signOut();
-    } catch (e) {
-      console.error('Sign out failed from Neon Auth:', e);
-    }
     setUser(null);
   };
 
   const addToHistory = async (mediaId, mediaType, mediaTitle, mediaPoster) => {
     if (!user) return false;
-    const success = await dbAddToHistory(user.id, mediaId, mediaType, mediaTitle, mediaPoster);
-    if (success) {
-      syncUserData();
-    }
-    return success;
+    
+    // Add to watch history in new database
+    await dbAddWatchHistory({ id: mediaId, title: mediaTitle, image: mediaPoster });
+    
+    // Add to continue watching in old database
+    await dbAddToHistory(user.id, mediaId, mediaType, mediaTitle, mediaPoster);
+    
+    // Add XP (5 XP per anime view)
+    await addXP(5);
+    
+    // Add activity
+    await addActivity();
+    
+    syncUserData();
+    return true;
   };
 
   const clearHistory = async () => {
@@ -111,27 +96,51 @@ export function UserProvider({ children }) {
     return success;
   };
 
-  const updateContinueWatching = async (mediaId, mediaType, mediaTitle, mediaPoster, season, episode, progress = 0, duration = 0) => {
+  const updateContinueWatching = async (mediaId, mediaType, mediaTitle, mediaPoster, season = 1, episode = 1, progress = 0, duration = 0) => {
     if (!user) return false;
-    const success = await dbUpdateContinueWatching(
-      user.id, mediaId, mediaType, mediaTitle, mediaPoster, season, episode, progress, duration
-    );
+    const success = await dbUpdateContinueWatching(user.id, mediaId, mediaType, mediaTitle, mediaPoster, season, episode, progress, duration);
     if (success) {
       syncUserData();
+      
+      // Update user stats: episodes watched and watch time
+      const stats = await getUserStats();
+      await updateUserStats({
+        ...stats,
+        episodesWatched: (stats.episodesWatched || 0) + 1,
+        totalWatchTime: (stats.totalWatchTime || 0) + (duration || 0)
+      });
+      
+      // Add XP for watching episode (10 XP per episode)
+      await addXP(10);
+      
+      // Add activity
+      await addActivity();
     }
     return success;
   };
 
   const toggleLike = async (mediaId, mediaType, mediaTitle, mediaPoster) => {
     if (!user) {
-      // Trigger login prompt
       setAuthTab('login');
       setShowAuthModal(true);
       return { promptLogin: true };
     }
+    
     const result = await dbToggleLike(user.id, mediaId, mediaType, mediaTitle, mediaPoster);
     if (!result.error) {
       syncUserData();
+      
+      // Also update favorites in new database
+      const favorites = await getFavorites();
+      const isAlreadyFavorite = favorites.animes?.some(f => String(f.id) === String(mediaId));
+      
+      if (result.action === 'liked' && !isAlreadyFavorite) {
+        await addFavorite('animes', { id: mediaId, title: mediaTitle, image: mediaPoster });
+        // Add XP for liking an anime (2 XP)
+        await addXP(2);
+      } else if (result.action === 'unliked' && isAlreadyFavorite) {
+        await removeFavorite('animes', mediaId);
+      }
     }
     return result;
   };
@@ -151,12 +160,39 @@ export function UserProvider({ children }) {
     return false;
   };
 
+  const addReminder = async (scheduleId, animeId, title, episode, airingAt, image) => {
+    if (!user) {
+      setAuthTab('login');
+      setShowAuthModal(true);
+      return { promptLogin: true };
+    }
+    const result = await dbAddReminder(user.id, scheduleId, animeId, title, episode, airingAt, image);
+    if (result) {
+      syncUserData();
+    }
+    return result;
+  };
+
+  const removeReminder = async (scheduleId) => {
+    if (!user) return false;
+    const success = await dbRemoveReminder(user.id, scheduleId);
+    if (success) {
+      syncUserData();
+    }
+    return success;
+  };
+
+  const isReminded = (scheduleId) => {
+    return reminders.some(item => String(item.schedule_id) === String(scheduleId));
+  };
+
   return (
     <UserContext.Provider value={{
       user,
       history,
       continueWatching,
       likes,
+      reminders,
       showAuthModal,
       authTab,
       setShowAuthModal,
@@ -169,7 +205,10 @@ export function UserProvider({ children }) {
       updateContinueWatching,
       toggleLike,
       isLiked,
-      updateProfile
+      updateProfile,
+      addReminder,
+      removeReminder,
+      isReminded
     }}>
       {children}
     </UserContext.Provider>

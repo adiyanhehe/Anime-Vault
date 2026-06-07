@@ -20,7 +20,8 @@ function Search() {
   const [query, setQuery] = useState(searchParams.get('q') || '');
   const [selectedGenre, setSelectedGenre] = useState(searchParams.get('genre') || '');
   const [selectedType, setSelectedType] = useState(searchParams.get('type') || 'ANIME');
-  const [favorites, setFavorites] = useState(() => JSON.parse(localStorage.getItem('animevault_favorites') || '[]'));
+  const [favoritesData, setFavoritesData] = useState(() => JSON.parse(localStorage.getItem('animevault_favorites') || '{"animes":[],"studios":[],"characters":[]}'));
+  const favorites = favoritesData.animes || [];
 
   useEffect(() => {
     const q = searchParams.get('q');
@@ -101,11 +102,21 @@ function Search() {
     setSearchParams({ type: 'ANIME' });
   }
 
+  function getTitle(anime) {
+    return anime?.title?.english || anime?.title?.romaji || anime?.title?.native || 'Unknown Title';
+  }
+  function getImage(anime) {
+    return anime?.coverImage?.extraLarge || anime?.coverImage?.large || anime?.coverImage?.medium;
+  }
   function toggleFavorite(anime) {
-    setFavorites((current) => {
-      const next = current.some((item) => item.id === anime.id)
-        ? current.filter((item) => item.id !== anime.id)
-        : [...current, { id: anime.id, title: anime.title?.romaji || 'Unknown' }];
+    setFavoritesData((current) => {
+      const isFav = (current.animes || []).some((item) => item.id === anime.id);
+      const next = {
+        ...current,
+        animes: isFav
+          ? (current.animes || []).filter((item) => item.id !== anime.id)
+          : [...(current.animes || []), { id: anime.id, title: getTitle(anime), image: getImage(anime) }],
+      };
       localStorage.setItem('animevault_favorites', JSON.stringify(next));
       return next;
     });
@@ -128,10 +139,11 @@ function Search() {
           <h3>Category</h3>
           <div className="type-toggle">
             {TYPES.map(t => (
-              <button 
+              <button
                 key={t}
                 className={`type-btn ${selectedType === t ? 'active' : ''}`}
                 onClick={() => handleTypeChange(t)}
+                onKeyDown={e => { if (e.key === 'Enter') handleTypeChange(t); }}
               >
                 {t}
               </button>
