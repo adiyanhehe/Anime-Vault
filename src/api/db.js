@@ -51,13 +51,18 @@ function setLS(key, value) { localStorage.setItem(key, JSON.stringify(value)); }
 // ---------------------- SERVER (NEON DB) SETUP ----------------------
 let sql = null;
 if (!isBrowser) {
-  try {
-    const { neon } = await import('@neondatabase/serverless');
-    const DATABASE_URL = 'postgresql://neondb_owner:npg_cprHoA5wBt0Z@ep-lively-surf-apnkb5f1.c-7.us-east-1.aws.neon.tech/neondb?sslmode=require';
-    sql = neon(DATABASE_URL);
-  } catch (e) {
-    console.log('Neon not available, using localStorage only');
-  }
+  // Wrap in async IIFE to avoid top-level await (Vite target es2020 doesn't support it).
+  // This block only runs on the server (isBrowser is false), so the deferred import
+  // is safe and the in-browser bundle never evaluates it.
+  (async () => {
+    try {
+      const { neon } = await import('@neondatabase/serverless');
+      const DATABASE_URL = 'postgresql://neondb_owner:npg_cprHoA5wBt0Z@ep-lively-surf-apnkb5f1.c-7.us-east-1.aws.neon.tech/neondb?sslmode=require';
+      sql = neon(DATABASE_URL);
+    } catch (e) {
+      console.log('Neon not available, using localStorage only');
+    }
+  })();
 }
 
 // Initialize database tables (server-side only)
