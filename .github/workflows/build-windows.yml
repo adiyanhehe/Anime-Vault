@@ -21,6 +21,14 @@ jobs:
       - name: Install dependencies
         run: npm ci
       - name: Build Windows installer
+        env:
+          # Sign with the dev certificate tracked in the repo so the
+          # auto-updater (electron-updater) can verify the binary against
+          # `latest.yml` and install updates.
+          CSC_LINK: ${{ github.workspace }}/animevault-code-signing.pfx
+          CSC_KEY_PASSWORD: devpwd
+          WIN_CSC_LINK: ${{ github.workspace }}/animevault-code-signing.pfx
+          WIN_CSC_KEY_PASSWORD: devpwd
         run: npm run electron:build -- --win
       - name: Upload installer artifact
         uses: actions/upload-artifact@v4

@@ -72,6 +72,23 @@ try {
   // Copy PNG for all platforms (required by Electron Builder)
   fs.copyFileSync(sourceIcon, path.join(iconDir, 'icon.png'));
   console.log('  📦 PNG icon copied');
+
+  // electron-builder looks for `build/icon.ico` by default for Windows. The
+  // script writes the .ico into `src/electron/.icon-ico/`, so mirror it into
+  // the `build/` directory (creating it on demand) so the NSIS installer and
+  // the in-app exe get the real logo instead of Electron's default icon.
+  const buildDir = path.join(__dirname, '..', 'build');
+  if (!fs.existsSync(buildDir)) {
+    fs.mkdirSync(buildDir, { recursive: true });
+  }
+  const icoSource = path.join(iconDir, 'icon.ico');
+  if (fs.existsSync(icoSource)) {
+    fs.copyFileSync(icoSource, path.join(buildDir, 'icon.ico'));
+    console.log('  📦 Windows icon copied to build/icon.ico');
+  } else {
+    console.warn('  ⚠️  icon.ico not found in src/electron/.icon-ico/ – Windows builds will fall back to the default Electron icon');
+  }
+
   console.log('✅ Icon generation completed successfully.');
 } catch (err) {
   console.error('❌ Icon generation failed:', err.message);

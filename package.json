@@ -50,7 +50,16 @@
       "allowToChangeInstallationDirectory": true,
       "oneClick": false
     },
-    "win": {},
+    "win": {
+      "icon": "build/icon.ico",
+      "certificateFile": "animevault-code-signing.pfx",
+      "certificatePassword": "devpwd",
+      "publisherName": "AnimeVault Dev",
+      "signAndEditExecutable": true,
+      "signtoolOptions": {
+        "publisherName": "AnimeVault Dev"
+      }
+    },
     "target": [
       {
         "target": "nsis",

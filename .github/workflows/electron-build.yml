@@ -146,9 +146,14 @@ jobs:
       - name: Build installer
         shell: bash
         env:
-          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
-          CSC_KEY_PASSWORD: ''
-          WIN_CSC_KEY_PASSWORD: ''
+          # Reuse the dev certificate that's tracked in the repo so the
+          # Windows builds are actually signed. Without this, the
+          # auto-updater refuses to install the update because the binary
+          # in `latest.yml` doesn't match an authenticode signature.
+          CSC_LINK: ${{ github.workspace }}/animevault-code-signing.pfx
+          CSC_KEY_PASSWORD: devpwd
+          WIN_CSC_LINK: ${{ github.workspace }}/animevault-code-signing.pfx
+          WIN_CSC_KEY_PASSWORD: devpwd
         run: npm run electron:build -- ${{ matrix.args }}
 
       - name: Upload installer artifact
