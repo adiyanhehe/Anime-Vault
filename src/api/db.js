@@ -919,41 +919,90 @@ export async function fetchCollectionItems(collectionId) {
     try { return await sql`SELECT * FROM collection_items WHERE collection_id = ${collectionId} ORDER BY added_at DESC`; }
     catch (e) { console.warn('[AnimeVault DB] fetchCollectionItems via Neon failed, falling back to localStorage:', e?.message); }
   }
+  // First, re-link any orphaned items in localStorage (handles stale data
+  // from before the createCollection id-mismatch fix was deployed).
+  rehydrateOrphanedCollectionItems();
   return getLS(LS_KEYS.COLLECTION_ITEMS, []).filter(i => i.collection_id === collectionId);
 }
 
+/**
+ * Self-healing migration: walks the localStorage cache and re-links any
+ * collection_items whose `collection_id` no longer matches any collection
+ * (this happens when a user created collections before the createCollection
+ *  id-mismatch fix was deployed — the collection stayed in localStorage with
+ *  a Date.now() id while the items were saved with the Neon id).
+ *
+ * For each orphan, we pick the collection that was created closest in time
+ * to the item's `added_at` (within a 1-minute window) — this is the most
+ * reliable heuristic we have without an explicit "legacy_id" field.
+ */
+function rehydrateOrphanedCollectionItems() {
+  if (!isBrowser) return;
+  const collections = getLS(LS_KEYS.COLLECTIONS, []);
+  const items = getLS(LS_KEYS.COLLECTION_ITEMS, []);
+  if (!collections.length || !items.length) return;
+
+  const validIds = new Set(collections.map(c => c.id));
+  let changed = false;
+
+  for (const item of items) {
+    if (validIds.has(item.collection_id)) continue;
+    // Orphan: find the collection whose `created_at` is closest to the
+    // item's `added_at` (within a 1 minute window). If we have no time
+    // signal, fall back to the user's most recent collection.
+    const itemTime = item.added_at ? new Date(item.added_at).getTime() : Date.now();
+    const candidates = collections
+      .map(c => ({
+        c,
+        diff: c.created_at ? Math.abs(new Date(c.created_at).getTime() - itemTime) : Number.POSITIVE_INFINITY,
+      }))
+      .sort((a, b) => a.diff - b.diff);
+    if (candidates.length === 0) continue;
+    const best = candidates[0];
+    if (best.diff > 60_000) continue; // too far apart, leave it
+    item.collection_id = best.c.id;
+    changed = true;
+  }
+
+  if (changed) {
+    setLS(LS_KEYS.COLLECTION_ITEMS, items);
+    console.log('[AnimeVault DB] Re-linked orphaned collection items to their proper collections.');
+  }
+}
+
 export async function createCollection(userId, username, title, description, cover, isPrivate) {
-  if (isBrowser) {
-    const tempId = Date.now();
-    const newCollection = { id: tempId, user_id: userId, username, title, description, cover, is_private: isPrivate, created_at: new Date().toISOString(), updated_at: new Date().toISOString() };
-    if (sql) {
-      try {
-        const res = await sql`INSERT INTO collections (user_id, username, title, description, cover, is_private) VALUES (${userId}, ${username}, ${title}, ${description}, ${cover}, ${isPrivate}) RETURNING *`;
-        const persisted = res[0] || newCollection;
-        // Persist the canonical Neon record (with Neon id) to localStorage so the
-        // list view and item lookups stay in sync with the saved items.
-        const collections = getLS(LS_KEYS.COLLECTIONS, []);
-        const idx = collections.findIndex(c => c.id === tempId || c.id === persisted.id);
-        if (idx !== -1) collections[idx] = { ...collections[idx], ...persisted };
-        else collections.push(persisted);
-        setLS(LS_KEYS.COLLECTIONS, collections);
+  // Neon is the single source of truth. localStorage is only a read-through
+  // cache / offline fallback — we never rely on its writes.
+  if (sql) {
+    try {
+      const res = await sql`INSERT INTO collections (user_id, username, title, description, cover, is_private) VALUES (${userId}, ${username}, ${title}, ${description}, ${cover}, ${isPrivate}) RETURNING *`;
+      const persisted = res[0];
+      if (persisted) {
+        // Mirror to localStorage as a read-through cache so the UI stays snappy
+        // and works offline. The canonical record is the Neon one.
+        if (isBrowser) {
+          const collections = getLS(LS_KEYS.COLLECTIONS, []);
+          const idx = collections.findIndex(c => c.id === persisted.id);
+          if (idx !== -1) collections[idx] = { ...collections[idx], ...persisted };
+          else collections.unshift(persisted);
+          setLS(LS_KEYS.COLLECTIONS, collections);
+        }
         return persisted;
-      } catch (e) {
-        console.warn('[AnimeVault DB] createCollection via Neon failed, saving to localStorage only:', e?.message);
-        const collections = getLS(LS_KEYS.COLLECTIONS, []);
-        collections.push(newCollection);
-        setLS(LS_KEYS.COLLECTIONS, collections);
-        return newCollection;
       }
+    } catch (e) {
+      console.warn('[AnimeVault DB] createCollection via Neon failed, falling back to localStorage:', e?.message);
     }
+  }
+  // Server-only / Neon-unavailable path: use localStorage as a last resort
+  // so the user can still create collections offline.
+  if (isBrowser) {
+    const newCollection = { id: Date.now(), user_id: userId, username, title, description, cover, is_private: isPrivate, created_at: new Date().toISOString(), updated_at: new Date().toISOString() };
     const collections = getLS(LS_KEYS.COLLECTIONS, []);
-    collections.push(newCollection);
+    collections.unshift(newCollection);
     setLS(LS_KEYS.COLLECTIONS, collections);
     return newCollection;
   }
-  if (!sql) return null;
-  const res = await sql`INSERT INTO collections (user_id, username, title, description, cover, is_private) VALUES (${userId}, ${username}, ${title}, ${description}, ${cover}, ${isPrivate}) RETURNING *`;
-  return res[0];
+  return null;
 }
 
 export async function updateCollection(collectionId, userId, title, description, cover, isPrivate) {
@@ -1002,24 +1051,36 @@ export async function deleteCollection(collectionId, userId) {
 }
 
 export async function addItemToCollection(collectionId, mediaId, mediaType, title, poster, score = null, status = null) {
+  // Neon is the single source of truth for collection_items too.
+  if (sql) {
+    try {
+      const res = await sql`INSERT INTO collection_items (collection_id, media_id, media_type, title, poster, score, status) VALUES (${collectionId}, ${mediaId}, ${mediaType}, ${title}, ${poster}, ${score}, ${status}) ON CONFLICT (collection_id, media_id, media_type) DO NOTHING RETURNING *`;
+      const persisted = res[0];
+      if (persisted) {
+        if (isBrowser) {
+          const items = getLS(LS_KEYS.COLLECTION_ITEMS, []);
+          const idx = items.findIndex(i => i.collection_id === collectionId && i.media_id === mediaId && i.media_type === mediaType);
+          if (idx !== -1) items[idx] = { ...items[idx], ...persisted };
+          else items.unshift(persisted);
+          setLS(LS_KEYS.COLLECTION_ITEMS, items);
+        }
+        return persisted;
+      }
+    } catch (e) {
+      console.warn('[AnimeVault DB] addItemToCollection via Neon failed, falling back to localStorage:', e?.message);
+    }
+  }
+  // Offline fallback: mirror to localStorage with a temp id.
   if (isBrowser) {
     const items = getLS(LS_KEYS.COLLECTION_ITEMS, []);
-    const exists = items.find(i => i.collection_id === collectionId && i.media_id === mediaId && i.media_type === mediaType);
-    if (exists) return exists;
+    const exists = items.findIndex(i => i.collection_id === collectionId && i.media_id === mediaId && i.media_type === mediaType);
+    if (exists !== -1) return items[exists];
     const newItem = { id: Date.now(), collection_id: collectionId, media_id: mediaId, media_type: mediaType, title, poster, score, status, added_at: new Date().toISOString() };
-    items.push(newItem);
+    items.unshift(newItem);
     setLS(LS_KEYS.COLLECTION_ITEMS, items);
-    if (sql) {
-      try {
-        const res = await sql`INSERT INTO collection_items (collection_id, media_id, media_type, title, poster, score, status) VALUES (${collectionId}, ${mediaId}, ${mediaType}, ${title}, ${poster}, ${score}, ${status}) ON CONFLICT (collection_id, media_id, media_type) DO NOTHING RETURNING *`;
-        return res[0] || newItem;
-      } catch (e) { console.warn('[AnimeVault DB] addItemToCollection via Neon failed:', e?.message); return newItem; }
-    }
     return newItem;
   }
-  if (!sql) return null;
-  const res = await sql`INSERT INTO collection_items (collection_id, media_id, media_type, title, poster, score, status) VALUES (${collectionId}, ${mediaId}, ${mediaType}, ${title}, ${poster}, ${score}, ${status}) ON CONFLICT (collection_id, media_id, media_type) DO NOTHING RETURNING *`;
-  return res[0];
+  return null;
 }
 
 export async function removeItemFromCollection(collectionId, itemId) {

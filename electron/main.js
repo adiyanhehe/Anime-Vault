@@ -228,7 +228,9 @@ function createWindow() {
 
   if (app.isPackaged) {
     // ── Production (packaged .exe / .dmg) ──
-    const indexPath = path.join(__dirname, '..', 'dist', 'index.html');
+    // Use app.getAppPath() which is reliable in both asar and un-asar builds
+    // and survives auto-updates (it always points to the app's resource dir).
+    const indexPath = path.join(app.getAppPath(), 'dist', 'index.html');
     console.log('[Electron] Loading production UI from:', indexPath);
     win.loadFile(indexPath);
   } else {
