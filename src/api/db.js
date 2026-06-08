@@ -832,10 +832,34 @@ export async function fetchAllCollections(userId = null) {
 
 export async function fetchUserCollections(userId) {
   if (sql) {
-    try { return await sql`SELECT * FROM collections WHERE user_id = ${userId} ORDER BY created_at DESC`; }
+    try {
+      return await sql`
+        SELECT c.*,
+          COUNT(DISTINCT ci.id) as count,
+          COUNT(DISTINCT cl.id) as likes_count,
+          COUNT(DISTINCT cf.id) as followers_count
+        FROM collections c
+        LEFT JOIN collection_items ci ON c.id = ci.collection_id
+        LEFT JOIN collection_likes cl ON c.id = cl.collection_id
+        LEFT JOIN collection_followers cf ON c.id = cf.collection_id
+        WHERE c.user_id = ${userId}
+        GROUP BY c.id
+        ORDER BY c.created_at DESC
+      `;
+    }
     catch (e) { console.warn('[AnimeVault DB] fetchUserCollections via Neon failed, falling back to localStorage:', e?.message); }
   }
-  return getLS(LS_KEYS.COLLECTIONS, []).filter(c => c.user_id === userId);
+  // localStorage fallback – enrich each collection with counts from the related tables
+  const collections = getLS(LS_KEYS.COLLECTIONS, []).filter(c => c.user_id === userId);
+  const items = getLS(LS_KEYS.COLLECTION_ITEMS, []);
+  const likes = getLS(LS_KEYS.COLLECTION_LIKES, []);
+  const followers = getLS(LS_KEYS.COLLECTION_FOLLOWERS, []);
+  return collections.map(c => ({
+    ...c,
+    count: items.filter(i => i.collection_id === c.id).length,
+    likes_count: likes.filter(l => l.collection_id === c.id).length,
+    followers_count: followers.filter(f => f.collection_id === c.id).length
+  }));
 }
 
 export async function fetchTrendingCollections(userId = null) {
@@ -900,16 +924,31 @@ export async function fetchCollectionItems(collectionId) {
 
 export async function createCollection(userId, username, title, description, cover, isPrivate) {
   if (isBrowser) {
-    const collections = getLS(LS_KEYS.COLLECTIONS, []);
-    const newCollection = { id: Date.now(), user_id: userId, username, title, description, cover, is_private: isPrivate, created_at: new Date().toISOString(), updated_at: new Date().toISOString() };
-    collections.push(newCollection);
-    setLS(LS_KEYS.COLLECTIONS, collections);
+    const tempId = Date.now();
+    const newCollection = { id: tempId, user_id: userId, username, title, description, cover, is_private: isPrivate, created_at: new Date().toISOString(), updated_at: new Date().toISOString() };
     if (sql) {
       try {
         const res = await sql`INSERT INTO collections (user_id, username, title, description, cover, is_private) VALUES (${userId}, ${username}, ${title}, ${description}, ${cover}, ${isPrivate}) RETURNING *`;
-        return res[0] || newCollection;
-      } catch (e) { console.warn('[AnimeVault DB] createCollection via Neon failed:', e?.message); return newCollection; }
+        const persisted = res[0] || newCollection;
+        // Persist the canonical Neon record (with Neon id) to localStorage so the
+        // list view and item lookups stay in sync with the saved items.
+        const collections = getLS(LS_KEYS.COLLECTIONS, []);
+        const idx = collections.findIndex(c => c.id === tempId || c.id === persisted.id);
+        if (idx !== -1) collections[idx] = { ...collections[idx], ...persisted };
+        else collections.push(persisted);
+        setLS(LS_KEYS.COLLECTIONS, collections);
+        return persisted;
+      } catch (e) {
+        console.warn('[AnimeVault DB] createCollection via Neon failed, saving to localStorage only:', e?.message);
+        const collections = getLS(LS_KEYS.COLLECTIONS, []);
+        collections.push(newCollection);
+        setLS(LS_KEYS.COLLECTIONS, collections);
+        return newCollection;
+      }
     }
+    const collections = getLS(LS_KEYS.COLLECTIONS, []);
+    collections.push(newCollection);
+    setLS(LS_KEYS.COLLECTIONS, collections);
     return newCollection;
   }
   if (!sql) return null;

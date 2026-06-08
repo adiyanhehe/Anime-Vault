@@ -520,14 +520,17 @@ async function searchAnimeJikan(
   search,
   type = "ANIME",
   page = 1,
-  perPage = 18,
+  perPage = 25,
 ) {
-  const path = type === "MANGA" ? "/manga" : "/anime";
-  const q = encodeURIComponent(search || "popular");
+  const isManga = type === "MANGA";
+  const path = isManga ? "/manga" : "/anime";
+  const q = encodeURIComponent((search || "").trim() || "naruto");
+  // If no search term provided, fall back to popular listings so users always see something
+  const effectiveQuery = (search || "").trim()
+    ? `${path}?q=${q}&order_by=score&sort=desc&page=${page}&limit=${perPage}`
+    : `${path}?order_by=popularity&sort=asc&page=${page}&limit=${perPage}`;
   try {
-    const data = await getJikan(
-      `${path}?q=${q}&order_by=popularity&sort=asc&page=${page}&limit=${perPage}`,
-    );
+    const data = await getJikan(effectiveQuery);
     const mapped = cleanMediaList(data, type);
     if (mapped.length) return mapped;
     throw new Error("Jikan returned no usable search items");
@@ -537,10 +540,8 @@ async function searchAnimeJikan(
       jikanErr.message,
     );
     try {
-      const isManga = type === "MANGA";
-      const path = isManga ? "/manga" : "/anime";
       const data = await getKitsu(
-        `${path}?filter[text]=${encodeURIComponent(search)}&page[limit]=${perPage}`,
+        `${path}?filter[text]=${encodeURIComponent(search || "")}&page[limit]=${perPage}`,
       );
       const mapped = cleanMediaList(data, type);
       if (mapped.length) return mapped;
@@ -553,9 +554,11 @@ async function searchAnimeJikan(
     const filtered = MOCK_FALLBACK_DATA.filter((item) => {
       const canonicalTitle = item.attributes?.canonicalTitle || "";
       const englishTitle = item.attributes?.titles?.en || "";
+      const haystack = (search || "").toLowerCase();
+      if (!haystack) return true;
       return (
-        canonicalTitle.toLowerCase().includes((search || "").toLowerCase()) ||
-        englishTitle.toLowerCase().includes((search || "").toLowerCase())
+        canonicalTitle.toLowerCase().includes(haystack) ||
+        englishTitle.toLowerCase().includes(haystack)
       );
     });
     const results = filtered.length > 0 ? filtered : MOCK_FALLBACK_DATA;
@@ -852,14 +855,17 @@ export async function searchAnime(
           id
           idMal
           title { romaji english native }
+          description
+          status
           episodes
           chapters
           volumes
-          coverImage { extraLarge large medium }
+          coverImage { extraLarge large medium color }
           bannerImage
           genres
           format
           averageScore
+          meanScore
           seasonYear
         }
       }

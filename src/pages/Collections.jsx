@@ -41,6 +41,7 @@ import {
   fetchTrendingMedia,
   fetchAnimeByIds
 } from '../api/anilist';
+import { useUser } from '../api/UserContext';
 
 // Featured slides for flashcards
 const CLASSROOM_OF_THE_ELITE_BANNER =
@@ -132,12 +133,6 @@ function mergeFeaturedAnime(fallback, fetched) {
     format: fetched.format || fallback.format,
   };
 }
-
-const DEMO_USER = {
-  id: 1,
-  username: 'AnimeFan99',
-  is_admin: false
-};
 
 const DashboardView = ({ user, onGoToMyCollections, onGoToCollection, onGoToCommunity, onGoToMakeCollection }) => {
   const [trending, setTrending] = useState([]);
@@ -617,7 +612,10 @@ const MakeCollectionView = ({ user, onBack, onSave }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [searching, setSearching] = useState(false);
+  const [hasSearched, setHasSearched] = useState(false);
+  const [searchError, setSearchError] = useState('');
   const [initialAnime, setInitialAnime] = useState([]);
+  const searchTimerRef = React.useRef(null);
 
   // Load initial trending anime
   useEffect(() => {
@@ -635,27 +633,61 @@ const MakeCollectionView = ({ user, onBack, onSave }) => {
   }, []);
 
   const handleSearch = async (q) => {
-    if (!q.trim()) {
+    if (!q || !q.trim()) {
       setSearchResults([]);
+      setHasSearched(false);
+      setSearchError('');
       return;
     }
     setSearching(true);
+    setSearchError('');
+    setHasSearched(true);
     try {
-      const results = await searchAnime(q);
-      setSearchResults(results || []);
+      const results = await searchAnime(q.trim());
+      setSearchResults(Array.isArray(results) ? results : []);
     } catch (err) {
       console.error('Search failed:', err);
+      setSearchError('Search failed. Please try again.');
+      setSearchResults([]);
     } finally {
       setSearching(false);
     }
   };
 
+  const handleSearchInput = (value) => {
+    setSearchQuery(value);
+    // Debounce search to avoid hitting AniList rate limits
+    if (searchTimerRef.current) {
+      clearTimeout(searchTimerRef.current);
+    }
+    searchTimerRef.current = setTimeout(() => {
+      handleSearch(value);
+    }, 400);
+  };
+
+  // Cleanup debounce timer on unmount
+  useEffect(() => {
+    return () => {
+      if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+    };
+  }, []);
+
   const addAnime = (anime) => {
+    if (!anime || anime.id == null) return;
     const alreadyAdded = items.some(i => i.id === anime.id);
     if (alreadyAdded) return;
-    setItems([...items, anime]);
+    // Normalize the anime object to ensure all needed fields are present
+    const normalized = {
+      id: anime.id,
+      title: anime.title || { romaji: 'Unknown Title', english: '', native: '' },
+      coverImage: anime.coverImage || {},
+      averageScore: anime.averageScore ?? anime.meanScore ?? null,
+      status: anime.status || null,
+    };
+    setItems([...items, normalized]);
     setSearchQuery('');
     setSearchResults([]);
+    setHasSearched(false);
   };
 
   const removeItem = (id) => {
@@ -837,10 +869,7 @@ const MakeCollectionView = ({ user, onBack, onSave }) => {
               type="text"
               placeholder="Search for anime to add..."
               value={searchQuery}
-              onChange={(e) => {
-                setSearchQuery(e.target.value);
-                handleSearch(e.target.value);
-              }}
+              onChange={(e) => handleSearchInput(e.target.value)}
               style={{
                 flex: 1,
                 background: 'transparent',
@@ -852,10 +881,23 @@ const MakeCollectionView = ({ user, onBack, onSave }) => {
             />
           </div>
 
+          {/* Search error */}
+          {searchError && (
+            <div style={{ marginBottom: '1rem', padding: '0.75rem 1rem', background: 'rgba(255,80,80,0.1)', border: '1px solid rgba(255,80,80,0.3)', borderRadius: '8px', color: '#ff8888', fontSize: '0.85rem' }}>
+              {searchError}
+            </div>
+          )}
+
           {/* Search Results */}
-          {searchQuery && searchResults.length > 0 && (
+          {hasSearched && !searching && searchResults.length === 0 && !searchError && (
+            <div style={{ marginBottom: '1.5rem', padding: '1.5rem', textAlign: 'center', color: '#cfc2d6', background: 'rgba(255,255,255,0.03)', borderRadius: '10px' }}>
+              <p style={{ margin: 0 }}>No anime found for "{searchQuery}". Try a different search term.</p>
+            </div>
+          )}
+
+          {searchResults.length > 0 && (
             <div style={{ marginBottom: '1.5rem', paddingBottom: '1.5rem', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-              <h4 style={{ marginBottom: '1rem', color: '#cfc2d6' }}>Search Results</h4>
+              <h4 style={{ marginBottom: '1rem', color: '#cfc2d6' }}>Search Results ({searchResults.length})</h4>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem' }}>
                 {searchResults.map(anime => (
                   <div key={anime.id} style={{ position: 'relative' }}>
@@ -868,10 +910,14 @@ const MakeCollectionView = ({ user, onBack, onSave }) => {
                     }}
                          onClick={() => addAnime(anime)}
                     >
-                      <img src={getImage(anime)} alt={getTitle(anime)} style={{ width: '100%', height: '160px', objectFit: 'cover' }} />
+                      {getImage(anime) ? (
+                        <img src={getImage(anime)} alt={getTitle(anime)} style={{ width: '100%', height: '160px', objectFit: 'cover' }} />
+                      ) : (
+                        <div style={{ width: '100%', height: '160px', background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#666' }}>No Image</div>
+                      )}
                       <div style={{ padding: '0.75rem' }}>
                         <h4 style={{ margin: '0 0 0.25rem 0', fontSize: '0.85rem' }}>{getTitle(anime)}</h4>
-                        <div style={{ fontSize: '0.75rem', color: '#ffc107', fontWeight: '600' }}>⭐ {anime.averageScore}</div>
+                        <div style={{ fontSize: '0.75rem', color: '#ffc107', fontWeight: '600' }}>⭐ {anime.averageScore || 'N/A'}</div>
                       </div>
                     </div>
                     <button
@@ -1438,6 +1484,9 @@ const EditCollectionView = ({ collection, user, onBack, onSave, onDelete }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [searching, setSearching] = useState(false);
+  const [hasSearched, setHasSearched] = useState(false);
+  const [searchError, setSearchError] = useState('');
+  const searchTimerRef = React.useRef(null);
 
   useEffect(() => {
     const load = async () => {
@@ -1447,23 +1496,47 @@ const EditCollectionView = ({ collection, user, onBack, onSave, onDelete }) => {
     load();
   }, [collection.id]);
 
+  // Cleanup debounce timer on unmount
+  useEffect(() => {
+    return () => {
+      if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+    };
+  }, []);
+
   const handleSearch = async (q) => {
-    if (!q.trim()) {
+    if (!q || !q.trim()) {
       setSearchResults([]);
+      setHasSearched(false);
+      setSearchError('');
       return;
     }
     setSearching(true);
+    setSearchError('');
+    setHasSearched(true);
     try {
-      const results = await searchAnime(q);
-      setSearchResults(results || []);
+      const results = await searchAnime(q.trim());
+      setSearchResults(Array.isArray(results) ? results : []);
     } catch (err) {
       console.error('Search failed:', err);
+      setSearchError('Search failed. Please try again.');
+      setSearchResults([]);
     } finally {
       setSearching(false);
     }
   };
 
+  const handleSearchInput = (value) => {
+    setSearchQuery(value);
+    if (searchTimerRef.current) {
+      clearTimeout(searchTimerRef.current);
+    }
+    searchTimerRef.current = setTimeout(() => {
+      handleSearch(value);
+    }, 400);
+  };
+
   const addAnime = (anime) => {
+    if (!anime || anime.id == null) return;
     const alreadyAdded = items.some(i => i.media_id === String(anime.id) || i.id === anime.id);
     if (alreadyAdded) return;
     const newItem = {
@@ -1472,13 +1545,14 @@ const EditCollectionView = ({ collection, user, onBack, onSave, onDelete }) => {
       media_type: 'anime',
       title: getTitle(anime),
       poster: getImage(anime),
-      score: anime.averageScore,
-      status: anime.status,
+      score: anime.averageScore ?? anime.meanScore ?? null,
+      status: anime.status || null,
       added_at: new Date().toISOString()
     };
     setItems([...items, newItem]);
     setSearchQuery('');
     setSearchResults([]);
+    setHasSearched(false);
   };
 
   const removeItem = (id) => {
@@ -1486,10 +1560,44 @@ const EditCollectionView = ({ collection, user, onBack, onSave, onDelete }) => {
   };
 
   const handleSave = async () => {
-    if (user) {
-      await updateCollection(collection.id, user.id, title, description, cover, isPrivate);
-      onSave();
+    if (!user) return;
+    // 1) Sync collection metadata
+    await updateCollection(collection.id, user.id, title, description, cover, isPrivate);
+
+    // 2) Sync items: fetch the current server-side items, then add new ones and
+    //    remove deleted ones. This ensures the items the user added/removed in
+    //    the edit view actually get persisted to the database.
+    try {
+      const serverItems = await fetchCollectionItems(collection.id);
+      const serverIds = new Set(serverItems.map(i => String(i.media_id)));
+      const localIds = new Set(items.map(i => String(i.media_id)));
+
+      // Add items present locally but not on the server
+      for (const item of items) {
+        if (!serverIds.has(String(item.media_id))) {
+          await addItemToCollection(
+            collection.id,
+            String(item.media_id),
+            item.media_type || 'anime',
+            item.title || getTitle(item),
+            item.poster || getImage(item),
+            item.score ?? null,
+            item.status ?? null
+          );
+        }
+      }
+
+      // Remove items present on the server but no longer in local state
+      for (const serverItem of serverItems) {
+        if (!localIds.has(String(serverItem.media_id))) {
+          await removeItemFromCollection(collection.id, serverItem.id);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to sync collection items:', err);
     }
+
+    onSave();
   };
 
   const handleDelete = async () => {
@@ -1655,10 +1763,7 @@ const EditCollectionView = ({ collection, user, onBack, onSave, onDelete }) => {
               type="text"
               placeholder="Add Anime"
               value={searchQuery}
-              onChange={(e) => {
-                setSearchQuery(e.target.value);
-                handleSearch(e.target.value);
-              }}
+              onChange={(e) => handleSearchInput(e.target.value)}
               style={{
                 flex: 1,
                 background: 'transparent',
@@ -1670,9 +1775,21 @@ const EditCollectionView = ({ collection, user, onBack, onSave, onDelete }) => {
             />
           </div>
 
-          {searchQuery && searchResults.length > 0 && (
+          {searchError && (
+            <div style={{ marginBottom: '1rem', padding: '0.75rem 1rem', background: 'rgba(255,80,80,0.1)', border: '1px solid rgba(255,80,80,0.3)', borderRadius: '8px', color: '#ff8888', fontSize: '0.85rem' }}>
+              {searchError}
+            </div>
+          )}
+
+          {hasSearched && !searching && searchResults.length === 0 && !searchError && (
+            <div style={{ marginBottom: '1.5rem', padding: '1.5rem', textAlign: 'center', color: '#cfc2d6', background: 'rgba(255,255,255,0.03)', borderRadius: '10px' }}>
+              <p style={{ margin: 0 }}>No anime found for "{searchQuery}". Try a different search term.</p>
+            </div>
+          )}
+
+          {searchResults.length > 0 && (
             <div style={{ marginBottom: '1.5rem', paddingBottom: '1.5rem', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-              <h4 style={{ marginBottom: '1rem', color: '#cfc2d6' }}>Search Results</h4>
+              <h4 style={{ marginBottom: '1rem', color: '#cfc2d6' }}>Search Results ({searchResults.length})</h4>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem' }}>
                 {searchResults.map(anime => (
                   <div key={anime.id} style={{ position: 'relative' }}>
@@ -1685,10 +1802,14 @@ const EditCollectionView = ({ collection, user, onBack, onSave, onDelete }) => {
                     }}
                          onClick={() => addAnime(anime)}
                     >
-                      <img src={getImage(anime)} alt={getTitle(anime)} style={{ width: '100%', height: '160px', objectFit: 'cover' }} />
+                      {getImage(anime) ? (
+                        <img src={getImage(anime)} alt={getTitle(anime)} style={{ width: '100%', height: '160px', objectFit: 'cover' }} />
+                      ) : (
+                        <div style={{ width: '100%', height: '160px', background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#666' }}>No Image</div>
+                      )}
                       <div style={{ padding: '0.75rem' }}>
                         <h4 style={{ margin: '0 0 0.25rem 0', fontSize: '0.85rem' }}>{getTitle(anime)}</h4>
-                        <div style={{ fontSize: '0.75rem', color: '#ffc107', fontWeight: '600' }}>⭐ {anime.averageScore}</div>
+                        <div style={{ fontSize: '0.75rem', color: '#ffc107', fontWeight: '600' }}>⭐ {anime.averageScore || 'N/A'}</div>
                       </div>
                     </div>
                     <button
@@ -1808,9 +1929,9 @@ const EditCollectionView = ({ collection, user, onBack, onSave, onDelete }) => {
 };
 
 export default function Collections() {
+  const { user } = useUser();
   const [view, setView] = useState('dashboard');
   const [selectedCollection, setSelectedCollection] = useState(null);
-  const [user] = useState(DEMO_USER);
 
   const handleGoToMyCollections = () => setView('my-collections');
   const handleGoToCommunity = () => setView('community');
