@@ -1,7 +1,7 @@
 {
   "name": "animevault",
   "private": true,
-  "version": "0.2.49",
+  "version": "0.2.50",
   "description": "The ultimate anime streaming experience",
   "author": "AnimeVault Team",
   "type": "module",
@@ -67,10 +67,13 @@
       "signAndEditExecutable": true,
       "certificateFile": "animevault-code-signing.pfx"
     },
+<<<<<<< HEAD
 
 
 
 
+=======
+>>>>>>> debed548ca1db10124d8c267e5335afec599b66c
     "mac": {
       "target": [
         {
@@ -93,7 +96,6 @@
       "identity": null,
       "artifactName": "AnimeVault-macOS-${arch}.${ext}"
     },
-
     "linux": {
       "target": [
         {
