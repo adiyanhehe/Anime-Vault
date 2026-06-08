@@ -146,15 +146,21 @@ jobs:
       - name: Build installer
         shell: bash
         env:
-          # Reuse the dev certificate that's tracked in the repo so the
-          # Windows builds are actually signed. Without this, the
-          # auto-updater refuses to install the update because the binary
-          # in `latest.yml` doesn't match an authenticode signature.
+          # Code signing. The .pfx is committed to the repo and the password
+          # is hardcoded here so the auto-updater works out of the box.
+          # SECURITY: this puts the .pfx password in git history. To lock it
+          # down, set CSC_KEY_PASSWORD as a Repository Secret, then change
+          # the line below to:
+          #   CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
           CSC_LINK: ${{ github.workspace }}/animevault-code-signing.pfx
-          CSC_KEY_PASSWORD: devpwd
+          CSC_KEY_PASSWORD: Adiyan123@!
           WIN_CSC_LINK: ${{ github.workspace }}/animevault-code-signing.pfx
-          WIN_CSC_KEY_PASSWORD: devpwd
+          WIN_CSC_KEY_PASSWORD: Adiyan123@!
+          CSC_IDENTITY_AUTO_DISCOVERY: 'true'
         run: npm run electron:build -- ${{ matrix.args }}
+
+
+
 
       - name: Upload installer artifact
         uses: actions/upload-artifact@v4

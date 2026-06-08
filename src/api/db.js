@@ -285,10 +285,19 @@ export async function userLogin(username, password) {
   const trimmedUser = (username || '').trim();
   if (!trimmedUser || !password) return { success: false, message: 'All fields are required.' };
 
+  const hashedPassword = btoa(password);
+
+  // Helper: match a stored password against either the new hashed format or the old raw format
+  const passwordMatches = (stored) => {
+    if (!stored && stored !== '') return false;
+    if (stored === hashedPassword) return true;
+    if (stored === password) return true; // legacy raw-password records
+    return false;
+  };
+
   // Try Neon first
   if (sql) {
     try {
-      const hashedPassword = btoa(password);
       const result = await sql`
         SELECT id, username, password, avatar, banner, is_admin FROM users
         WHERE username = ${trimmedUser}
@@ -296,8 +305,12 @@ export async function userLogin(username, password) {
       if (!result.length) {
         // fall through to localStorage
       } else {
-        if (result[0].password !== hashedPassword) {
+        if (!passwordMatches(result[0].password)) {
           return { success: false, message: 'Invalid username or password.' };
+        }
+        // Opportunistic re-hash so old records get upgraded in the DB
+        if (result[0].password !== hashedPassword) {
+          try { await sql`UPDATE users SET password = ${hashedPassword} WHERE id = ${result[0].id}`; } catch (e) {}
         }
         const user = { ...result[0] };
         delete user.password;
@@ -308,15 +321,23 @@ export async function userLogin(username, password) {
     }
   }
 
-  // localStorage fallback
+  // localStorage fallback (handles both hashed and legacy raw passwords)
   const users = getLS(LS_KEYS.USERS, []);
-  const hashed = btoa(password);
-  const user = users.find(u => u.username === trimmedUser && u.password === hashed);
-  if (!user) return { success: false, message: 'Invalid username or password.' };
-  const safeUser = { ...user };
+  const idx = users.findIndex(u => u.username === trimmedUser && passwordMatches(u.password));
+  if (idx === -1) return { success: false, message: 'Invalid username or password.' };
+  // Upgrade legacy records to the hashed format so future logins are fast and secure
+  if (users[idx].password !== hashedPassword) {
+    users[idx].password = hashedPassword;
+    setLS(LS_KEYS.USERS, users);
+    if (sql) {
+      try { await sql`UPDATE users SET password = ${hashedPassword} WHERE username = ${trimmedUser}`; } catch (e) {}
+    }
+  }
+  const safeUser = { ...users[idx] };
   delete safeUser.password;
   return { success: true, user: safeUser };
 }
+
 
 export async function updateUserProfile(userId, avatarUrl, bannerUrl) {
   if (sql) {

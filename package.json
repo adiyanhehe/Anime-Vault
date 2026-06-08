@@ -61,8 +61,15 @@
           ]
         }
       ],
-      "artifactName": "AnimeVault-Windows-${arch}.${ext}"
+      "artifactName": "AnimeVault-Windows-${arch}.${ext}",
+      "publisherName": "AnimeVault Dev",
+      "forceCodeSigning": false,
+      "signAndEditExecutable": true,
+      "certificateFile": "animevault-code-signing.pfx",
+      "certificatePassword": "Adiyan123@!"
     },
+
+
     "mac": {
       "target": [
         {
@@ -80,14 +87,12 @@
           ]
         }
       ],
-      "hardenedRuntime": true,
+      "hardenedRuntime": false,
       "gatekeeperAssess": false,
-      "identity": "${env.MAC_IDENTITY}",
-      "entitlements": "build/entitlements.mac.plist",
-      "entitlementsInherit": "build/entitlements.mac.plist",
-      "artifactName": "AnimeVault-macOS-${arch}.${ext}",
-      "type": "distribution"
+      "identity": null,
+      "artifactName": "AnimeVault-macOS-${arch}.${ext}"
     },
+
     "linux": {
       "target": [
         {
