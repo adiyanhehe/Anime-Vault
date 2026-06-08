@@ -1,7 +1,7 @@
 {
   "name": "animevault",
   "private": true,
-  "version": "0.2.50",
+  "version": "0.2.51",
   "description": "The ultimate anime streaming experience",
   "author": "AnimeVault Team",
   "type": "module",
@@ -68,7 +68,6 @@
       "certificateFile": "animevault-code-signing.pfx"
     },
     "mac": {
-
       "target": [
         {
           "target": "dmg",
