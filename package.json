@@ -65,9 +65,10 @@
       "publisherName": "AnimeVault Dev",
       "forceCodeSigning": false,
       "signAndEditExecutable": true,
-      "certificateFile": "animevault-code-signing.pfx",
-      "certificatePassword": "Adiyan123@!"
+      "certificateFile": "animevault-code-signing.pfx"
     },
+
+
 
 
     "mac": {

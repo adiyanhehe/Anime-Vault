@@ -22,20 +22,13 @@ jobs:
         run: npm ci
       - name: Build Windows installer
         # Code signing. The .pfx is committed to the repo and the password
-        # is hardcoded here so the auto-updater works out of the box.
-        # SECURITY: this puts the .pfx password in git history. To lock it
-        # down, set CSC_KEY_PASSWORD as a Repository Secret, then change
-        # the line below to:
-        #   CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+        # is read from the CSC_KEY_PASSWORD repository secret.
         env:
           CSC_LINK: ${{ github.workspace }}/animevault-code-signing.pfx
-          CSC_KEY_PASSWORD: Adiyan123@!
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
           WIN_CSC_LINK: ${{ github.workspace }}/animevault-code-signing.pfx
-          WIN_CSC_KEY_PASSWORD: Adiyan123@!
-          CSC_IDENTITY_AUTO_DISCOVERY: 'true'
+          WIN_CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
         run: npm run electron:build -- --win
-
-
       - name: Upload installer artifact
         uses: actions/upload-artifact@v4
         with:
