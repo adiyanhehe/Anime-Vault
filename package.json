@@ -1,7 +1,7 @@
 {
   "name": "animevault",
   "private": true,
-  "version": "0.2.51",
+  "version": "0.2.52",
   "description": "The ultimate anime streaming experience",
   "author": "AnimeVault Team",
   "type": "module",
@@ -66,9 +66,12 @@
       "forceCodeSigning": false,
       "signAndEditExecutable": false
     },
+<<<<<<< HEAD
 
 
 
+=======
+>>>>>>> 62f213b6e0aa0a5406f5e90b03066db7d2fb7f88
     "mac": {
       "target": [
         {
