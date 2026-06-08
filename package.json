@@ -66,12 +66,7 @@
       "forceCodeSigning": false,
       "signAndEditExecutable": false
     },
-<<<<<<< HEAD
 
-
-
-=======
->>>>>>> 62f213b6e0aa0a5406f5e90b03066db7d2fb7f88
     "mac": {
       "target": [
         {
@@ -94,6 +89,7 @@
       "identity": null,
       "artifactName": "AnimeVault-macOS-${arch}.${ext}"
     },
+
     "linux": {
       "target": [
         {
