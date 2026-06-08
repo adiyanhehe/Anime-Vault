@@ -64,10 +64,9 @@
       "artifactName": "AnimeVault-Windows-${arch}.${ext}",
       "publisherName": "AnimeVault Dev",
       "forceCodeSigning": false,
-      "signAndEditExecutable": true,
-      "certificateFile": "animevault-code-signing.pfx",
-      "certificatePassword": "Adiyan123@!"
+      "signAndEditExecutable": false
     },
+
 
 
     "mac": {
