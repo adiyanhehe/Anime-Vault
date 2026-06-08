@@ -67,14 +67,8 @@
       "signAndEditExecutable": true,
       "certificateFile": "animevault-code-signing.pfx"
     },
-<<<<<<< HEAD
-
-
-
-
-=======
->>>>>>> debed548ca1db10124d8c267e5335afec599b66c
     "mac": {
+
       "target": [
         {
           "target": "dmg",
