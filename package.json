@@ -13,16 +13,16 @@
     "generate-icons": "node scripts/generate-icons.js",
     "generate-dev-cert": "powershell -ExecutionPolicy Bypass -File scripts/generate-dev-cert.ps1",
     "clean": "rimraf release",
-    "prebuild": "taskkill /IM AnimeVault.exe /F || echo 'No running instance'",
+    "prebuild": "node -e \"try{require('child_process').execSync('taskkill /IM AnimeVault.exe /F',{stdio:'ignore'})}catch(e){console.log('No running instance')}\"",
     "electron:dev": "cross-env NODE_ENV=development concurrently \"vite\" \"wait-on http://localhost:5173 && electron .\"",
-    "electron:build": "npm run prebuild && npm run clean && set NODE_OPTIONS=--max_old_space_size=8192 && npm run generate-icons && set ELECTRON=1 && vite build && electron-builder --publish never",
+    "electron:build": "npm run prebuild && npm run clean && cross-env NODE_OPTIONS=--max_old_space_size=8192 && npm run generate-icons && cross-env ELECTRON=1 && vite build && electron-builder --publish never",
     "predeploy": "npm run build",
     "deploy": "gh-pages -d dist",
     "bump-version": "npm version patch -m \"chore: bump version to %s\"",
     "android:build": "npm run android:sync && cd android && chmod +x gradlew && ./gradlew assembleRelease",
     "android:build:win": "npm run android:sync && cd android && set \"JAVA_HOME=D:\\jdk-21\\jdk-21.0.11\" && set \"PATH=%JAVA_HOME%\\bin;%PATH%\" && gradlew assembleRelease",
     "electron:release": "npm run generate-icons && cross-env ELECTRON=1 vite build && electron-builder --publish always",
-    "electron:build:win": "npm run prebuild && npm run clean && npm run generate-icons && set ELECTRON=1 && vite build && electron-builder --win --publish never",
+    "electron:build:win": "npm run prebuild && npm run clean && npm run generate-icons && cross-env ELECTRON=1 && vite build && electron-builder --win --publish never",
     "electron:build:mac": "npm run generate-icons && cross-env ELECTRON=1 vite build && electron-builder --mac --publish never",
     "electron:build:linux": "npm run generate-icons && cross-env ELECTRON=1 vite build && electron-builder --linux --publish never",
     "android:sync": "npm run build && npx cap sync android",
@@ -38,7 +38,8 @@
     "asar": true,
     "files": [
       "dist/**/*",
-      "electron/**/*"
+      "electron/**/*",
+      "build/**/*"
     ],
     "npmRebuild": false,
     "extraMetadata": {
@@ -52,75 +53,68 @@
     },
     "win": {
       "icon": "build/icon.ico",
-      "certificateFile": "animevault-code-signing.pfx",
-      "certificatePassword": "devpwd",
-      "publisherName": "AnimeVault Dev",
-      "signAndEditExecutable": true,
-      "signtoolOptions": {
-        "publisherName": "AnimeVault Dev"
-      }
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "artifactName": "AnimeVault-Windows-${arch}.${ext}"
     },
-    "target": [
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ],
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "identity": "${env.MAC_IDENTITY}",
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist",
+      "artifactName": "AnimeVault-macOS-${arch}.${ext}",
+      "type": "distribution"
+    },
+    "linux": {
+      "target": [
+        {
+          "target": "deb",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "AppImage",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "src/electron/.icon-ico/icon.png",
+      "category": "AudioVideo",
+      "maintainer": "AnimeVault Team",
+      "artifactName": "AnimeVault-Linux-${arch}.${ext}"
+    },
+    "publish": [
       {
-        "target": "nsis",
-        "arch": [
-          "x64"
-        ]
+        "provider": "github",
+        "releaseType": "release"
       }
-    ],
-    "artifactName": "AnimeVault-Windows-${arch}.${ext}"
+    ]
   },
-  "mac": {
-    "target": [
-      {
-        "target": "dmg",
-        "arch": [
-          "x64",
-          "arm64"
-        ]
-      },
-      {
-        "target": "zip",
-        "arch": [
-          "x64",
-          "arm64"
-        ]
-      }
-    ],
-    "hardenedRuntime": true,
-    "gatekeeperAssess": false,
-    "identity": "${env.MAC_IDENTITY}",
-    "entitlements": "build/entitlements.mac.plist",
-    "entitlementsInherit": "build/entitlements.mac.plist",
-    "artifactName": "AnimeVault-macOS-${arch}.${ext}",
-    "type": "distribution"
-  },
-  "linux": {
-    "target": [
-      {
-        "target": "deb",
-        "arch": [
-          "x64"
-        ]
-      },
-      {
-        "target": "AppImage",
-        "arch": [
-          "x64"
-        ]
-      }
-    ],
-    "icon": "src/electron/.icon-ico/icon.png",
-    "category": "AudioVideo",
-    "maintainer": "AnimeVault Team",
-    "artifactName": "AnimeVault-Linux-${arch}.${ext}"
-  },
-  "publish": [
-    {
-      "provider": "github",
-      "releaseType": "release"
-    }
-  ],
   "dependencies": {
     "@neondatabase/auth": "^0.3.0-beta",
     "@neondatabase/serverless": "^1.1.0",

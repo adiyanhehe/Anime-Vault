@@ -7,8 +7,9 @@ import {
 } from 'lucide-react';
 import './styles/designTokens.css';
 import { useUser } from './api/UserContext';
-import { fetchSiteSettings } from './api/db';
+import { fetchSiteSettings, initDatabase } from './api/db';
 import { initializeDatabase } from './api/database';
+
 import { FocusableNavLink, FocusableLink, FocusableButton } from './components/FocusableWrapper';
 import RequireAuth from './components/RequireAuth';
 import Home from './pages/Home';
@@ -55,11 +56,13 @@ function App() {
   useEffect(() => {
     async function loadSettings() {
       try {
-        // Initialize database first
+        // Initialize local client storage
         await initializeDatabase();
+        // Initialize Neon database tables and run seed
+        try { await initDatabase(); } catch (dbErr) { console.warn('Neon init skipped:', dbErr?.message); }
         const settings = await fetchSiteSettings();
-        if (settings.announcement) setAnnouncement(settings.announcement);
-        if (settings.maintenance === 'true') setMaintenanceMode(true);
+        if (settings?.announcement) setAnnouncement(settings.announcement);
+        if (settings?.maintenance === 'true') setMaintenanceMode(true);
       } catch (err) {
         console.error('Failed to load global site settings:', err);
       } finally {
@@ -68,6 +71,7 @@ function App() {
     }
     loadSettings();
   }, []);
+
 
 
   useEffect(() => {
