@@ -1,8 +1,5 @@
 import { useState, useEffect } from 'react';
-import { 
-  Heart, Clock, User, LogOut, Trash2, Calendar, Film, 
-  Camera, Edit2, Image, Sparkles, Tv, Check, Save, ExternalLink, Award 
-} from 'lucide-react';
+import { Heart, Clock, User, LogOut, Trash2, Calendar, Film, Camera, Edit2, Image, Sparkles, Tv, Check, Save, ExternalLink, Award, Settings as SettingsIcon } from 'lucide-react';
 import { useUser } from '../api/UserContext';
 import { Link, useNavigate } from 'react-router-dom';
 import { fetchTrendingMedia } from '../api/anilist';
@@ -243,21 +240,38 @@ export default function Profile() {
 
 
 
-        {/* Logout Quick Trigger */}
-        <button 
-          onClick={() => { logout(); navigate('/'); }}
-          style={{
-            padding: '12px 24px', background: 'rgba(239,68,68,0.08)',
-            border: '1px solid rgba(239,68,68,0.3)', color: '#ef4444',
+        <div style={{ display: 'flex', gap: '12px' }}>
+          {/* Settings Button */}
+          <Link to="/settings" style={{
+            padding: '12px 24px', background: 'rgba(255,255,255,0.05)',
+            border: '1px solid rgba(255,255,255,0.1)', color: '#fff',
             fontSize: '0.85rem', fontWeight: '800', borderRadius: '12px',
             cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px',
-            transition: 'all 0.2s ease', marginBottom: '10px'
+            transition: 'all 0.2s ease', marginBottom: '10px',
+            textDecoration: 'none'
           }}
-          onMouseEnter={e => e.currentTarget.style.background = 'rgba(239,68,68,0.18)'}
-          onMouseLeave={e => e.currentTarget.style.background = 'rgba(239,68,68,0.08)'}
-        >
-          <LogOut size={16} /> Logout
-        </button>
+          onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
+          onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+          >
+            <SettingsIcon size={16} /> Settings
+          </Link>
+
+          {/* Logout Quick Trigger */}
+          <button 
+            onClick={() => { logout(); navigate('/'); }}
+            style={{
+              padding: '12px 24px', background: 'rgba(239,68,68,0.08)',
+              border: '1px solid rgba(239,68,68,0.3)', color: '#ef4444',
+              fontSize: '0.85rem', fontWeight: '800', borderRadius: '12px',
+              cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px',
+              transition: 'all 0.2s ease', marginBottom: '10px'
+            }}
+            onMouseEnter={e => e.currentTarget.style.background = 'rgba(239,68,68,0.18)'}
+            onMouseLeave={e => e.currentTarget.style.background = 'rgba(239,68,68,0.08)'}
+          >
+            <LogOut size={16} /> Logout
+          </button>
+        </div>
       </div>
 
       {/* ── PROFILE THEME EDITING PANEL ── */}

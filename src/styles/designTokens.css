@@ -5,6 +5,7 @@
   --brand-primary: hsl(340, 85%, 55%); /* vibrant pink */
   --brand-primary-light: hsl(340, 85%, 65%);
   --brand-primary-dark: hsl(340, 85%, 45%);
+  --brand-color: var(--brand-primary); /* Alias for existing uses */
 
   /* Backgrounds */
   --bg-primary: hsl(0, 0%, 12%);

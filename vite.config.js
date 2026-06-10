@@ -52,9 +52,10 @@ export default defineConfig(({ command, mode }) => {
       },
     },
     build: {
-      rollupOptions: {
-        external: ['bcryptjs'],
-      },
+        rollupOptions: {
+            // Only externalize bcryptjs for Electron builds (since it's Node-only there)
+            external: isElectronBuild ? ['bcryptjs'] : [],
+        },
     },
   };
 });

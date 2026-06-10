@@ -309,7 +309,7 @@ jobs:
           fi
           cp "${apks[0]}" "release/AnimeVault-Android.apk"
 
-      # Publish Android APK immediately (don't wait for desktop builds)
+      #dosent wait for other builds to finish lol
       - name: Resolve version tag
         id: release
         shell: bash

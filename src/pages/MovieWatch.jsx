@@ -97,15 +97,9 @@ function MovieWatch() {
         const newSources = [];
         
         if (type === 'movie') {
-          newSources.push({ name: 'MultiEmbed', url: `https://multiembed.mov/?video_id=${imdbId}` });
-          newSources.push({ name: 'AutoEmbed', url: `https://autoembed.co/movie/imdb/${imdbId}` });
-          newSources.push({ name: 'VidSrc.me', url: `https://vidsrc.me/embed/movie?imdb=${imdbId}` });
-          newSources.push({ name: 'EmbedAPI', url: `https://player.embed-api.stream/?id=${imdbId}&type=movie` });
+          newSources.push({ name: 'VidSrc-Embed', url: `https://vidsrc-embed.ru/embed/movie?imdb=${imdbId}` });
         } else {
-          newSources.push({ name: 'MultiEmbed', url: `https://multiembed.mov/?video_id=${imdbId}&s=${sNum}&e=${eNum}` });
-          newSources.push({ name: 'AutoEmbed', url: `https://autoembed.co/tv/imdb/${imdbId}-${sNum}-${eNum}` });
-          newSources.push({ name: 'VidSrc.me', url: `https://vidsrc.me/embed/tv?imdb=${imdbId}&season=${sNum}&episode=${eNum}` });
-          newSources.push({ name: 'EmbedAPI', url: `https://player.embed-api.stream/?id=${imdbId}&type=tv&season=${sNum}&episode=${eNum}` });
+          newSources.push({ name: 'VidSrc-Embed', url: `https://vidsrc-embed.ru/embed/tv?imdb=${imdbId}&season=${sNum}&episode=${eNum}` });
         }
         
         setSources(newSources);
@@ -117,7 +111,8 @@ function MovieWatch() {
 
   async function loadMeta() {
     setLoading(true);
-    const data = await fetchMediaMeta(type, id);
+    let data = await fetchMediaMeta(type, id);
+
     // Normalise episode numbers for UI
     if (data && data.videos) {
       data.videos = data.videos.map((v) => ({
@@ -129,10 +124,33 @@ function MovieWatch() {
     // Initialise season/episode for series
     if (data && (type === "tv" || type === "series")) {
       const seasons = {};
-      (data.videos || []).forEach((v) => {
-        if (v.season !== undefined) {
-          if (!seasons[v.season]) seasons[v.season] = [];
-          seasons[v.season].push(v);
+      (data.seasons || data.videos || []).forEach((s) => {
+        // Case 1: It's a season object with episode_count
+        if ((s.season_number !== undefined || s.season !== undefined) && s.episode_count !== undefined) {
+          const seasonNum = s.season_number !== undefined ? s.season_number : s.season;
+          if (seasonNum > 0) {
+            const epCount = s.episode_count;
+            seasons[seasonNum] = [];
+            for (let i = 1; i <= epCount; i++) {
+              seasons[seasonNum].push({
+                episode: i,
+                number: i,
+                title: `Episode ${i}`,
+              });
+            }
+          }
+        } 
+        // Case 2: It's an individual episode
+        else if (s.season !== undefined && s.episode !== undefined) {
+          const seasonNum = s.season;
+          if (!seasons[seasonNum]) seasons[seasonNum] = [];
+          seasons[seasonNum].push(s);
+        }
+        // Case 3: It's an individual episode with season_number and number
+        else if (s.season_number !== undefined && s.number !== undefined) {
+          const seasonNum = s.season_number;
+          if (!seasons[seasonNum]) seasons[seasonNum] = [];
+          seasons[seasonNum].push({ ...s, episode: s.number });
         }
       });
       const nums = Object.keys(seasons)
@@ -173,11 +191,34 @@ function MovieWatch() {
 
   const isSeries = type === "tv" || type === "series";
   const seasonsMap = {};
-  if (isSeries && meta.videos) {
-    meta.videos.forEach((v) => {
-      if (v.season !== undefined) {
-        if (!seasonsMap[v.season]) seasonsMap[v.season] = [];
-        seasonsMap[v.season].push(v);
+  if (isSeries && (meta.seasons || meta.videos)) {
+    (meta.seasons || meta.videos || []).forEach((s) => {
+      // Case 1: It's a season object with episode_count
+      if ((s.season_number !== undefined || s.season !== undefined) && s.episode_count !== undefined) {
+        const seasonNum = s.season_number !== undefined ? s.season_number : s.season;
+        if (seasonNum > 0) {
+          const epCount = s.episode_count;
+          seasonsMap[seasonNum] = [];
+          for (let i = 1; i <= epCount; i++) {
+            seasonsMap[seasonNum].push({
+              episode: i,
+              number: i,
+              title: `Episode ${i}`,
+            });
+          }
+        }
+      } 
+      // Case 2: It's an individual episode
+      else if (s.season !== undefined && s.episode !== undefined) {
+        const seasonNum = s.season;
+        if (!seasonsMap[seasonNum]) seasonsMap[seasonNum] = [];
+        seasonsMap[seasonNum].push(s);
+      }
+      // Case 3: It's an individual episode with season_number and number
+      else if (s.season_number !== undefined && s.number !== undefined) {
+        const seasonNum = s.season_number;
+        if (!seasonsMap[seasonNum]) seasonsMap[seasonNum] = [];
+        seasonsMap[seasonNum].push({ ...s, episode: s.number });
       }
     });
   }
