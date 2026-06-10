@@ -53,6 +53,7 @@
     },
     "win": {
       "icon": "build/icon.ico",
+
       "target": [
         {
           "target": "nsis",
@@ -62,7 +63,7 @@
         }
       ],
       "artifactName": "AnimeVault-Windows-${arch}.${ext}",
-      "publisherName": "AnimeVault Dev",
+      "publisherName": "Anime Vault team",
       "forceCodeSigning": false,
       "signAndEditExecutable": false
     },
