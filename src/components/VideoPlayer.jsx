@@ -6,6 +6,9 @@ import { Settings } from 'lucide-react';
 import '@vidstack/react/player/styles/default/theme.css';
 import electronBridge from '../utils/electronBridge';
 
+// Check if we're in Electron environment
+const isElectron = typeof window !== 'undefined' && window.electronAPI !== undefined;
+
 // Throttle updates so we don't spam Discord RPC (e.g. every 5 seconds)
 let lastUpdateTime = 0;
 
@@ -66,19 +69,36 @@ function VideoPlayer({ sources, poster, title, embedUrl, isZen }) {
 
     return (
       <div 
-        className={`video-player-wrapper-v2 embed-container ${isZen ? 'zen-active' : ''}`}
+        className={`player-wrap video-player-wrapper-v2 embed-container ${isZen ? 'zen-active' : ''}`}
         style={isMiruro ? { overflow: 'hidden', position: 'relative' } : {}}
       >
-        <iframe
-          src={embedUrl}
-          className="embed-iframe"
-          style={isMiruro ? { marginTop: '-100px', height: 'calc(100% + 100px)' } : {}}
-          allowFullScreen
-          allow="autoplay; fullscreen; picture-in-picture; encrypted-media; clipboard-write"
-          title={title}
-          referrerPolicy="no-referrer-when-downgrade"
-          loading="lazy"
-        />
+        {isElectron ? (
+          <webview
+              src={embedUrl}
+              className="embed-iframe"
+              style={isMiruro ? { marginTop: '-100px', height: 'calc(100% + 100px)' } : {
+                width: '100%',
+                height: '100%',
+                border: 'none'
+              }}
+              partition="persist:player"
+              allowpopups="false"
+              sandbox="allow-scripts allow-same-origin allow-forms"
+              allowfullscreen
+              title={title}
+            />
+        ) : (
+          <iframe
+            src={embedUrl}
+            className="embed-iframe"
+            style={isMiruro ? { marginTop: '-100px', height: 'calc(100% + 100px)' } : {}}
+            allowFullScreen
+            allow="autoplay; fullscreen; picture-in-picture; encrypted-media; clipboard-write"
+            title={title}
+            referrerPolicy="no-referrer-when-downgrade"
+            loading="lazy"
+          />
+        )}
       </div>
     );
   }

@@ -8,6 +8,13 @@ function AnimeCard({ anime, isFavorite, onToggleFavorite, linkPrefix = '/anime/'
   const year = anime.seasonYear;
   const episodes = anime.episodes;
   const chapters = anime.chapters;
+  
+  // Get the cover image with fallbacks
+  const coverImage = anime.coverImage?.extraLarge 
+    || anime.coverImage?.large 
+    || anime.coverImage?.medium 
+    || anime.coverImage?.original
+    || '/logo.png';
 
   function handleFavoriteClick(e) {
     e.preventDefault();
@@ -19,7 +26,7 @@ function AnimeCard({ anime, isFavorite, onToggleFavorite, linkPrefix = '/anime/'
     <FocusableLink to={`${linkPrefix}${anime.id}`} className="anime-card-v2" title={title}>
       <div className="card-media">
         <img 
-          src={anime.coverImage?.large || anime.coverImage?.extraLarge} 
+          src={coverImage} 
           alt={title} 
           loading="lazy"
         />

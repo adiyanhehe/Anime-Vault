@@ -2,21 +2,37 @@
 /* Premium design tokens – use throughout the app */
 :root {
   /* Brand */
-  --brand-primary: hsl(340, 85%, 55%); /* vibrant pink */
+  --brand-primary: hsl(340, 85%, 55%);
   --brand-primary-light: hsl(340, 85%, 65%);
   --brand-primary-dark: hsl(340, 85%, 45%);
-  --brand-color: var(--brand-primary); /* Alias for existing uses */
+  --brand-color: var(--red);
 
-  /* Backgrounds */
-  --bg-primary: hsl(0, 0%, 12%);
-  --bg-secondary: hsl(0, 0%, 16%);
+  /* Accent Colors */
+  --red: #e50914;
+  --red2: #ff1a24;
+  --red-dim: rgba(229, 9, 20, 0.15);
+  --red-glow: 0 0 30px rgba(229, 9, 20, 0.3);
+
+  /* Theme Variables */
+  --bg: #0a0a0a;
+  --surface: #111111;
+  --surface2: #1a1a1a;
+  --surface3: #222222;
+  --border: #2a2a2a;
+  --text: #f0f0f0;
+  --text2: #c0c0c0;
+  --text3: #909090;
+
+  /* Backgrounds (legacy) */
+  --bg-primary: var(--surface);
+  --bg-secondary: var(--surface2);
   --bg-glass: rgba(255, 255, 255, 0.06);
-  --glass-border: rgba(255, 255, 255, 0.12);
+  --glass-border: var(--border);
 
-  /* Text */
-  --text-primary: hsl(0, 0%, 94%);
-  --text-secondary: hsl(0, 0%, 68%);
-  --text-muted: hsl(0, 0%, 45%);
+  /* Text (legacy) */
+  --text-primary: var(--text);
+  --text-secondary: var(--text2);
+  --text-muted: var(--text3);
 
   /* Spacing */
   --spacing-xs: 0.4rem;

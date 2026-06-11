@@ -431,7 +431,7 @@ function AnimeDetails() {
     <div className="details-page-v2">
 
       {/* ── Video Player ── */}
-      <div className="player-section-v2">
+      <div className="player-section-v2" style={{ paddingBottom: '1.5rem' }}>
         {!user ? (
           <div className="video-player-error">
             <PlayCircle size={48} />

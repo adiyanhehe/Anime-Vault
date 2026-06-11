@@ -1,48 +1,104 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import AnimeCard from '../components/AnimeCard';
+import PremiumAnimeCard from '../components/PremiumAnimeCard';
 import { searchAnime, fetchTrendingMedia } from '../api/anilist';
-import { Filter, Search as SearchIcon, X } from 'lucide-react';
+import { getFavoritesLocal, addFavoriteLocal, removeFavoriteLocal } from '../api/db';
+import { Search as SearchIcon, Filter, TrendingUp, Calendar, Star, Zap, ChevronRight, Clock, AlertTriangle, Sparkles } from 'lucide-react';
 
 const GENRES = [
   'Action', 'Adventure', 'Comedy', 'Drama', 'Fantasy',
   'Horror', 'Mystery', 'Romance', 'Sci-Fi', 'Slice of Life',
-  'Sports', 'Supernatural', 'Thriller'
+  'Sports', 'Supernatural', 'Thriller', 'Ecchi', 'Mecha',
+  'Psychological', 'Historical', 'Music', 'Military'
 ];
 
 const TYPES = ['ANIME', 'MANGA'];
+const SORT_OPTIONS = [
+  { value: 'TRENDING', label: 'Trending' },
+  { value: 'POPULARITY', label: 'Popularity' },
+  { value: 'SCORE', label: 'Score' },
+  { value: 'FAVOURITES', label: 'Favorites' },
+  { value: 'UPDATED', label: 'Updated' }
+];
+const STATUS_OPTIONS = [
+  { value: 'All', label: 'All' },
+  { value: 'RELEASING', label: 'Airing' },
+  { value: 'FINISHED', label: 'Completed' },
+  { value: 'NOT_YET_RELEASED', label: 'Upcoming' },
+  { value: 'HIATUS', label: 'Hiatus' },
+  { value: 'CANCELLED', label: 'Cancelled' }
+];
+
+const currentYear = new Date().getFullYear();
+const YEAR_OPTIONS = ['All', ...Array.from({ length: 30 }, (_, i) => currentYear - i)];
 
 function Search() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [results, setResults] = useState([]);
+  const [trending, setTrending] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [query, setQuery] = useState(searchParams.get('q') || '');
   const [selectedGenre, setSelectedGenre] = useState(searchParams.get('genre') || '');
   const [selectedType, setSelectedType] = useState(searchParams.get('type') || 'ANIME');
-  const [favoritesData, setFavoritesData] = useState(() => JSON.parse(localStorage.getItem('animevault_favorites') || '{"animes":[],"studios":[],"characters":[]}'));
-  const favorites = favoritesData.animes || [];
+  const [sortBy, setSortBy] = useState(searchParams.get('sort') || 'TRENDING');
+  const [status, setStatus] = useState(searchParams.get('status') || 'All');
+  const [year, setYear] = useState(searchParams.get('year') || 'All');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [favoritesData, setFavoritesData] = useState({ animes: [], studios: [], characters: [] });
+  const [searchHistory, setSearchHistory] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('animevault_search_history') || '[]');
+    } catch {
+      return [];
+    }
+  });
+
+  // Load favorites from db
+  useEffect(() => {
+    const loadFavs = async () => {
+      const favs = await getFavoritesLocal(); // dummy user id
+      setFavoritesData(favs);
+    };
+    loadFavs();
+  }, []);
+
+  // Load trending on mount
+  useEffect(() => {
+    const loadTrending = async () => {
+      try {
+        const data = await fetchTrendingMedia('ANIME');
+        setTrending(data.slice(0, 10));
+      } catch (err) {
+        console.error('Failed to load trending:', err);
+      }
+    };
+    loadTrending();
+  }, []);
 
   useEffect(() => {
     const q = searchParams.get('q');
     const genre = searchParams.get('genre');
     const type = searchParams.get('type') || 'ANIME';
-    const trending = searchParams.get('trending');
+    const sort = searchParams.get('sort') || 'TRENDING';
+    const st = searchParams.get('status') || 'All';
+    const yr = searchParams.get('year') || 'All';
 
     setQuery(q || '');
     setSelectedGenre(genre || '');
     setSelectedType(type);
-    
-    if (trending) {
-      loadTrending(type);
-    } else if (q || genre) {
-      runSearch(q, genre, type);
+    setSortBy(sort);
+    setStatus(st);
+    setYear(yr);
+
+    if (q || genre || st !== 'All' || yr !== 'All') {
+      runSearch(q, genre, type, sort, st, yr);
     } else {
-      loadTrending(type);
+      loadTrendingForResults(type);
     }
   }, [searchParams]);
 
-  async function loadTrending(typeToLoad) {
+  async function loadTrendingForResults(typeToLoad) {
     try {
       setLoading(true);
       setError('');
@@ -55,13 +111,31 @@ function Search() {
     }
   }
 
-  async function runSearch(searchTerm, genreFilter, typeFilter) {
+  async function runSearch(searchTerm, genreFilter, typeFilter, sortFilter, statusFilter, yearFilter) {
     try {
       setLoading(true);
       setError('');
       const trimmedSearch = (searchTerm || '').trim();
       
-      const data = await searchAnime(trimmedSearch || null, typeFilter, genreFilter || null, 1, 50);
+      // Save search history if query exists
+      if (trimmedSearch) {
+        setSearchHistory(prev => {
+          const newHistory = [trimmedSearch, ...prev.filter(h => h.toLowerCase() !== trimmedSearch.toLowerCase())].slice(0, 10);
+          localStorage.setItem('animevault_search_history', JSON.stringify(newHistory));
+          return newHistory;
+        });
+      }
+
+      const data = await searchAnime(
+        trimmedSearch || null, 
+        typeFilter, 
+        genreFilter || null, 
+        1, 
+        50,
+        sortFilter,
+        statusFilter === 'All' ? null : statusFilter,
+        yearFilter === 'All' ? null : parseInt(yearFilter)
+      );
       setResults(data);
     } catch (err) {
       setError(err.message || 'Search failed');
@@ -70,9 +144,19 @@ function Search() {
     }
   }
 
-  function updateSearchParams({ nextQuery = query, nextGenre = selectedGenre, nextType = selectedType } = {}) {
+  function updateSearchParams({ 
+    nextQuery = query, 
+    nextGenre = selectedGenre, 
+    nextType = selectedType, 
+    nextSort = sortBy, 
+    nextStatus = status, 
+    nextYear = year 
+  } = {}) {
     const params = new URLSearchParams();
     params.set('type', nextType);
+    params.set('sort', nextSort);
+    if (nextStatus !== 'All') params.set('status', nextStatus);
+    if (nextYear !== 'All') params.set('year', nextYear);
     const trimmedQuery = nextQuery.trim();
     if (trimmedQuery) params.set('q', trimmedQuery);
     if (nextGenre) params.set('genre', nextGenre);
@@ -90,131 +174,351 @@ function Search() {
     updateSearchParams({ nextGenre: newGenre });
   }
 
-  function handleTypeChange(type) {
-    setSelectedType(type);
-    updateSearchParams({ nextType: type });
-  }
-
-  function handleReset() {
-    setQuery('');
-    setSelectedGenre('');
-    setSelectedType('ANIME');
-    setSearchParams({ type: 'ANIME' });
-  }
-
   function getTitle(anime) {
-    return anime?.title?.english || anime?.title?.romaji || anime?.title?.native || 'Unknown Title';
+    return anime?.title?.english || anime?.title?.romaji || anime?.title?.native || anime?.name || 'Unknown Title';
   }
+  
   function getImage(anime) {
-    return anime?.coverImage?.extraLarge || anime?.coverImage?.large || anime?.coverImage?.medium;
+    return anime?.coverImage?.extraLarge || anime?.coverImage?.large || anime?.poster || '';
   }
+
   function toggleFavorite(anime) {
-    setFavoritesData((current) => {
-      const isFav = (current.animes || []).some((item) => item.id === anime.id);
-      const next = {
-        ...current,
-        animes: isFav
-          ? (current.animes || []).filter((item) => item.id !== anime.id)
-          : [...(current.animes || []), { id: anime.id, title: getTitle(anime), image: getImage(anime) }],
-      };
-      localStorage.setItem('animevault_favorites', JSON.stringify(next));
-      return next;
+    setFavoritesData(prev => {
+      const isFav = prev.animes.some(item => item.id === anime.id);
+      let newFavs;
+      if (isFav) {
+        newFavs = prev.animes.filter(item => item.id !== anime.id);
+        removeFavoriteLocal('animes', anime.id);
+      } else {
+        const newItem = { id: anime.id, title: getTitle(anime), image: getImage(anime) };
+        newFavs = [...prev.animes, newItem];
+        addFavoriteLocal('animes', newItem);
+      }
+      
+      const newData = { ...prev, animes: newFavs };
+      return newData;
     });
   }
 
+  const placeholders = [
+    'Search for "Solo Leveling"',
+    'Search for "One Piece"',
+    'Search for "Romance Anime"',
+    'Search for "Time Travel Anime"',
+    'Search for "Studio Ghibli"'
+  ];
+  const [currentPlaceholder, setCurrentPlaceholder] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentPlaceholder(prev => (prev + 1) % placeholders.length);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, []);
+
   return (
-    <section className="search-page-v2">
-      <div className="search-sidebar-v2">
-        <div className="sidebar-section">
-          <div className="sidebar-header-v2">
-            <div className="header-title">
-              <Filter size={20} />
+    <div className="premium-search-page">
+      {/* Mobile Sidebar Toggle */}
+      <button 
+        className="premium-sidebar-toggle" 
+        onClick={() => setSidebarOpen(!sidebarOpen)}
+      >
+        <Filter size={20} />
+        <span>Filters</span>
+      </button>
+
+      <div className={`premium-layout ${sidebarOpen ? 'sidebar-open' : ''}`}>
+        {/* Sidebar */}
+        <div className="premium-sidebar">
+          <div className="sidebar-header">
+            <div className="sidebar-title">
+              <Filter size={22} />
               <h2>Filters</h2>
             </div>
-            <button className="reset-btn" onClick={handleReset}>Reset</button>
-          </div>
-        </div>
-
-        <div className="sidebar-section">
-          <h3>Category</h3>
-          <div className="type-toggle">
-            {TYPES.map(t => (
-              <button
-                key={t}
-                className={`type-btn ${selectedType === t ? 'active' : ''}`}
-                onClick={() => handleTypeChange(t)}
-                onKeyDown={e => { if (e.key === 'Enter') handleTypeChange(t); }}
-              >
-                {t}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="sidebar-section">
-          <h3>Genres</h3>
-          <div className="genre-list-v2">
-            {GENRES.map(g => (
-              <button 
-                key={g}
-                className={`genre-pill-v2 ${selectedGenre === g ? 'active' : ''}`}
-                onClick={() => handleGenreToggle(g)}
-              >
-                {g}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      <div className="search-main-v2">
-        <form className="search-box-v2" onSubmit={handleSearchSubmit}>
-          <SearchIcon className="search-icon-v2" size={20} />
-          <input 
-            type="text" 
-            placeholder={`Search ${selectedType.toLowerCase()}...`}
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-          />
-          {query && (
-            <button
-              type="button"
-              className="clear-btn-v2"
+            <button 
+              className="reset-all-btn" 
               onClick={() => {
                 setQuery('');
-                updateSearchParams({ nextQuery: '' });
+                setSelectedGenre('');
+                setSelectedType('ANIME');
+                setSortBy('TRENDING');
+                setStatus('All');
+                setYear('All');
+                setSearchParams({ type: 'ANIME', sort: 'TRENDING' });
               }}
-              aria-label="Clear search"
             >
-              <X size={20} />
+              Reset
             </button>
-          )}
-          <button type="submit" className="search-submit-v2">Search</button>
-        </form>
+          </div>
 
-        <div className="results-info-v2">
-          <span>{results.length} results found</span>
-        </div>
-
-        <div className="results-container-v2">
-          {loading && <div className="loading-grid">{Array(10).fill(0).map((_, i) => <div key={i} className="skeleton-card" />)}</div>}
-          {!loading && error && <div className="error-msg">{error}</div>}
-          {!loading && !error && (
-            <div className="results-grid-v2">
-              {results.map((anime) => (
-                <AnimeCard
-                  key={anime.id}
-                  anime={anime}
-                  isFavorite={favorites.some((item) => item.id === anime.id)}
-                  onToggleFavorite={toggleFavorite}
-                  linkPrefix={selectedType === 'MANGA' ? '/manga/' : '/anime/'}
-                />
+          {/* Category */}
+          <div className="sidebar-section">
+            <h3 className="sidebar-section-title">
+              <Zap size={16} />
+              Category
+            </h3>
+            <div className="category-tabs">
+              {TYPES.map(t => (
+                <button
+                  key={t}
+                  className={`category-tab ${selectedType === t ? 'active' : ''}`}
+                  onClick={() => {
+                    setSelectedType(t);
+                    updateSearchParams({ nextType: t });
+                  }}
+                >
+                  {t}
+                </button>
               ))}
             </div>
+          </div>
+
+          {/* Sort By */}
+          <div className="sidebar-section">
+            <h3 className="sidebar-section-title">
+              <ChevronRight size={16} />
+              Sort By
+            </h3>
+            <div className="sort-buttons">
+              {SORT_OPTIONS.map(opt => (
+                <button
+                  key={opt.value}
+                  className={`sort-btn ${sortBy === opt.value ? 'active' : ''}`}
+                  onClick={() => {
+                    setSortBy(opt.value);
+                    updateSearchParams({ nextSort: opt.value });
+                  }}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Status */}
+          <div className="sidebar-section">
+            <h3 className="sidebar-section-title">
+              <Calendar size={16} />
+              Status
+            </h3>
+            <div className="status-selector">
+              {STATUS_OPTIONS.map(opt => (
+                <button
+                  key={opt.value}
+                  className={`status-option ${status === opt.value ? 'active' : ''}`}
+                  onClick={() => {
+                    setStatus(opt.value);
+                    updateSearchParams({ nextStatus: opt.value });
+                  }}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Year */}
+          <div className="sidebar-section">
+            <h3 className="sidebar-section-title">
+              <Star size={16} />
+              Year
+            </h3>
+            <select
+              className="year-selector"
+              value={year}
+              onChange={(e) => {
+                setYear(e.target.value);
+                updateSearchParams({ nextYear: e.target.value });
+              }}
+            >
+              {YEAR_OPTIONS.map(yr => (
+                <option key={yr} value={yr}>{yr}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Genres */}
+          <div className="sidebar-section">
+            <h3 className="sidebar-section-title">
+              <Sparkles size={16} />
+              Genres
+            </h3>
+            <div className="genre-grid">
+              {GENRES.map(g => (
+                <button 
+                  key={g}
+                  className={`genre-pill ${selectedGenre === g ? 'active' : ''}`}
+                  onClick={() => handleGenreToggle(g)}
+                >
+                  {g}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Main Content */}
+        <div className="premium-main">
+          {/* Hero Search */}
+          <section className="premium-hero">
+            <div className="hero-content">
+              <h1>Discover Your Next Favorite Anime</h1>
+              <p>Explore over 100,000+ anime and manga titles, updated daily</p>
+              <form className="hero-search-form" onSubmit={handleSearchSubmit}>
+                <SearchIcon className="hero-search-icon" size={24} />
+                <input
+                  type="text"
+                  placeholder={placeholders[currentPlaceholder]}
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                />
+                {query && (
+                  <button
+                    type="button"
+                    className="hero-clear-btn"
+                    onClick={() => {
+                      setQuery('');
+                      updateSearchParams({ nextQuery: '' });
+                    }}
+                    aria-label="Clear search"
+                  >
+                    ✕
+                  </button>
+                )}
+                <button type="submit" className="hero-search-btn">
+                  Search
+                </button>
+              </form>
+
+              {/* Hero Stats */}
+              <div className="hero-stats">
+                <div className="hero-stat">
+                  <span className="stat-number">100K+</span>
+                  <span className="stat-label">Anime</span>
+                </div>
+                <div className="hero-stat">
+                  <span className="stat-number">50K+</span>
+                  <span className="stat-label">Manga</span>
+                </div>
+                <div className="hero-stat">
+                  <span className="stat-number">Daily</span>
+                  <span className="stat-label">Updates</span>
+                </div>
+              </div>
+            </div>
+          </section>
+
+
+
+          {/* Search History */}
+          {searchHistory.length > 0 && !query && (
+            <section className="premium-section">
+              <div className="section-header">
+                <div className="section-title">
+                  <Clock size={20} />
+                  <h2>Recent Searches</h2>
+                </div>
+                <button 
+                  className="see-all-btn"
+                  onClick={() => {
+                    setSearchHistory([]);
+                    localStorage.removeItem('animevault_search_history');
+                  }}
+                >
+                  Clear All
+                </button>
+              </div>
+              <div className="search-history-grid">
+                {searchHistory.map((term, idx) => (
+                  <button
+                    key={idx}
+                    className="history-item"
+                    onClick={() => {
+                      setQuery(term);
+                      updateSearchParams({ nextQuery: term });
+                    }}
+                  >
+                    {term}
+                  </button>
+                ))}
+              </div>
+            </section>
           )}
+
+          {/* Results */}
+          <section className="premium-section">
+            <div className="section-header">
+              <div className="section-title">
+                <Sparkles size={20} />
+                <h2>{query ? 'Search Results' : 'Discover'}</h2>
+                <span className="results-count">
+                  {loading ? 'Loading...' : `${results.length} results`}
+                </span>
+              </div>
+              {/* Active Filters */}
+              <div className="active-filters">
+                {selectedGenre && (
+                  <span className="filter-chip">
+                    {selectedGenre}
+                    <button onClick={() => handleGenreToggle(selectedGenre)}>✕</button>
+                  </span>
+                )}
+                {status !== 'All' && (
+                  <span className="filter-chip">
+                    {STATUS_OPTIONS.find(opt => opt.value === status)?.label}
+                    <button onClick={() => { setStatus('All'); updateSearchParams({ nextStatus: 'All' }); }}>✕</button>
+                  </span>
+                )}
+                {year !== 'All' && (
+                  <span className="filter-chip">
+                    {year}
+                    <button onClick={() => { setYear('All'); updateSearchParams({ nextYear: 'All' }); }}>✕</button>
+                  </span>
+                )}
+              </div>
+            </div>
+
+            <div className="premium-results-container">
+              {loading && (
+                <div className="loading-grid">
+                  {Array(12).fill(0).map((_, i) => (
+                    <div key={i} className="card-skeleton" />
+                  ))}
+                </div>
+              )}
+              {!loading && error && (
+                <div className="error-display">
+                  <AlertTriangle size={48} />
+                  <h3>Something went wrong</h3>
+                  <p>{error}</p>
+                  <button onClick={() => loadTrendingForResults(selectedType)}>Try Again</button>
+                </div>
+              )}
+              {!loading && !error && results.length === 0 && (
+                <div className="empty-results">
+                  <Clock size={48} />
+                  <h3>No results found</h3>
+                  <p>Try adjusting your filters or search term</p>
+                </div>
+              )}
+              {!loading && !error && results.length > 0 && (
+                <div className="premium-results-grid">
+                  {results.map((media) => (
+                    <PremiumAnimeCard
+                      key={media.id}
+                      anime={media}
+                      isFavorite={favoritesData.animes.some(item => item.id === media.id)}
+                      onToggleFavorite={toggleFavorite}
+                      linkPrefix={selectedType === 'MANGA' ? '/manga/' : '/anime/'}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          </section>
         </div>
       </div>
-    </section>
+    </div>
   );
 }
 

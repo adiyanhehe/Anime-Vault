@@ -207,6 +207,16 @@ function mapJikanToAniList(item, type = "ANIME") {
     item.published?.prop?.from?.year ||
     null;
 
+  // Map Jikan trailer to AniList format
+  let trailer = null;
+  if (item.trailer?.youtube_id) {
+    trailer = {
+      id: item.trailer.youtube_id,
+      site: "youtube",
+      thumbnail: item.trailer.images?.maximum_image_url || item.trailer.images?.large_image_url,
+    };
+  }
+
   return {
     id: `mal-${item.mal_id}`,
     idMal: item.mal_id,
@@ -247,6 +257,7 @@ function mapJikanToAniList(item, type = "ANIME") {
         ? { site: "MyAnimeList", url: item.url, id: String(item.mal_id) }
         : null,
     ].filter(Boolean),
+    trailer,
   };
 }
 
@@ -750,6 +761,7 @@ export async function fetchAnimeByIds(ids = []) {
           studios { nodes { name } }
           coverImage { extraLarge large medium color }
           bannerImage
+          trailer { id site thumbnail }
         }
       }
     }
@@ -802,6 +814,7 @@ export async function fetchTrendingMedia(
           format
           averageScore
           seasonYear
+          trailer { id site thumbnail }
         }
       }
     }
@@ -826,13 +839,16 @@ export async function searchAnime(
   genre = null,
   page = 1,
   perPage = 50,
+  sort = "TRENDING",
+  status = null,
+  year = null,
 ) {
   if (globalFallbackActive) {
     return searchAnimeJikan(search, type, page, perPage);
   }
 
   let queryArgs = `$type: MediaType, $page: Int, $perPage: Int`;
-  let mediaArgs = `type: $type, sort: POPULARITY_DESC, countryOfOrigin: "JP", isAdult: false`;
+  let mediaArgs = `type: $type, countryOfOrigin: "JP", isAdult: false`;
   
   const variables = { type, page, perPage };
 
@@ -846,6 +862,31 @@ export async function searchAnime(
     queryArgs += `, $genre: String`;
     mediaArgs += `, genre: $genre`;
     variables.genre = genre;
+  }
+
+  // Add sort parameter
+  const sortMap = {
+    "POPULARITY": "POPULARITY_DESC",
+    "SCORE": "SCORE_DESC",
+    "TRENDING": "TRENDING_DESC",
+    "FAVOURITES": "FAVOURITES_DESC",
+    "UPDATED": "UPDATED_AT_DESC"
+  };
+  const sortValue = sortMap[sort] || "TRENDING_DESC";
+  mediaArgs += `, sort: ${sortValue}`;
+
+  // Add status parameter
+  if (status && status !== "All") {
+    queryArgs += `, $status: MediaStatus`;
+    mediaArgs += `, status: $status`;
+    variables.status = status;
+  }
+
+  // Add year parameter
+  if (year && year !== "All") {
+    queryArgs += `, $year: Int`;
+    mediaArgs += `, seasonYear: $year`;
+    variables.year = Number(year);
   }
 
   const query = `
@@ -867,6 +908,7 @@ export async function searchAnime(
           averageScore
           meanScore
           seasonYear
+          trailer { id site thumbnail }
         }
       }
     }

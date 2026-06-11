@@ -29,36 +29,35 @@ import {
   AlertTriangle,
   Check,
   X,
+  Download,
+  Upload,
+  Layout,
+  GripVertical,
+  EyeOff as EyeOffIcon,
+  Eye as EyeIcon,
+  Moon,
+  Sun,
+  Maximize2,
+  Minimize2,
 } from 'lucide-react';
 import { useUser } from '../api/UserContext';
-import { Link, useNavigate } from 'react-router-dom';
-import { getSettings, saveSettings, resetSettings, updateSetting, updateUserProfile } from '../api/db';
-
-const THEMES = [
-  { id: 'dark', label: 'Dark' },
-  { id: 'light', label: 'Light' },
-  { id: 'system', label: 'System' },
-];
-
-const ACCENT_COLORS = [
-  '#ff1a75',
-  '#ff6b6b',
-  '#feca57',
-  '#48dbfb',
-  '#1dd1a1',
-  '#5f27cd',
-  '#ff9ff3',
-  '#54a0ff',
-];
+import { Link } from 'react-router-dom';
+import { getSettings, saveSettings, resetSettings } from '../api/db';
+import { storage } from '../utils/storage';
+import {
+  ACCENT_PRESETS,
+  applyAccentColor,
+  THEME_PRESETS,
+  DEFAULT_CUSTOM_VARS,
+  applyTheme,
+} from '../utils/appearance';
+import { collectBackupData, restoreBackupData, BACKUP_KEYS } from '../utils/backup';
+import { HOME_ROWS, loadHomeLayout, saveHomeLayout } from '../utils/homeLayout';
 
 const FONT_SIZES = ['small', 'medium', 'large'];
-
 const QUALITIES = ['auto', '480p', '720p', '1080p', '4K'];
-
 const PLAYBACK_SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 2];
-
 const REMINDER_TIMINGS = ['15min', '30min', '1hour', '2hours'];
-
 const GENRES = [
   'Action',
   'Adventure',
@@ -72,18 +71,14 @@ const GENRES = [
   'Sports',
   'Thriller',
 ];
-
 const SORT_ORDERS = ['dateAdded', 'name', 'rating'];
-
 const LANGUAGES = ['en', 'es', 'fr', 'de', 'ja', 'ko', 'zh'];
-
 const REGIONS = ['US', 'CA', 'UK', 'EU', 'AU', 'JP', 'KR'];
 
 export default function Settings() {
   const { user, updateProfile } = useUser();
-  const navigate = useNavigate();
   const [settings, setSettings] = useState(getSettings());
-  const [activeTab, setActiveTab] = useState('profile');
+  const [activeTab, setActiveTab] = useState('personalization');
   const [saveStatus, setSaveStatus] = useState('');
   const [avatarUrl, setAvatarUrl] = useState(user?.avatar || '');
   const [bannerUrl, setBannerUrl] = useState(user?.banner || '');
@@ -91,80 +86,41 @@ export default function Settings() {
   const [emailInput, setEmailInput] = useState(user?.email || '');
   const [bioInput, setBioInput] = useState(user?.bio || '');
 
-  // Helper function to convert hex to HSL
-  function hexToHSL(hex) {
-    let r = parseInt(hex.slice(1, 3), 16) / 255;
-    let g = parseInt(hex.slice(3, 5), 16) / 255;
-    let b = parseInt(hex.slice(5, 7), 16) / 255;
-    let max = Math.max(r, g, b), min = Math.min(r, g, b);
-    let h, s, l = (max + min) / 2;
-    if (max === min) {
-      h = s = 0;
-    } else {
-      let d = max - min;
-      s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-      switch (max) {
-        case r: h = ((g - b) / d + (g < b ? 6 : 0)); break;
-        case g: h = ((b - r) / d + 2); break;
-        case b: h = ((r - g) / d + 4); break;
-      }
-      h = h / 6;
-    }
-    return { h: Math.round(h * 360), s: Math.round(s * 100), l: Math.round(l * 100) };
-  }
+  // Appearance state
+  const [accentColor, setAccentColor] = useState(
+    storage.get('accentColor') || 'red'
+  );
+  const [theme, setTheme] = useState(storage.get('theme') || 'dark');
+  const [customVars, setCustomVars] = useState(
+    storage.get('customThemeVars') || DEFAULT_CUSTOM_VARS
+  );
+  const [fontSize, setFontSize] = useState(storage.get('fontSize') || 'medium');
 
-  function applySettingsToDOM(settings) {
-    if (settings.theme === 'light') {
-      // Light theme
-      document.documentElement.style.setProperty('--bg-primary', 'hsl(0, 0%, 98%)');
-      document.documentElement.style.setProperty('--bg-secondary', 'hsl(0, 0%, 92%)');
-      document.documentElement.style.setProperty('--bg-glass', 'rgba(0, 0, 0, 0.04)');
-      document.documentElement.style.setProperty('--text-primary', 'hsl(0, 0%, 8%)');
-      document.documentElement.style.setProperty('--text-secondary', 'hsl(0, 0%, 45%)');
-      document.documentElement.style.setProperty('--text-muted', 'hsl(0, 0%, 60%)');
-      document.documentElement.style.setProperty('--glass-border', 'rgba(0, 0, 0, 0.08)');
-      document.documentElement.style.setProperty('--shadow-sm', '0 2px 6px rgba(0,0,0,0.08)');
-      document.documentElement.style.setProperty('--shadow-md', '0 4px 12px rgba(0,0,0,0.1)');
-      document.documentElement.style.setProperty('--shadow-lg', '0 8px 24px rgba(0,0,0,0.12)');
-    } else {
-      // Dark theme (default)
-      document.documentElement.style.setProperty('--bg-primary', 'hsl(0, 0%, 12%)');
-      document.documentElement.style.setProperty('--bg-secondary', 'hsl(0, 0%, 16%)');
-      document.documentElement.style.setProperty('--bg-glass', 'rgba(255, 255, 255, 0.06)');
-      document.documentElement.style.setProperty('--text-primary', 'hsl(0, 0%, 94%)');
-      document.documentElement.style.setProperty('--text-secondary', 'hsl(0, 0%, 68%)');
-      document.documentElement.style.setProperty('--text-muted', 'hsl(0, 0%, 45%)');
-      document.documentElement.style.setProperty('--glass-border', 'rgba(255, 255, 255, 0.12)');
-      document.documentElement.style.setProperty('--shadow-sm', '0 2px 6px rgba(0,0,0,0.3)');
-      document.documentElement.style.setProperty('--shadow-md', '0 4px 12px rgba(0,0,0,0.4)');
-      document.documentElement.style.setProperty('--shadow-lg', '0 8px 24px rgba(0,0,0,0.5)');
-    }
+  // Home customization state
+  const [homeLayout, setHomeLayout] = useState(loadHomeLayout());
 
-    // Apply font size
-    let fontSize = '16px'; // Default medium
-    if (settings.fontSize === 'small') fontSize = '14px';
-    if (settings.fontSize === 'large') fontSize = '18px';
-    document.documentElement.style.fontSize = fontSize;
-
-    // Apply accent color
-    if (settings.accentColor) {
-      const accentHex = settings.accentColor;
-      const hsl = hexToHSL(accentHex);
-      document.documentElement.style.setProperty('--brand-primary', `hsl(${hsl.h}, ${hsl.s}%, ${hsl.l}%)`);
-      document.documentElement.style.setProperty('--brand-primary-light', `hsl(${hsl.h}, ${hsl.s}%, ${Math.min(hsl.l + 10, 95)}%)`);
-      document.documentElement.style.setProperty('--brand-primary-dark', `hsl(${hsl.h}, ${hsl.s}%, ${Math.max(hsl.l - 10, 10)}%)`);
-      document.documentElement.style.setProperty('--brand-color', `hsl(${hsl.h}, ${hsl.s}%, ${hsl.l}%)`); // Fallback
-    }
-  }
+  // Block stats
+  const [blockStats, setBlockStats] = useState({ blocked: 0, timestamp: 0 });
 
   useEffect(() => {
     setSettings(getSettings());
-    applySettingsToDOM(getSettings());
+    // Load local storage settings
+    setAccentColor(storage.get('accentColor') || 'red');
+    setTheme(storage.get('theme') || 'dark');
+    setCustomVars(storage.get('customThemeVars') || DEFAULT_CUSTOM_VARS);
+    setFontSize(storage.get('fontSize') || 'medium');
+    setHomeLayout(loadHomeLayout());
+
+    // Load block stats if electron
+    if (window.electron?.getBlockStats) {
+      window.electron.getBlockStats().then(setBlockStats);
+      const unsub = window.electron.onBlockedUpdate(setBlockStats);
+      return unsub;
+    }
   }, []);
 
   const handleSave = () => {
     const success = saveSettings(settings);
-    applySettingsToDOM(settings);
     if (success) {
       setSaveStatus('Saved successfully!');
       setTimeout(() => setSaveStatus(''), 2000);
@@ -179,17 +135,60 @@ export default function Settings() {
       resetSettings();
       const newSettings = getSettings();
       setSettings(newSettings);
-      applySettingsToDOM(newSettings);
       setSaveStatus('Settings reset!');
       setTimeout(() => setSaveStatus(''), 2000);
     }
   };
 
-  // Update settings with live preview
-  const updateSettingLive = (key, value) => {
-    const newSettings = { ...settings, [key]: value };
-    setSettings(newSettings);
-    applySettingsToDOM(newSettings);
+  // Home customization handlers
+  const toggleHomeRow = (id) => {
+    const newVisible = { ...homeLayout.visible, [id]: !homeLayout.visible[id] };
+    const newLayout = { ...homeLayout, visible: newVisible };
+    setHomeLayout(newLayout);
+    saveHomeLayout(newLayout.order, newLayout.visible);
+  };
+
+  const moveHomeRow = (index, direction) => {
+    const newOrder = [...homeLayout.order];
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= newOrder.length) return;
+    [newOrder[index], newOrder[targetIndex]] = [
+      newOrder[targetIndex],
+      newOrder[index],
+    ];
+    const newLayout = { ...homeLayout, order: newOrder };
+    setHomeLayout(newLayout);
+    saveHomeLayout(newLayout.order, newLayout.visible);
+  };
+
+  // Backup handlers
+  const handleExport = () => {
+    const data = collectBackupData();
+    const blob = new Blob([JSON.stringify(data, null, 2)], {
+      type: 'application/json',
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `animevault-backup-${Date.now()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleImport = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = JSON.parse(e.target.result);
+        restoreBackupData(data);
+        alert('Backup imported! Please refresh to apply changes.');
+      } catch {
+        alert('Invalid backup file!');
+      }
+    };
+    reader.readAsText(file);
   };
 
   const handleSaveProfile = async () => {
@@ -211,13 +210,13 @@ export default function Settings() {
   };
 
   const tabs = [
-    { id: 'profile', label: 'Profile', icon: User },
     { id: 'personalization', label: 'Personalization', icon: Palette },
+    { id: 'home', label: 'Home', icon: Layout },
+    { id: 'profile', label: 'Profile', icon: User },
     { id: 'security', label: 'Security', icon: Shield },
     { id: 'playback', label: 'Playback', icon: Tv },
     { id: 'library', label: 'Library', icon: BookOpen },
     { id: 'notifications', label: 'Notifications', icon: Bell },
-    { id: 'discord', label: 'Discord RPC', icon: Gamepad2 },
     { id: 'app', label: 'App Settings', icon: Cog },
     { id: 'advanced', label: 'Advanced', icon: Code },
   ];
@@ -228,7 +227,7 @@ export default function Settings() {
 
   return (
     <div className="settings-container" style={{
-      maxWidth: '1200px',
+      maxWidth: '1280px',
       margin: '40px auto 80px',
       padding: '0 20px',
       color: '#fff',
@@ -265,7 +264,7 @@ export default function Settings() {
           gap: '12px',
           marginBottom: '24px',
         }}>
-          <SettingsIcon size={28} style={{ color: '#ff1a75' }} />
+          <SettingsIcon size={28} style={{ color: 'var(--red)' }} />
           Settings
         </div>
 
@@ -278,9 +277,9 @@ export default function Settings() {
               style={{
                 padding: '12px 16px',
                 borderRadius: '12px',
-                background: activeTab === tab.id ? 'var(--brand-color)' : 'rgba(255,255,255,0.03)',
-                color: activeTab === tab.id ? '#000' : 'var(--text-secondary)',
-                border: 'none',
+                background: activeTab === tab.id ? 'var(--red-dim)' : 'rgba(255,255,255,0.02)',
+                color: activeTab === tab.id ? 'var(--red2)' : 'var(--text-secondary)',
+                border: activeTab === tab.id ? '1px solid var(--red)' : '1px solid transparent',
                 cursor: 'pointer',
                 fontWeight: '700',
                 display: 'flex',
@@ -339,15 +338,15 @@ export default function Settings() {
             style={{
               padding: '10px 20px',
               borderRadius: '10px',
-              background: 'var(--brand-color)',
-              color: '#000',
+              background: 'var(--red)',
+              color: '#fff',
               border: 'none',
               fontWeight: '700',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
               gap: '8px',
-              boxShadow: '0 4px 15px rgba(255,26,117,0.3)',
+              boxShadow: 'var(--red-glow)',
               transition: 'all 0.2s',
             }}
           >
@@ -358,11 +357,218 @@ export default function Settings() {
 
         {/* Tab Content */}
         <div style={{
-          background: 'rgba(15,15,25,0.6)',
+          background: 'var(--surface)',
           borderRadius: '16px',
           padding: '28px',
-          border: '1px solid rgba(255,26,117,0.15)',
+          border: '1px solid var(--border)',
         }}>
+          {activeTab === 'personalization' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+              <h2 style={{ fontSize: '1.5rem', fontWeight: '900', marginBottom: '8px' }}>Personalization</h2>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '700', marginBottom: '12px', textTransform: 'uppercase', color: 'var(--text-secondary)' }}>
+                  Theme
+                </label>
+                <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                  {THEME_PRESETS.map((t) => (
+                    <button
+                      key={t.id}
+                      onClick={() => {
+                        setTheme(t.id);
+                        const vars = t.id === 'custom' ? customVars : undefined;
+                        applyTheme(t.id, vars);
+                        storage.set('theme', t.id);
+                      }}
+                      style={{
+                        padding: '10px 20px',
+                        borderRadius: '10px',
+                        background: theme === t.id ? 'var(--red)' : 'rgba(255,255,255,0.05)',
+                        color: theme === t.id ? '#fff' : 'var(--text-secondary)',
+                        border: theme === t.id ? 'none' : '1px solid rgba(255,255,255,0.1)',
+                        fontWeight: '700',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s',
+                      }}
+                    >
+                      {t.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {theme === 'custom' && (
+                <div style={{ padding: '20px', background: 'rgba(255,255,255,0.02)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.08)' }}>
+                  <h3 style={{ fontSize: '1.1rem', fontWeight: '800', marginBottom: '16px' }}>Custom Colors</h3>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '12px' }}>
+                    {Object.entries(DEFAULT_CUSTOM_VARS).map(([key, _]) => (
+                      <div key={key}>
+                        <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '700', marginBottom: '8px', textTransform: 'capitalize', color: 'var(--text-secondary)' }}>
+                          {key.replace('--', '').replace(/-/g, ' ')}
+                        </label>
+                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                          <input
+                            type="color"
+                            value={customVars[key]}
+                            onChange={(e) => {
+                              const newVars = { ...customVars, [key]: e.target.value };
+                              setCustomVars(newVars);
+                              applyTheme('custom', newVars);
+                              storage.set('customThemeVars', newVars);
+                            }}
+                            style={{
+                              width: '40px',
+                              height: '40px',
+                              border: 'none',
+                              borderRadius: '8px',
+                              cursor: 'pointer',
+                              background: 'transparent',
+                            }}
+                          />
+                          <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontFamily: 'monospace' }}>{customVars[key]}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '700', marginBottom: '12px', textTransform: 'uppercase', color: 'var(--text-secondary)' }}>
+                  Accent Color
+                </label>
+                <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                  {ACCENT_PRESETS.map((a) => (
+                    <button
+                      key={a.id}
+                      onClick={() => {
+                        setAccentColor(a.id);
+                        applyAccentColor(a.id);
+                        storage.set('accentColor', a.id);
+                      }}
+                      title={a.label}
+                      style={{
+                        width: '40px',
+                        height: '40px',
+                        borderRadius: '50%',
+                        background: a.color,
+                        border: accentColor === a.id ? '3px solid #fff' : '3px solid transparent',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s',
+                      }}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '700', marginBottom: '8px', textTransform: 'uppercase', color: 'var(--text-secondary)' }}>
+                  Font Size
+                </label>
+                <select
+                  value={fontSize}
+                  onChange={(e) => {
+                    setFontSize(e.target.value);
+                    storage.set('fontSize', e.target.value);
+                    const sizeMap = { small: '14px', medium: '16px', large: '18px' };
+                    document.documentElement.style.fontSize = sizeMap[e.target.value];
+                  }}
+                  style={{
+                    padding: '10px 14px',
+                    borderRadius: '10px',
+                    background: 'rgba(255,255,255,0.05)',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    color: '#fff',
+                    outline: 'none',
+                    width: '200px',
+                  }}
+                >
+                  {FONT_SIZES.map((size) => (
+                    <option key={size} value={size}>
+                      {size.charAt(0).toUpperCase() + size.slice(1)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'home' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+              <h2 style={{ fontSize: '1.5rem', fontWeight: '900', marginBottom: '8px' }}>Home Page</h2>
+
+              <div style={{ padding: '20px', background: 'rgba(255,255,255,0.02)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.08)' }}>
+                <h3 style={{ fontSize: '1.1rem', fontWeight: '800', marginBottom: '16px' }}>Home Rows</h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {homeLayout.order.map((rowId, index) => {
+                    const row = HOME_ROWS.find(r => r.id === rowId);
+                    if (!row) return null;
+                    return (
+                      <div
+                        key={row.id}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '12px',
+                          padding: '12px',
+                          background: 'rgba(255,255,255,0.02)',
+                          borderRadius: '8px',
+                          border: '1px solid rgba(255,255,255,0.06)',
+                        }}
+                      >
+                        <GripVertical size={20} style={{ color: 'var(--text-secondary)', cursor: 'grab' }} />
+                        <span style={{ flex: 1, fontWeight: '600' }}>{row.label}</span>
+                        <button
+                          onClick={() => moveHomeRow(index, 'up')}
+                          disabled={index === 0}
+                          style={{
+                            padding: '8px',
+                            borderRadius: '6px',
+                            background: 'rgba(255,255,255,0.05)',
+                            border: 'none',
+                            color: index === 0 ? 'var(--text-secondary)' : '#fff',
+                            cursor: index === 0 ? 'not-allowed' : 'pointer',
+                            opacity: index === 0 ? 0.5 : 1,
+                          }}
+                        >
+                          <Maximize2 size={16} style={{ transform: 'rotate(-90deg)' }} />
+                        </button>
+                        <button
+                          onClick={() => moveHomeRow(index, 'down')}
+                          disabled={index === homeLayout.order.length - 1}
+                          style={{
+                            padding: '8px',
+                            borderRadius: '6px',
+                            background: 'rgba(255,255,255,0.05)',
+                            border: 'none',
+                            color: index === homeLayout.order.length - 1 ? 'var(--text-secondary)' : '#fff',
+                            cursor: index === homeLayout.order.length - 1 ? 'not-allowed' : 'pointer',
+                            opacity: index === homeLayout.order.length - 1 ? 0.5 : 1,
+                          }}
+                        >
+                          <Maximize2 size={16} style={{ transform: 'rotate(90deg)' }} />
+                        </button>
+                        <button
+                          onClick={() => toggleHomeRow(row.id)}
+                          style={{
+                            padding: '8px',
+                            borderRadius: '6px',
+                            background: 'rgba(255,255,255,0.05)',
+                            border: 'none',
+                            color: '#fff',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          {homeLayout.visible[row.id] ? <EyeIcon size={16} /> : <EyeOffIcon size={16} />}
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
+
           {activeTab === 'profile' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
               <h2 style={{ fontSize: '1.5rem', fontWeight: '900', marginBottom: '8px' }}>Profile Settings</h2>
@@ -378,7 +584,7 @@ export default function Settings() {
                   style={{
                     width: '100%',
                     padding: '12px 16px',
-                    background: 'rgba(0,0,0,0.4)',
+                    background: 'rgba(255,255,255,0.05)',
                     border: '1px solid rgba(255,255,255,0.1)',
                     borderRadius: '10px',
                     color: '#fff',
@@ -399,7 +605,7 @@ export default function Settings() {
                   style={{
                     width: '100%',
                     padding: '12px 16px',
-                    background: 'rgba(0,0,0,0.4)',
+                    background: 'rgba(255,255,255,0.05)',
                     border: '1px solid rgba(255,255,255,0.1)',
                     borderRadius: '10px',
                     color: '#fff',
@@ -420,7 +626,7 @@ export default function Settings() {
                   style={{
                     width: '100%',
                     padding: '12px 16px',
-                    background: 'rgba(0,0,0,0.4)',
+                    background: 'rgba(255,255,255,0.05)',
                     border: '1px solid rgba(255,255,255,0.1)',
                     borderRadius: '10px',
                     color: '#fff',
@@ -442,7 +648,7 @@ export default function Settings() {
                   style={{
                     width: '100%',
                     padding: '12px 16px',
-                    background: 'rgba(0,0,0,0.4)',
+                    background: 'rgba(255,255,255,0.05)',
                     border: '1px solid rgba(255,255,255,0.1)',
                     borderRadius: '10px',
                     color: '#fff',
@@ -463,7 +669,7 @@ export default function Settings() {
                   style={{
                     width: '100%',
                     padding: '12px 16px',
-                    background: 'rgba(0,0,0,0.4)',
+                    background: 'rgba(255,255,255,0.05)',
                     border: '1px solid rgba(255,255,255,0.1)',
                     borderRadius: '10px',
                     color: '#fff',
@@ -478,15 +684,15 @@ export default function Settings() {
                 style={{
                   padding: '12px 24px',
                   borderRadius: '10px',
-                  background: 'var(--brand-color)',
-                  color: '#000',
+                  background: 'var(--red)',
+                  color: '#fff',
                   border: 'none',
                   fontWeight: '700',
                   cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
                   gap: '8px',
-                  boxShadow: '0 4px 15px rgba(255,26,117,0.3)',
+                  boxShadow: 'var(--red-glow)',
                   width: 'fit-content',
                 }}
               >
@@ -494,7 +700,7 @@ export default function Settings() {
                 Update Profile
               </button>
 
-              <div style={{ marginTop: '16px', padding: '20px', background: 'rgba(0,0,0,0.3)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.08)' }}>
+              <div style={{ marginTop: '16px', padding: '20px', background: 'rgba(255,255,255,0.02)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.08)' }}>
                 <h3 style={{ fontSize: '1.1rem', fontWeight: '800', marginBottom: '16px' }}>Profile Visibility</h3>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                   <label style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }}>
@@ -504,7 +710,7 @@ export default function Settings() {
                       style={{
                         padding: '8px 12px',
                         borderRadius: '8px',
-                        background: 'rgba(0,0,0,0.4)',
+                        background: 'rgba(255,255,255,0.05)',
                         border: '1px solid rgba(255,255,255,0.1)',
                         color: '#fff',
                         outline: 'none',
@@ -540,91 +746,11 @@ export default function Settings() {
             </div>
           )}
 
-          {activeTab === 'personalization' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-              <h2 style={{ fontSize: '1.5rem', fontWeight: '900', marginBottom: '8px' }}>Personalization</h2>
-
-              <div>
-                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '700', marginBottom: '12px', textTransform: 'uppercase', color: 'var(--text-secondary)' }}>
-                  Theme
-                </label>
-                <div style={{ display: 'flex', gap: '12px' }}>
-                  {THEMES.map((theme) => (
-                    <button
-                      key={theme.id}
-                      onClick={() => updateSettingLive('theme', theme.id)}
-                      style={{
-                        padding: '10px 20px',
-                        borderRadius: '10px',
-                        background: settings.theme === theme.id ? 'var(--brand-color)' : 'rgba(255,255,255,0.05)',
-                        color: settings.theme === theme.id ? '#000' : 'var(--text-secondary)',
-                        border: settings.theme === theme.id ? 'none' : '1px solid rgba(255,255,255,0.1)',
-                        fontWeight: '700',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s',
-                      }}
-                    >
-                      {theme.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '700', marginBottom: '12px', textTransform: 'uppercase', color: 'var(--text-secondary)' }}>
-                  Accent Color
-                </label>
-                <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-                  {ACCENT_COLORS.map((color) => (
-                    <button
-                      key={color}
-                      onClick={() => updateSettingLive('accentColor', color)}
-                      style={{
-                        width: '40px',
-                        height: '40px',
-                        borderRadius: '50%',
-                        background: color,
-                        border: settings.accentColor === color ? '3px solid #fff' : '3px solid transparent',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s',
-                      }}
-                    />
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '700', marginBottom: '8px', textTransform: 'uppercase', color: 'var(--text-secondary)' }}>
-                  Font Size
-                </label>
-                <select
-                  value={settings.fontSize}
-                  onChange={(e) => updateSettingLive('fontSize', e.target.value)}
-                  style={{
-                    padding: '10px 14px',
-                    borderRadius: '10px',
-                    background: 'rgba(0,0,0,0.4)',
-                    border: '1px solid rgba(255,255,255,0.1)',
-                    color: '#fff',
-                    outline: 'none',
-                    width: '200px',
-                  }}
-                >
-                  {FONT_SIZES.map((size) => (
-                    <option key={size} value={size}>
-                      {size.charAt(0).toUpperCase() + size.slice(1)}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-          )}
-
           {activeTab === 'security' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
               <h2 style={{ fontSize: '1.5rem', fontWeight: '900', marginBottom: '8px' }}>Security Settings</h2>
 
-              <div style={{ padding: '20px', background: 'rgba(0,0,0,0.3)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.08)' }}>
+              <div style={{ padding: '20px', background: 'rgba(255,255,255,0.02)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.08)' }}>
                 <h3 style={{ fontSize: '1.1rem', fontWeight: '800', marginBottom: '16px' }}>Password</h3>
                 <button
                   style={{
@@ -642,7 +768,7 @@ export default function Settings() {
                 </button>
               </div>
 
-              <div style={{ padding: '20px', background: 'rgba(0,0,0,0.3)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.08)' }}>
+              <div style={{ padding: '20px', background: 'rgba(255,255,255,0.02)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.08)' }}>
                 <h3 style={{ fontSize: '1.1rem', fontWeight: '800', marginBottom: '16px' }}>Two-Factor Authentication (2FA)</h3>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                   <div style={{
@@ -674,7 +800,7 @@ export default function Settings() {
                 </p>
               </div>
 
-              <div style={{ padding: '20px', background: 'rgba(0,0,0,0.3)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.08)' }}>
+              <div style={{ padding: '20px', background: 'rgba(255,255,255,0.02)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.08)' }}>
                 <h3 style={{ fontSize: '1.1rem', fontWeight: '800', marginBottom: '16px' }}>Session Management</h3>
                 <button
                   style={{
@@ -691,7 +817,7 @@ export default function Settings() {
                 </button>
               </div>
 
-              <div style={{ padding: '20px', background: 'rgba(0,0,0,0.3)', borderRadius: '12px', border: '1px solid rgba(239,68,68,0.2)' }}>
+              <div style={{ padding: '20px', background: 'rgba(255,255,255,0.02)', borderRadius: '12px', border: '1px solid rgba(239,68,68,0.2)' }}>
                 <h3 style={{ fontSize: '1.1rem', fontWeight: '800', marginBottom: '8px', color: '#ef4444' }}>Danger Zone</h3>
                 <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '16px' }}>
                   Permanently delete your account and all associated data
@@ -727,7 +853,7 @@ export default function Settings() {
                   style={{
                     padding: '10px 14px',
                     borderRadius: '10px',
-                    background: 'rgba(0,0,0,0.4)',
+                    background: 'rgba(255,255,255,0.05)',
                     border: '1px solid rgba(255,255,255,0.1)',
                     color: '#fff',
                     outline: 'none',
@@ -776,7 +902,7 @@ export default function Settings() {
                   style={{
                     padding: '10px 14px',
                     borderRadius: '10px',
-                    background: 'rgba(0,0,0,0.4)',
+                    background: 'rgba(255,255,255,0.05)',
                     border: '1px solid rgba(255,255,255,0.1)',
                     color: '#fff',
                     outline: 'none',
@@ -805,7 +931,7 @@ export default function Settings() {
                         style={{
                           padding: '10px 14px',
                           borderRadius: '10px',
-                          background: 'rgba(0,0,0,0.4)',
+                          background: 'rgba(255,255,255,0.05)',
                           border: '1px solid rgba(255,255,255,0.1)',
                           color: '#fff',
                           outline: 'none',
@@ -830,7 +956,7 @@ export default function Settings() {
                         style={{
                           padding: '10px 14px',
                           borderRadius: '10px',
-                          background: 'rgba(0,0,0,0.4)',
+                          background: 'rgba(255,255,255,0.05)',
                           border: '1px solid rgba(255,255,255,0.1)',
                           color: '#fff',
                           outline: 'none',
@@ -875,7 +1001,7 @@ export default function Settings() {
                         style={{
                           padding: '10px 14px',
                           borderRadius: '10px',
-                          background: 'rgba(0,0,0,0.4)',
+                          background: 'rgba(255,255,255,0.05)',
                           border: '1px solid rgba(255,255,255,0.1)',
                           color: '#fff',
                           outline: 'none',
@@ -921,8 +1047,8 @@ export default function Settings() {
                       style={{
                         padding: '8px 16px',
                         borderRadius: '20px',
-                        background: settings.favoriteGenres.includes(genre) ? 'var(--brand-color)' : 'rgba(255,255,255,0.05)',
-                        color: settings.favoriteGenres.includes(genre) ? '#000' : 'var(--text-secondary)',
+                        background: settings.favoriteGenres.includes(genre) ? 'var(--red)' : 'rgba(255,255,255,0.05)',
+                        color: settings.favoriteGenres.includes(genre) ? '#fff' : 'var(--text-secondary)',
                         border: 'none',
                         fontWeight: '700',
                         cursor: 'pointer',
@@ -946,7 +1072,7 @@ export default function Settings() {
                   style={{
                     padding: '10px 14px',
                     borderRadius: '10px',
-                    background: 'rgba(0,0,0,0.4)',
+                    background: 'rgba(255,255,255,0.05)',
                     border: '1px solid rgba(255,255,255,0.1)',
                     color: '#fff',
                     outline: 'none',
@@ -971,7 +1097,7 @@ export default function Settings() {
                   style={{
                     padding: '10px 14px',
                     borderRadius: '10px',
-                    background: 'rgba(0,0,0,0.4)',
+                    background: 'rgba(255,255,255,0.05)',
                     border: '1px solid rgba(255,255,255,0.1)',
                     color: '#fff',
                     outline: 'none',
@@ -992,6 +1118,54 @@ export default function Settings() {
                 />
                 <span style={{ fontSize: '0.95rem' }}>Auto-add to Continue Watching</span>
               </label>
+
+              <div style={{ marginTop: '16px', padding: '20px', background: 'rgba(255,255,255,0.02)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.08)' }}>
+                <h3 style={{ fontSize: '1.1rem', fontWeight: '800', marginBottom: '16px' }}>Backup & Restore</h3>
+                <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '16px' }}>
+                  Backup your library, watch history, and settings to a JSON file
+                </p>
+                <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                  <button
+                    onClick={handleExport}
+                    style={{
+                      padding: '10px 20px',
+                      borderRadius: '10px',
+                      background: 'var(--red)',
+                      color: '#fff',
+                      border: 'none',
+                      fontWeight: '700',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                    }}
+                  >
+                    <Download size={16} />
+                    Export Backup
+                  </button>
+                  <label style={{
+                    padding: '10px 20px',
+                    borderRadius: '10px',
+                    background: 'rgba(255,255,255,0.05)',
+                    color: 'var(--text-secondary)',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    fontWeight: '700',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                  }}>
+                    <Upload size={16} />
+                    Import Backup
+                    <input
+                      type="file"
+                      accept=".json"
+                      onChange={handleImport}
+                      style={{ display: 'none' }}
+                    />
+                  </label>
+                </div>
+              </div>
             </div>
           )}
 
@@ -1041,7 +1215,7 @@ export default function Settings() {
                   style={{
                     padding: '10px 14px',
                     borderRadius: '10px',
-                    background: 'rgba(0,0,0,0.4)',
+                    background: 'rgba(255,255,255,0.05)',
                     border: '1px solid rgba(255,255,255,0.1)',
                     color: '#fff',
                     outline: 'none',
@@ -1061,75 +1235,6 @@ export default function Settings() {
             </div>
           )}
 
-          {activeTab === 'discord' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-              <h2 style={{ fontSize: '1.5rem', fontWeight: '900', marginBottom: '8px' }}>Discord RPC</h2>
-
-              <div style={{
-                padding: '20px',
-                background: 'rgba(0,0,0,0.3)',
-                borderRadius: '12px',
-                border: '1px solid rgba(255,255,255,0.08)',
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '16px', justifyContent: 'space-between' }}>
-                  <div>
-                    <h3 style={{ fontSize: '1.1rem', fontWeight: '800', marginBottom: '4px' }}>Rich Presence</h3>
-                    <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                      Show what you're watching on Discord
-                    </p>
-                  </div>
-                  <div style={{
-                    width: '56px',
-                    height: '32px',
-                    borderRadius: '16px',
-                    background: settings.discordRpcEnabled ? '#5865F2' : 'rgba(255,255,255,0.1)',
-                    position: 'relative',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s',
-                  }}
-                  onClick={() => setSettings({ ...settings, discordRpcEnabled: !settings.discordRpcEnabled })}
-                  >
-                    <div style={{
-                      width: '26px',
-                      height: '26px',
-                      borderRadius: '50%',
-                      background: '#fff',
-                      position: 'absolute',
-                      top: '3px',
-                      left: settings.discordRpcEnabled ? '27px' : '3px',
-                      transition: 'all 0.2s',
-                    }} />
-                  </div>
-                </div>
-
-                {settings.discordRpcEnabled && (
-                  <div style={{ marginTop: '20px', paddingTop: '20px', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
-                    <h4 style={{ fontSize: '1rem', fontWeight: '700', marginBottom: '12px' }}>RPC Settings</h4>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                      <label style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', width: 'fit-content' }}>
-                        <input
-                          type="checkbox"
-                          checked
-                          style={{ cursor: 'pointer', width: '18px', height: '18px' }}
-                        />
-                        <span style={{ fontSize: '0.9rem' }}>Show episode number</span>
-                      </label>
-
-                      <label style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', width: 'fit-content' }}>
-                        <input
-                          type="checkbox"
-                          checked
-                          style={{ cursor: 'pointer', width: '18px', height: '18px' }}
-                        />
-                        <span style={{ fontSize: '0.9rem' }}>Show progress</span>
-                      </label>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
           {activeTab === 'app' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
               <h2 style={{ fontSize: '1.5rem', fontWeight: '900', marginBottom: '8px' }}>App Settings</h2>
@@ -1145,7 +1250,7 @@ export default function Settings() {
                     style={{
                       padding: '10px 14px',
                       borderRadius: '10px',
-                      background: 'rgba(0,0,0,0.4)',
+                      background: 'rgba(255,255,255,0.05)',
                       border: '1px solid rgba(255,255,255,0.1)',
                       color: '#fff',
                       outline: 'none',
@@ -1170,7 +1275,7 @@ export default function Settings() {
                     style={{
                       padding: '10px 14px',
                       borderRadius: '10px',
-                      background: 'rgba(0,0,0,0.4)',
+                      background: 'rgba(255,255,255,0.05)',
                       border: '1px solid rgba(255,255,255,0.1)',
                       color: '#fff',
                       outline: 'none',
@@ -1185,6 +1290,29 @@ export default function Settings() {
                   </select>
                 </div>
               </div>
+
+              {window.electron && (
+                <div style={{ padding: '20px', background: 'rgba(255,255,255,0.02)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.08)' }}>
+                  <h3 style={{ fontSize: '1.1rem', fontWeight: '800', marginBottom: '16px' }}>Ad Blocker</h3>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                    <div style={{
+                      padding: '16px',
+                      background: 'var(--red-dim)',
+                      borderRadius: '12px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '4px',
+                    }}>
+                      <span style={{ fontSize: '2rem', fontWeight: '900', color: 'var(--red2)' }}>
+                        {blockStats.blocked}
+                      </span>
+                      <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>
+                        Ads Blocked
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 <label style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', width: 'fit-content' }}>
@@ -1221,6 +1349,12 @@ export default function Settings() {
               <div style={{ marginTop: '16px' }}>
                 <h3 style={{ fontSize: '1.1rem', fontWeight: '800', marginBottom: '12px' }}>Cache</h3>
                 <button
+                  onClick={() => {
+                    localStorage.removeItem('animevault_anilistCache');
+                    localStorage.removeItem('animevault_episodeGroupCache');
+                    localStorage.removeItem('animevault_aniskipCache');
+                    alert('Cache cleared!');
+                  }}
                   style={{
                     padding: '10px 20px',
                     borderRadius: '10px',
@@ -1269,7 +1403,7 @@ export default function Settings() {
 
               <div style={{
                 padding: '20px',
-                background: 'rgba(0,0,0,0.3)',
+                background: 'rgba(255,255,255,0.02)',
                 borderRadius: '12px',
                 border: '1px solid rgba(255,255,255,0.08)',
               }}>

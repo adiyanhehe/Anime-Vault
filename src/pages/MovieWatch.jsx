@@ -1,5 +1,5 @@
 // src/pages/MovieWatch.jsx
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
 import {
   ArrowLeft,
@@ -18,6 +18,8 @@ import CommentsSection from "../components/CommentsSection";
 import { useUser } from "../api/UserContext";
 import electronBridge from "../utils/electronBridge";
 import { FocusableButton, FocusableLink } from "../components/FocusableWrapper";
+import { PLAYER_SOURCES, getSourceUrl } from "../utils/playerSources";
+import { storage } from "../utils/storage";
 
 // Helper to get episode number
 function getEpisodeNumber(episode) {
@@ -31,17 +33,25 @@ function MovieWatch() {
   const [loading, setLoading] = useState(true);
   const [activeSeason, setActiveSeason] = useState(null);
   const [activeEpisode, setActiveEpisode] = useState(null);
-  const [sources, setSources] = useState([]);
-  const [activeServerIdx, setActiveServerIdx] = useState(0);
+  const [activeSourceId, setActiveSourceId] = useState(() => storage.get("playerSource") || PLAYER_SOURCES[0].id);
   const [iframeLoaded, setIframeLoaded] = useState(false);
   const [showFallbackHint, setShowFallbackHint] = useState(false);
+  const [accentColor] = useState(() => storage.get("accentColor") || "ff1a75");
+  const [playing, setPlaying] = useState(false);
+  const webviewRef = useRef(null);
+
+  // Check if we're in Electron
+  const isElectron = typeof window !== 'undefined' && window.electronAPI !== undefined;
 
   // Load video metadata and set initial player source
   useEffect(() => {
     loadMeta();
   }, [id, type]);
 
-
+  // Save player source when changed
+  useEffect(() => {
+    storage.set("playerSource", activeSourceId);
+  }, [activeSourceId]);
 
   // Sync watch history to backend
   useEffect(() => {
@@ -87,27 +97,18 @@ function MovieWatch() {
     return () => electronBridge.clearAnimeActivity();
   }, [meta, activeEpisode, type, id]);
 
-  // Compute available servers when meta or episode changes
-  useEffect(() => {
-    if (meta) {
-      const imdbId = meta.imdb_id || id;
-      if (imdbId) {
-        const sNum = activeSeason || 1;
-        const eNum = getEpisodeNumber(activeEpisode);
-        const newSources = [];
-        
-        if (type === 'movie') {
-          newSources.push({ name: 'VidSrc-Embed', url: `https://vidsrc-embed.ru/embed/movie?imdb=${imdbId}` });
-        } else {
-          newSources.push({ name: 'VidSrc-Embed', url: `https://vidsrc-embed.ru/embed/tv?imdb=${imdbId}&season=${sNum}&episode=${eNum}` });
-        }
-        
-        setSources(newSources);
-        setActiveServerIdx(0); // Reset to primary server on media change
-        setIframeLoaded(false);
-      }
-    }
-  }, [meta, activeSeason, activeEpisode, type, id]);
+  // Compute current embed URL
+  const getCurrentEmbedUrl = () => {
+    if (!meta) return null;
+    const tmdbId = meta.tmdbId;
+    if (!tmdbId) return null;
+    const sNum = activeSeason || 1;
+    const eNum = getEpisodeNumber(activeEpisode);
+    const sourceType = type === 'movie' ? 'movie' : 'tv';
+    return getSourceUrl(activeSourceId, sourceType, tmdbId, sNum, eNum, {}, accentColor);
+  };
+
+  const currentEmbedUrl = getCurrentEmbedUrl();
 
   async function loadMeta() {
     setLoading(true);
@@ -125,8 +126,21 @@ function MovieWatch() {
     if (data && (type === "tv" || type === "series")) {
       const seasons = {};
       (data.seasons || data.videos || []).forEach((s) => {
-        // Case 1: It's a season object with episode_count
-        if ((s.season_number !== undefined || s.season !== undefined) && s.episode_count !== undefined) {
+        // Case 1: It's a season object with actual episodes array
+        if (s.season_number !== undefined && s.episodes && s.episodes.length > 0) {
+          const seasonNum = s.season_number;
+          if (seasonNum > 0) {
+            seasons[seasonNum] = s.episodes.map((ep) => ({
+              ...ep,
+              episode: ep.episode_number,
+              number: ep.episode_number,
+              title: ep.name || `Episode ${ep.episode_number}`,
+              thumbnail: ep.still_path ? `https://image.tmdb.org/t/p/w780${ep.still_path}` : null
+            }));
+          }
+        }
+        // Case 2: It's a season object with episode_count
+        else if ((s.season_number !== undefined || s.season !== undefined) && s.episode_count !== undefined) {
           const seasonNum = s.season_number !== undefined ? s.season_number : s.season;
           if (seasonNum > 0) {
             const epCount = s.episode_count;
@@ -140,13 +154,13 @@ function MovieWatch() {
             }
           }
         } 
-        // Case 2: It's an individual episode
+        // Case 3: It's an individual episode
         else if (s.season !== undefined && s.episode !== undefined) {
           const seasonNum = s.season;
           if (!seasons[seasonNum]) seasons[seasonNum] = [];
           seasons[seasonNum].push(s);
         }
-        // Case 3: It's an individual episode with season_number and number
+        // Case 4: It's an individual episode with season_number and number
         else if (s.season_number !== undefined && s.number !== undefined) {
           const seasonNum = s.season_number;
           if (!seasons[seasonNum]) seasons[seasonNum] = [];
@@ -193,8 +207,21 @@ function MovieWatch() {
   const seasonsMap = {};
   if (isSeries && (meta.seasons || meta.videos)) {
     (meta.seasons || meta.videos || []).forEach((s) => {
-      // Case 1: It's a season object with episode_count
-      if ((s.season_number !== undefined || s.season !== undefined) && s.episode_count !== undefined) {
+      // Case 1: It's a season object with actual episodes array
+      if (s.season_number !== undefined && s.episodes && s.episodes.length > 0) {
+        const seasonNum = s.season_number;
+        if (seasonNum > 0) {
+          seasonsMap[seasonNum] = s.episodes.map((ep) => ({
+            ...ep,
+            episode: ep.episode_number,
+            number: ep.episode_number,
+            title: ep.name || `Episode ${ep.episode_number}`,
+            thumbnail: ep.still_path ? `https://image.tmdb.org/t/p/w780${ep.still_path}` : null
+          }));
+        }
+      }
+      // Case 2: It's a season object with episode_count
+      else if ((s.season_number !== undefined || s.season !== undefined) && s.episode_count !== undefined) {
         const seasonNum = s.season_number !== undefined ? s.season_number : s.season;
         if (seasonNum > 0) {
           const epCount = s.episode_count;
@@ -208,13 +235,13 @@ function MovieWatch() {
           }
         }
       } 
-      // Case 2: It's an individual episode
+      // Case 3: It's an individual episode
       else if (s.season !== undefined && s.episode !== undefined) {
         const seasonNum = s.season;
         if (!seasonsMap[seasonNum]) seasonsMap[seasonNum] = [];
         seasonsMap[seasonNum].push(s);
       }
-      // Case 3: It's an individual episode with season_number and number
+      // Case 4: It's an individual episode with season_number and number
       else if (s.season_number !== undefined && s.number !== undefined) {
         const seasonNum = s.season_number;
         if (!seasonsMap[seasonNum]) seasonsMap[seasonNum] = [];
@@ -314,55 +341,77 @@ function MovieWatch() {
                 Streaming: {isSeries && activeEpisode ? `S${activeSeason} E${getEpisodeNumber(activeEpisode)}` : meta.name}
               </h2>
             </div>
-            {sources.length > 0 && (
-              <div style={{ display: "flex", gap: "8px", overflowX: "auto", paddingBottom: "4px" }}>
-                {sources.map((src, idx) => (
-                  <FocusableButton
-                    key={src.name}
-                    style={{
-                      padding: "6px 12px",
-                      fontSize: "0.8rem",
-                      borderRadius: "6px",
-                      background: activeServerIdx === idx ? "#ff1a75" : "var(--glass)",
-                      color: activeServerIdx === idx ? "#fff" : "var(--text-secondary)",
-                      border: "1px solid",
-                      borderColor: activeServerIdx === idx ? "#ff1a75" : "var(--glass-border)",
-                      cursor: "pointer",
-                      whiteSpace: "nowrap",
-                      transition: "all 0.2s ease"
-                    }}
-                    onClick={() => {
-                      setActiveServerIdx(idx);
-                      setIframeLoaded(false);
-                    }}
-                  >
-                    <Server size={14} style={{ display: "inline-block", marginRight: "6px", verticalAlign: "middle" }} />
-                    {src.name}
-                  </FocusableButton>
-                ))}
-              </div>
-            )}
+            <div style={{ display: "flex", gap: "8px", overflowX: "auto", paddingBottom: "4px" }}>
+              {PLAYER_SOURCES.map((src) => (
+                <FocusableButton
+                  key={src.id}
+                  style={{
+                    padding: "6px 12px",
+                    fontSize: "0.8rem",
+                    borderRadius: "6px",
+                    background: activeSourceId === src.id ? "#ff1a75" : "var(--glass)",
+                    color: activeSourceId === src.id ? "#fff" : "var(--text-secondary)",
+                    border: "1px solid",
+                    borderColor: activeSourceId === src.id ? "#ff1a75" : "var(--glass-border)",
+                    cursor: "pointer",
+                    whiteSpace: "nowrap",
+                    transition: "all 0.2s ease"
+                  }}
+                  onClick={() => {
+                    setActiveSourceId(src.id);
+                    setIframeLoaded(false);
+                  }}
+                >
+                  <Server size={14} style={{ display: "inline-block", marginRight: "6px", verticalAlign: "middle" }} />
+                  {src.label}
+                </FocusableButton>
+              ))}
+            </div>
           </div>
-          <div className="watch-iframe-container" style={{ position: "relative", overflow: "hidden", width: "100%", aspectRatio: "16 / 9", background: "#000", borderRadius: "12px", border: "1px solid var(--glass-border)", marginTop: "12px" }}>
-            {sources.length > 0 ? (
+          <div className="player-wrap" style={{ marginTop: "12px" }}>
+            {currentEmbedUrl ? (
               <>
                 {!iframeLoaded && (
                   <div className="player-loading-overlay" style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", zIndex: 10 }}>
                     <div className="spinner" />
-                    <p style={{ color: "rgba(255,255,255,0.5)", marginTop: "12px" }}>Loading {sources[activeServerIdx]?.name}...</p>
+                    <p style={{ color: "rgba(255,255,255,0.5)", marginTop: "12px" }}>Loading {PLAYER_SOURCES.find(s => s.id === activeSourceId)?.label}...</p>
                   </div>
                 )}
-                <iframe
-                  id="watch-player-iframe"
-                  key={sources[activeServerIdx]?.url}
-                  src={sources[activeServerIdx]?.url}
-                  title={meta.name}
-                  allowFullScreen
-                  frameBorder="0"
-                  allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
-                  style={{ width: "100%", height: "100%", position: "absolute", inset: 0, zIndex: 1 }}
-                  onLoad={() => setIframeLoaded(true)}
-                />
+                {isElectron ? (
+                  <webview
+                    ref={webviewRef}
+                    id="watch-player-webview"
+                    key={currentEmbedUrl}
+                    src={currentEmbedUrl}
+                    partition="persist:player"
+                    allowpopups="false"
+                    sandbox="allow-scripts allow-same-origin allow-forms"
+                    title={meta?.name || meta?.title}
+                    allowfullscreen
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      position: "absolute",
+                      inset: 0,
+                      zIndex: 1,
+                      border: "none",
+                    }}
+                    onDidFinishLoad={() => setIframeLoaded(true)}
+                    onDidFailLoad={() => setIframeLoaded(true)}
+                  />
+                ) : (
+                  <iframe
+                    id="watch-player-iframe"
+                    key={currentEmbedUrl}
+                    src={currentEmbedUrl}
+                    title={meta?.name || meta?.title}
+                    allowFullScreen
+                    frameBorder="0"
+                    allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
+                    style={{ width: "100%", height: "100%", position: "absolute", inset: 0, zIndex: 1 }}
+                    onLoad={() => setIframeLoaded(true)}
+                  />
+                )}
               </>
             ) : (
               <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", color: "rgba(255,255,255,0.3)" }}>

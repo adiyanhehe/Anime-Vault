@@ -9,6 +9,8 @@ import './styles/designTokens.css';
 import { useUser } from './api/UserContext';
 import { fetchSiteSettings, initDatabase, getSettings } from './api/db';
 import { initializeDatabase } from './api/database';
+import { applyTheme, applyAccentColor } from './utils/appearance';
+import { storage } from './utils/storage';
 
 import { FocusableNavLink, FocusableLink, FocusableButton } from './components/FocusableWrapper';
 import RequireAuth from './components/RequireAuth';
@@ -37,9 +39,7 @@ import Collections from './pages/Collections';
 import Stats from './pages/Stats';
 import Notifications from './pages/Notifications';
 import Settings from './pages/Settings';
-
-// duplicate import removed
-import AdminNav from './components/AdminNav';
+import SearchModal from './components/SearchModal';
 
 
 function App() {
@@ -49,6 +49,7 @@ function App() {
   const [maintenanceMode, setMaintenanceMode] = useState(false);
   const [topbarQuery, setTopbarQuery] = useState('');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -57,17 +58,21 @@ function App() {
   useEffect(() => {
     async function loadSettings() {
       try {
-        // Initialize local client storage
         await initializeDatabase();
-        // Initialize Neon database tables and run seed
         try { await initDatabase(); } catch (dbErr) { console.warn('Neon init skipped:', dbErr?.message); }
         const settings = await fetchSiteSettings();
         if (settings?.announcement) setAnnouncement(settings.announcement);
         if (settings?.maintenance === 'true') setMaintenanceMode(true);
         
-        // Load and apply user personalization settings
-        const userSettings = getSettings();
-        applySettingsToDOM(userSettings);
+        const savedAccent = storage.get('accentColor') || 'red';
+        const savedTheme = storage.get('theme') || 'dark';
+        const savedCustomVars = storage.get('customThemeVars');
+        applyAccentColor(savedAccent);
+        applyTheme(savedTheme, savedCustomVars);
+        
+        const fontSize = storage.get('fontSize') || 'medium';
+        const sizeMap = { small: '14px', medium: '16px', large: '18px' };
+        document.documentElement.style.fontSize = sizeMap[fontSize];
       } catch (err) {
         console.error('Failed to load global site settings:', err);
       } finally {
@@ -77,74 +82,17 @@ function App() {
     loadSettings();
   }, []);
 
-  // Helper function to apply settings to CSS custom properties
-  function applySettingsToDOM(settings) {
-    if (settings.theme === 'light') {
-      // Light theme
-      document.documentElement.style.setProperty('--bg-primary', 'hsl(0, 0%, 98%)');
-      document.documentElement.style.setProperty('--bg-secondary', 'hsl(0, 0%, 92%)');
-      document.documentElement.style.setProperty('--bg-glass', 'rgba(0, 0, 0, 0.04)');
-      document.documentElement.style.setProperty('--text-primary', 'hsl(0, 0%, 8%)');
-      document.documentElement.style.setProperty('--text-secondary', 'hsl(0, 0%, 45%)');
-      document.documentElement.style.setProperty('--text-muted', 'hsl(0, 0%, 60%)');
-      document.documentElement.style.setProperty('--glass-border', 'rgba(0, 0, 0, 0.08)');
-      document.documentElement.style.setProperty('--shadow-sm', '0 2px 6px rgba(0,0,0,0.08)');
-      document.documentElement.style.setProperty('--shadow-md', '0 4px 12px rgba(0,0,0,0.1)');
-      document.documentElement.style.setProperty('--shadow-lg', '0 8px 24px rgba(0,0,0,0.12)');
-    } else {
-      // Dark theme (default)
-      document.documentElement.style.setProperty('--bg-primary', 'hsl(0, 0%, 12%)');
-      document.documentElement.style.setProperty('--bg-secondary', 'hsl(0, 0%, 16%)');
-      document.documentElement.style.setProperty('--bg-glass', 'rgba(255, 255, 255, 0.06)');
-      document.documentElement.style.setProperty('--text-primary', 'hsl(0, 0%, 94%)');
-      document.documentElement.style.setProperty('--text-secondary', 'hsl(0, 0%, 68%)');
-      document.documentElement.style.setProperty('--text-muted', 'hsl(0, 0%, 45%)');
-      document.documentElement.style.setProperty('--glass-border', 'rgba(255, 255, 255, 0.12)');
-      document.documentElement.style.setProperty('--shadow-sm', '0 2px 6px rgba(0,0,0,0.3)');
-      document.documentElement.style.setProperty('--shadow-md', '0 4px 12px rgba(0,0,0,0.4)');
-      document.documentElement.style.setProperty('--shadow-lg', '0 8px 24px rgba(0,0,0,0.5)');
-    }
-
-    // Apply font size
-    let fontSize = '16px'; // Default medium
-    if (settings.fontSize === 'small') fontSize = '14px';
-    if (settings.fontSize === 'large') fontSize = '18px';
-    document.documentElement.style.fontSize = fontSize;
-
-    // Apply accent color
-    if (settings.accentColor) {
-      const accentHex = settings.accentColor;
-      // Convert hex to HSL for better control
-      const hsl = hexToHSL(accentHex);
-      document.documentElement.style.setProperty('--brand-primary', `hsl(${hsl.h}, ${hsl.s}%, ${hsl.l}%)`);
-      document.documentElement.style.setProperty('--brand-primary-light', `hsl(${hsl.h}, ${hsl.s}%, ${Math.min(hsl.l + 10, 95)}%)`);
-      document.documentElement.style.setProperty('--brand-primary-dark', `hsl(${hsl.h}, ${hsl.s}%, ${Math.max(hsl.l - 10, 10)}%)`);
-      document.documentElement.style.setProperty('--brand-color', `hsl(${hsl.h}, ${hsl.s}%, ${hsl.l}%)`); // Fallback for existing uses
-    }
-  }
-
-  // Helper to convert hex to HSL object
-  function hexToHSL(hex) {
-    let r = parseInt(hex.slice(1, 3), 16) / 255;
-    let g = parseInt(hex.slice(3, 5), 16) / 255;
-    let b = parseInt(hex.slice(5, 7), 16) / 255;
-    let max = Math.max(r, g, b), min = Math.min(r, g, b);
-    let h, s, l = (max + min) / 2;
-
-    if (max === min) {
-      h = s = 0;
-    } else {
-      let d = max - min;
-      s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-      switch (max) {
-        case r: h = ((g - b) / d + (g < b ? 6 : 0)); break;
-        case g: h = ((b - r) / d + 2); break;
-        case b: h = ((r - g) / d + 4); break;
+  // Keyboard shortcut for search
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        setIsSearchOpen(true);
       }
-      h = h / 6;
-    }
-    return { h: Math.round(h * 360), s: Math.round(s * 100), l: Math.round(l * 100) };
-  }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
 
 
@@ -260,17 +208,35 @@ function App() {
            </FocusableNavLink>
          </nav>
         <div className="topbar-actions" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <form className="topbar-search-form" onSubmit={handleTopbarSearch} role="search">
+          <button 
+            className="topbar-search-form" 
+            onClick={() => setIsSearchOpen(true)}
+            style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '0.75rem', 
+              padding: '0.5rem 1rem', 
+              background: 'var(--glass)', 
+              border: '1px solid var(--glass-border)', 
+              borderRadius: '8px', 
+              color: 'var(--text-secondary)', 
+              cursor: 'pointer',
+              transition: 'all 0.2s ease'
+            }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--brand-color)'; e.currentTarget.style.color = '#fff'; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--glass-border)'; e.currentTarget.style.color = 'var(--text-secondary)'; }}
+          >
             <SearchIcon size={18} aria-hidden="true" />
-            <input
-              type="search"
-              value={topbarQuery}
-              onChange={(event) => setTopbarQuery(event.target.value)}
-              placeholder="Search anime..."
-              aria-label="Search anime"
-            />
-            <button type="submit">Search</button>
-          </form>
+            <span style={{ fontSize: '0.9rem' }}>Search anime...</span>
+            <kbd style={{ 
+              background: 'rgba(255,255,255,0.05)', 
+              border: '1px solid rgba(255,255,255,0.1)', 
+              padding: '2px 6px', 
+              borderRadius: '4px', 
+              fontSize: '0.75rem', 
+              marginLeft: 'auto' 
+            }}>⌘K</kbd>
+          </button>
           {user ? (
             <FocusableLink to="/profile" style={{
               display: 'inline-flex', alignItems: 'center', gap: '6px',
@@ -449,6 +415,7 @@ function App() {
       <AuthModal />
       <UpdateCenter />
       <ProfileModal isOpen={isProfileOpen} onClose={() => setIsProfileOpen(false)} />
+      {isSearchOpen && <SearchModal onClose={() => setIsSearchOpen(false)} />}
 
       <style>{`
         .mobile-menu-overlay {

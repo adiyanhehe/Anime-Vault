@@ -10,7 +10,7 @@ const MOVIE_GENRES = [
 
 const TRENDING_SHOWS = [
   {
-    id: 'tt20234568',
+    id: '200709',
     name: 'Weak Hero Class 1',
     type: 'tv',
     year: '2022',
@@ -21,7 +21,7 @@ const TRENDING_SHOWS = [
     genre: 'Action, Drama, Youth'
   },
   {
-    id: 'tt28036189',
+    id: '228547',
     name: 'When I Fly Towards You',
     type: 'tv',
     year: '2023',
@@ -32,7 +32,7 @@ const TRENDING_SHOWS = [
     genre: 'Romance, Youth, Comedy'
   },
   {
-    id: 'tt29606822',
+    id: '218539',
     name: 'My Demon',
     type: 'tv',
     year: '2023',
@@ -43,7 +43,7 @@ const TRENDING_SHOWS = [
     genre: 'Fantasy, Romance, Comedy'
   },
   {
-    id: 'tt15398716',
+    id: '872585',
     name: 'Oppenheimer',
     type: 'movie',
     year: '2023',
@@ -54,7 +54,7 @@ const TRENDING_SHOWS = [
     genre: 'Biography, Drama, History'
   },
   {
-    id: 'tt15239678',
+    id: '693134',
     name: 'Dune: Part Two',
     type: 'movie',
     year: '2024',
@@ -78,7 +78,7 @@ function DramasMovies() {
   const [moviePage, setMoviePage] = useState(1);
   const [tvPage, setTvPage] = useState(1);
   const [activeSlide, setActiveSlide] = useState(0);
-  
+
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -271,7 +271,7 @@ function DramasMovies() {
               Ad-neutral, high-speed streaming for Blockbusters & Series.
             </p>
           </div>
-          
+
           <form onSubmit={handleSearch} className="movies-search-bar" style={{
             display: 'flex',
             alignItems: 'center',
@@ -356,7 +356,7 @@ function DramasMovies() {
                 <X size={12} style={{ cursor: 'pointer', color: 'red' }} onClick={clearSearch} />
               </span>
             )}
-            <button 
+            <button
               onClick={clearAllFilters}
               style={{
                 marginLeft: 'auto',
@@ -385,15 +385,15 @@ function DramasMovies() {
               <div className="trending-grid-v2">
                 {searchResults.map((item) => {
                   const watchType = item.type === 'series' || item.mediaType === 'series' ? 'tv' : 'movie';
-                  const posterUrl = item.poster || `https://live.metahub.space/poster/medium/${item.imdb_id || item.id}/img`;
-                  
+                  const posterUrl = item.poster;
+
                   return (
                     <FocusableLink
-                      to={`/watch/${watchType}/${item.imdb_id || item.id}`}
-                      key={item.id || item.imdb_id}
+                      to={`/watch/${watchType}/${item.id}`}
+                      key={item.id}
                       className="movie-card"
                       onClick={() => {
-                        localStorage.setItem(`media_title_${item.imdb_id || item.id}`, item.name || item.title);
+                        localStorage.setItem(`media_title_${item.id}`, item.name || item.title);
                       }}
                       style={{ textDecoration: 'none' }}
                     >
@@ -531,15 +531,15 @@ function DramasMovies() {
                 <div className="trending-grid-v2">
                   {(activeTab === 'movies' ? movies : tvShows).map((item) => {
                     const cleanTitle = item.title;
-                    const posterUrl = `https://live.metahub.space/poster/medium/${item.imdb_id}/img`;
-                    
+                    const posterUrl = item.poster;
+
                     return (
                       <FocusableLink
-                        to={`/watch/${activeTab === 'tv' ? 'tv' : 'movie'}/${item.imdb_id}`}
-                        key={item.imdb_id}
+                        to={`/watch/${activeTab === 'tv' ? 'tv' : 'movie'}/${item.id}`}
+                        key={item.id}
                         className="movie-card"
                         onClick={() => {
-                          localStorage.setItem(`media_title_${item.imdb_id}`, item.title || item.name);
+                          localStorage.setItem(`media_title_${item.id}`, item.title || item.name);
                         }}
                         style={{ textDecoration: 'none' }}
                       >
