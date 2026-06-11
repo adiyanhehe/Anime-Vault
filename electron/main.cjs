@@ -32,8 +32,8 @@ app.commandLine.appendSwitch("disk-cache-size", String(80 * 1024 * 1024));
 app.commandLine.appendSwitch("renderer-process-limit", "3");
 
 // ── Sub-modules ────────────────────────────────────────────────────────────────
-const blockStats = require("./ipc/blockStats");
-const storageIpc = require("./ipc/storage");
+const blockStats = require("./ipc/blockStats.cjs");
+const storageIpc = require("./ipc/storage.cjs");
 
 // ── Ad/tracker block list ───────────────────────────────────────────────────────
 const BLOCKED_HOSTS = [
