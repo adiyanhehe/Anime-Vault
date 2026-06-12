@@ -36,7 +36,12 @@ const blockStats = require("./ipc/blockStats.cjs");
 const storageIpc = require("./ipc/storage.cjs");
 
 // ── Ad/tracker block list ───────────────────────────────────────────────────────
+// NOTE: Critical design dependencies (fonts.googleapis.com, fonts.gstatic.com)
+// are intentionally NOT blocked. The app relies on Google Fonts (Geist, Sora)
+// and Material Symbols for proper rendering. Blocking them breaks icon display
+// and layout. Only actual ad/tracker domains are listed here.
 const BLOCKED_HOSTS = [
+  // Analytics / Ad networks
   "*://www.google-analytics.com/*",
   "*://analytics.google.com/*",
   "*://googletagmanager.com/*",
@@ -48,11 +53,8 @@ const BLOCKED_HOSTS = [
   "*://adservice.google.de/*",
   "*://pagead2.googlesyndication.com/*",
   "*://stats.g.doubleclick.net/*",
-  "*://yt3.ggpht.com/ytc/*",
-  "*://fonts.googleapis.com/*",
-  "*://fonts.gstatic.com/*",
-  "*://googleapis.com/*",
-  "*://gstatic.com/*",
+
+  // Known ad servers / malvertising
   "*://cdn.adx1.com/*",
   "*://intelligenceadx.com/*",
   "*://adsco.re/*",
@@ -303,6 +305,14 @@ function createWindow() {
       checkForUpdates();
     }
   });
+
+  // ── Auto-check for updates on startup (like Discord) ─────────────────────────
+  if (app.isPackaged) {
+    // Send an immediate "checking" status so the UI shows the checking state
+    mainWindow.webContents.once("did-finish-load", () => {
+      // The first did-finish-load triggers the initial check; we already have this above
+    });
+  }
 }
 
 // ── Auto Updater Helpers ────────────────────────────────────────────────────────
@@ -348,7 +358,7 @@ function initAutoUpdater() {
     console.log("[AutoUpdater] Checking for updates...");
     sendUpdateStatus({
       status: "checking",
-      message: "Checking GitHub Releases for a fresh AnimeVault build...",
+      message: "Scanning GitHub Releases for a fresh build...",
       progress: 0,
     });
   });
@@ -432,6 +442,19 @@ function initAutoUpdater() {
       });
     }
   });
+
+  // ── Auto-check on startup (like Discord) ─────────────────────────────────────
+  // After initializing, immediately trigger a check so the app shows "checking" state
+  // when the user opens it
+  if (app.isPackaged) {
+    // Use a short delay to let the app settle, then check
+    setTimeout(() => {
+      console.log("[AutoUpdater] Performing startup update check (Discord-style)...");
+      autoUpdater.checkForUpdates().catch((error) => {
+        console.error("[AutoUpdater] Startup check failed:", error);
+      });
+    }, 3000);
+  }
 }
 
 function checkForUpdates() {

@@ -7189,8 +7189,27 @@ select {
   animation: updateSpin 1s linear infinite;
 }
 
+.update-spin {
+  animation: updateSpin 1.2s linear infinite;
+}
+
 @keyframes updateSpin {
   to { transform: rotate(360deg); }
+}
+
+@keyframes updatePulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
+
+@keyframes checkComplete {
+  from { transform: scale(1); }
+  to { transform: scale(1.1); }
+}
+
+@keyframes bannerPulse {
+  from { transform: scale(1); }
+  to { transform: scale(1.2); }
 }
 
 @media (max-width: 640px) {

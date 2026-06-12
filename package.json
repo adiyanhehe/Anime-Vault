@@ -38,7 +38,8 @@
     "asar": true,
     "files": [
       "dist/**/*",
-      "electron/**/*",
+      "electron/**/*.cjs",
+      "electron/**/*.js",
       "build/**/*"
     ],
     "npmRebuild": false,
